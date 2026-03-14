@@ -33,7 +33,7 @@
   object-fit: contain;
   object-position: center;
   display: block;
-  border: 2px solid red;
+  /* border: 2px solid red; */
 }
 
 .login-right-panel {
