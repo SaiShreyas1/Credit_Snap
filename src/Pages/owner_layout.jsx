@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Home, Utensils, Wallet, History, HelpCircle, Bell, UserCircle, Settings, LogOut } from 'lucide-react';
-import studentLogo from '../assets/CreditSnap_logo_Student.png';
+import { Menu, Home, Edit, Wallet, BarChart2, History, HelpCircle, Bell, UserCircle, Settings, LogOut } from 'lucide-react';
+import canteenLogo from '../assets/CreditSnap_logo_Canteen.png'; 
 
-export default function StudLayout() {
+export default function OwnerLayout() {
   const navigate = useNavigate();
   const location = useLocation(); 
 
-  const [userProfile, setUserProfile] = useState(null); 
+  const [userProfile, setUserProfile] = useState({ name: "Hall 1 Admin", role: "Canteen Owner" }); 
   const [notifications, setNotifications] = useState([]); 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -19,15 +19,19 @@ export default function StudLayout() {
   // --- NEW: Listener for clicks outside the dropdowns ---
   useEffect(() => {
     function handleClickOutside(event) {
+      // If the click is NOT inside the notification dropdown, close it
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setIsNotificationsOpen(false);
       }
+      // If the click is NOT inside the profile dropdown, close it
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
     }
+    // Bind the event listener
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
+      // Unbind the event listener on clean up
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
@@ -46,20 +50,26 @@ export default function StudLayout() {
           <div className="p-4"><Menu className="w-8 h-8 cursor-pointer hover:text-orange-400 transition" /></div>
           <nav className="mt-4 flex flex-col gap-2">
             
-            <div onClick={() => navigate('/student/dashboard')} className={`mx-2 py-3 px-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition ${isActive('dashboard') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => navigate('/canteen/dashboard')} className={`mx-2 py-3 px-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition ${isActive('dashboard') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <Home className="w-6 h-6 mb-1" /><span className="text-sm font-semibold">Home</span>
             </div>
 
-            <div onClick={() => navigate('/student/canteens')} className={`mx-2 py-3 px-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition ${isActive('canteens') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
-              <Utensils className="w-6 h-6 mb-1" /><span className="text-sm font-semibold">Canteens</span>
+            <div onClick={() => navigate('/owner/editmenu')} className={`mx-2 py-3 px-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition ${isActive('editmenu') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+              <Edit className="w-6 h-6 mb-1" /><span className="text-sm font-semibold text-center leading-tight">Edit Menu</span>
             </div>
             
-            <div className="py-3 px-4 flex flex-col items-center justify-center text-gray-300 hover:text-white cursor-pointer opacity-70 transition">
-              <Wallet className="w-6 h-6 mb-1" /><span className="text-sm">View debts</span>
+            <div onClick={() => navigate('/owner/debts')} className={`mx-2 py-3 px-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition ${isActive('debts') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+              <Wallet className="w-6 h-6 mb-1" /><span className="text-sm text-center leading-tight">Active Debts</span>
             </div>
-            <div className="py-3 px-4 flex flex-col items-center justify-center text-gray-300 hover:text-white cursor-pointer opacity-70 transition">
+
+            <div onClick={() => navigate('/owner/analytics')} className={`mx-2 py-3 px-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition ${isActive('analytics') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+              <BarChart2 className="w-6 h-6 mb-1" /><span className="text-sm text-center">Analytics</span>
+            </div>
+
+            <div onClick={() => navigate('/owner/history')} className={`mx-2 py-3 px-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition ${isActive('history') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <History className="w-6 h-6 mb-1" /><span className="text-sm">History</span>
             </div>
+
             <div className="py-3 px-4 flex flex-col items-center justify-center text-gray-300 hover:text-white cursor-pointer opacity-70 transition">
               <HelpCircle className="w-6 h-6 mb-1" /><span className="text-sm">Help</span>
             </div>
@@ -77,7 +87,9 @@ export default function StudLayout() {
         {/* TOP HEADER */}
         <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-10 shrink-0">
           <div className="flex items-center h-full">
-             <img src={studentLogo} alt="CreditSnap Logo" className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2" />
+             <img src={canteenLogo} alt="CreditSnap Logo" className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2" 
+               onError={(e) => e.target.src = "https://via.placeholder.com/150x50?text=Logo+Here"} 
+             />
           </div>
           
           <div className="flex items-center gap-6 pr-2">
@@ -119,12 +131,12 @@ export default function StudLayout() {
               {isProfileOpen && (
                 <div className="absolute right-0 mt-4 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
                   <div className="bg-gray-50 p-4 border-b border-gray-100">
-                    <p className="font-bold text-gray-800">{userProfile ? userProfile.name : "Student Profile"}</p>
-                    <p className="text-xs text-gray-500">Roll No: {userProfile ? userProfile.rollNo : "Loading..."}</p>
+                    <p className="font-bold text-gray-800">{userProfile ? userProfile.name : "Admin Profile"}</p>
+                    <p className="text-xs text-gray-500">{userProfile ? userProfile.role : "Loading..."}</p>
                   </div>
                   <div className="flex flex-col">
-                    <div onClick={() => navigate('/student/profile')} className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 text-sm text-gray-700 transition">
-                      <Settings className="w-4 h-4" /> Account Settings
+                    <div onClick={() => navigate('/owner/profile')} className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 text-sm text-gray-700 transition">
+                      <Settings className="w-4 h-4" /> Canteen Settings
                     </div>
                     <div className="px-4 py-3 hover:bg-red-50 cursor-pointer flex items-center gap-3 text-sm text-red-600 font-medium transition border-t border-gray-100">
                       <LogOut className="w-4 h-4" /> Logout
@@ -137,7 +149,9 @@ export default function StudLayout() {
           </div>
         </header>
 
-        <Outlet />
+        <div className="flex-1 overflow-y-auto bg-[#f4f7f6]">
+          <Outlet />
+        </div>
 
       </div>
     </div>
