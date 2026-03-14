@@ -1,13 +1,25 @@
 import React, { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
+// Mock data simulating backend response (Same as in View Debts)
+const canteenDebtsData = [
+  { id: '1', name: 'Hall 10 Canteen', currentDebt: 3915 },
+  { id: '2', name: 'Hall 1 Canteen', currentDebt: 1180 },
+  { id: '3', name: 'Hall 12 Canteen', currentDebt: 875 },
+  { id: '4', name: 'Hall 6 Canteen', currentDebt: 530 },
+  { id: '5', name: 'Hall 3 Canteen', currentDebt: 0 }
+];
+
 export default function StudDashboard() {
-  const [totalDebt, setTotalDebt] = useState(0); 
+  // Calculate the sum of all current debts from the mock data
+  const initialTotalDebt = canteenDebtsData.reduce((total, canteen) => total + canteen.currentDebt, 0);
+
+  const [totalDebt, setTotalDebt] = useState(initialTotalDebt); 
   const [alerts, setAlerts] = useState([]); 
   const [currentOrders, setCurrentOrders] = useState([]); 
 
   return (
-    <main className="p-8 overflow-y-auto flex-1">
+    <main className="p-8 overflow-y-auto flex-1 bg-gray-50 min-h-screen">
       <div className="flex flex-col md:flex-row gap-6 mb-8">
         <div className="bg-gradient-to-r from-[#1e3a8a] to-[#3b82f6] rounded-2xl p-6 text-white flex-1 shadow-lg h-40 flex flex-col justify-between">
           <div>
@@ -16,7 +28,7 @@ export default function StudDashboard() {
           </div>
           {totalDebt > 0 && (
             <div>
-              <button className="bg-[#f97316] hover:bg-orange-600 text-white px-6 py-1.5 rounded-full font-semibold shadow-md transition">Pay Now</button>
+              <button className="bg-[#f97316] hover:bg-orange-600 text-white px-6 py-1.5 rounded-full font-semibold shadow-md transition cursor-pointer">Pay Now</button>
             </div>
           )}
         </div>

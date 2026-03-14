@@ -11,6 +11,10 @@ import StudLayout from './Pages/stud_layout';
 import StudDashboard from './Pages/stud_Dashboard';
 import StudCanteens from './Pages/stud_canteens';
 import StudProfile from './Pages/stud_profile';
+import StudHistory from './Pages/stud_history'; // <-- Added!
+// Added New Student Pages
+import StudViewDebts from './Pages/stud_ViewDebts'; 
+import StudAboutUs from './Pages/stud_Aboutus';
 
 // --- Owner Pages ---
 import OwnerLayout from './Pages/owner_layout';
@@ -34,6 +38,11 @@ export default function App() {
           <Route path="dashboard" element={<StudDashboard />} />
           <Route path="canteens" element={<StudCanteens />} />
           <Route path="profile" element={<StudProfile />} />
+          <Route path="history" element={<StudHistory />} /> 
+          
+          {/* New Student Routes */}
+          <Route path="debts" element={<StudViewDebts />} /> 
+          <Route path="about" element={<StudAboutUs />} />
         </Route>
 
         {/* --- Protected Owner Routes --- */}
