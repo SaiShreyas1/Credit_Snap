@@ -9,7 +9,7 @@ import ForgotPassword from './Pages/ForgotPassword';
 // --- Student Pages ---
 import StudLayout from './Pages/stud_layout';
 import StudDashboard from './Pages/stud_Dashboard';
-import StudCanteens from './Pages/stud_canteens';
+import StudCanteens from './Pages/stud_Canteens';
 import StudProfile from './Pages/stud_profile';
 import StudHistory from './Pages/stud_history'; // <-- Added!
 // Added New Student Pages
@@ -21,7 +21,7 @@ import OwnerLayout from './Pages/owner_layout';
 import OwnerEditMenu from './Pages/owner_editmenu';
 import OwnerProfile from './Pages/owner_profile';
 import OwnerActiveDebts from './Pages/owner_ActiveDebts';
-
+import Ownerhistory from './Pages/owner_history';
 export default function App() {
   return (
     <BrowserRouter>
@@ -52,6 +52,7 @@ export default function App() {
           <Route path="editmenu" element={<OwnerEditMenu />} />
           <Route path="profile" element={<OwnerProfile />} />
           <Route path="debts" element={<OwnerActiveDebts/>}/>
+          <Route path="history" element={<Ownerhistory/>}/>
         </Route>
       </Routes>
     </BrowserRouter>
