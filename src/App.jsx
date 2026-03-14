@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // --- Authentication Pages ---
 import Login from './Pages/Login';
-import Signup from './Pages/Signup';
+import Signup from './Pages/signup';
 import ForgotPassword from './Pages/ForgotPassword';
 
 // --- Student Pages ---

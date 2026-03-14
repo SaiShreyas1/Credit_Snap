@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './Signup.css';
+import './signup.css';
 import studentLogo from '../assets/Student_without_bg_logo.png'; 
 
 const Signup = () => {

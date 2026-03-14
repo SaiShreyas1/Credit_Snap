@@ -38,11 +38,13 @@ const Login = () => {
   return (
     <div className="login-page">
       <div className={`login-left-panel ${isStudent ? 'bg-blue-theme' : 'bg-yellow-theme'}`}>
-        <img 
-          src={isStudent ? studentLogo : canteenLogo} 
-          alt={`CreditSnap ${role} Logo`} 
-          className="brand-logo" 
-        />
+        <div className="brand-logo-wrap">
+          <img 
+            src={isStudent ? studentLogo : canteenLogo} 
+            alt={`CreditSnap ${role} Logo`} 
+            className="brand-logo" 
+          />
+        </div>
       </div>
 
       <div className="login-right-panel">
@@ -60,9 +62,9 @@ const Login = () => {
             <button 
               type="button"
               className={`role-btn ${!isStudent ? 'active-yellow' : ''}`}
-              onClick={() => { setRole('Shopkeeper'); setEmailError(''); }}
+              onClick={() => { setRole('Canteen'); setEmailError(''); }}
             >
-              Shopkeeper
+              Canteen
             </button>
           </div>
 
@@ -97,12 +99,10 @@ const Login = () => {
             </button>
           </form>
 
-          {isStudent && (
-            <div className="signup-redirect">
-              <span className="light-text">Don't have an account? </span>
-              <a href="/signup">Sign Up.</a>
-            </div>
-          )}
+          <div className={`signup-redirect ${isStudent ? '' : 'signup-redirect-hidden'}`}>
+            <span className="light-text">Don't have an account? </span>
+            <a href="/signup">Sign Up.</a>
+          </div>
           
         </div>
       </div>

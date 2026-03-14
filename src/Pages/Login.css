@@ -19,10 +19,22 @@
 .bg-yellow-theme { background-color: #FFFDE7; } /* Shopkeeper now Soft Yellow */
 .bg-blue-theme { background-color: #e5eff5; }   /* Student is Blue */
 
+.brand-logo-wrap {
+  width: min(82%, 420px);
+  height: min(72vh, 420px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .brand-logo {
-  max-width: 400px; 
-  width: 80%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
+  object-fit: contain;
+  object-position: center;
+  display: block;
 }
 
 .login-right-panel {
@@ -36,9 +48,11 @@
 .form-container {
   width: 100%;
   max-width: 420px;
+  min-height: 520px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
 .login-heading {
@@ -110,7 +124,15 @@
 .btn-blue { background-color: #183B66; }
 .btn-blue:hover { background-color: #0F2540; }
 
-.signup-redirect { margin-top: 35px; font-size: 13px; }
+.signup-redirect {
+  margin-top: 35px;
+  font-size: 13px;
+  min-height: 20px;
+}
+
+.signup-redirect-hidden {
+  visibility: hidden;
+}
 
 /* Responsive adjustments */
 @media (max-width: 800px) {
@@ -120,11 +142,15 @@
   .login-left-panel {
     padding: 40px 0;
   }
-  .brand-logo {
+  .brand-logo-wrap {
     max-width: 250px;
+    max-height: 250px;
   }
   .login-right-panel {
     padding: 40px 20px;
+  }
+  .form-container {
+    min-height: auto;
   }
 }
 /* Error message styling */
