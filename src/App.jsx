@@ -16,6 +16,7 @@ import StudProfile from './Pages/stud_profile';
 import OwnerLayout from './Pages/owner_layout';
 import OwnerEditMenu from './Pages/owner_editmenu';
 import OwnerProfile from './Pages/owner_profile';
+import OwnerActiveDebts from './Pages/owner_ActiveDebts';
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
           <Route index element={<Navigate to="editmenu" replace />} />
           <Route path="editmenu" element={<OwnerEditMenu />} />
           <Route path="profile" element={<OwnerProfile />} />
+          <Route path="debts" element={<OwnerActiveDebts/>}/>
         </Route>
 
       </Routes>
