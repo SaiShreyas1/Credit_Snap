@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { User } from 'lucide-react';
-
+import { useNavigate } from 'react-router-dom';
 export default function StudProfile() {
+    const navigate = useNavigate();
   // Using the exact data from your mockup!
   const [studentInfo, setStudentInfo] = useState({
     name: "Shreyas",
@@ -60,9 +61,9 @@ export default function StudProfile() {
         </div>
         
         <div className="mt-6 flex justify-center">
-          <button className="cursor-pointer bg-[#ea580c] text-white px-14 py-3 rounded-full font-medium text-lg hover:bg-orange-700 transition shadow-sm">
-            Log Out
-          </button>
+            <button onClick={() => navigate('/')} className="cursor-pointer bg-[#ea580c] text-white px-14 py-3 rounded-full font-medium text-lg hover:bg-orange-700 transition shadow-sm">
+                Log Out
+            </button>
         </div>
 
       </div>

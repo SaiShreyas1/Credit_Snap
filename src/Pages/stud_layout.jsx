@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Home, Utensils, Wallet, History, HelpCircle, Bell, UserCircle, Settings, LogOut } from 'lucide-react';
-import studentLogo from '../assets/CreditSnap_logo_Student.png';
+import studentLogo from '../assets/Student_without_bg_logo.png';
 
 export default function StudLayout() {
   const navigate = useNavigate();
@@ -126,7 +126,7 @@ export default function StudLayout() {
                     <div onClick={() => navigate('/student/profile')} className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 text-sm text-gray-700 transition">
                       <Settings className="w-4 h-4" /> Account Settings
                     </div>
-                    <div className="px-4 py-3 hover:bg-red-50 cursor-pointer flex items-center gap-3 text-sm text-red-600 font-medium transition border-t border-gray-100">
+                    <div onClick={() => navigate('/')} className="px-4 py-3 hover:bg-red-50 cursor-pointer flex items-center gap-3 text-sm text-red-600 font-medium transition border-t border-gray-100">
                       <LogOut className="w-4 h-4" /> Logout
                     </div>
                   </div>

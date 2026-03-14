@@ -1,18 +1,18 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// --- Authentication Pages (Teammate's Work) ---
+// --- Authentication Pages ---
 import Login from './Pages/Login';
 import Signup from './Pages/Signup';
 import ForgotPassword from './Pages/ForgotPassword';
 
-// --- Student Pages (Your Work) ---
+// --- Student Pages ---
 import StudLayout from './Pages/stud_layout';
 import StudDashboard from './Pages/stud_Dashboard';
 import StudCanteens from './Pages/stud_canteens';
 import StudProfile from './Pages/stud_profile';
 
-// --- Owner Pages (Your Work) ---
+// --- Owner Pages ---
 import OwnerLayout from './Pages/owner_layout';
 import OwnerEditMenu from './Pages/owner_editmenu';
 import OwnerProfile from './Pages/owner_profile';

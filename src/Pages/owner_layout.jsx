@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Home, Edit, Wallet, BarChart2, History, HelpCircle, Bell, UserCircle, Settings, LogOut } from 'lucide-react';
-import canteenLogo from '../assets/CreditSnap_logo_Canteen.png'; 
+import canteenLogo from '../assets/Canteen_without_bg_logo.png'; 
 
 export default function OwnerLayout() {
   const navigate = useNavigate();
@@ -138,8 +138,8 @@ export default function OwnerLayout() {
                     <div onClick={() => navigate('/owner/profile')} className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 text-sm text-gray-700 transition">
                       <Settings className="w-4 h-4" /> Canteen Settings
                     </div>
-                    <div className="px-4 py-3 hover:bg-red-50 cursor-pointer flex items-center gap-3 text-sm text-red-600 font-medium transition border-t border-gray-100">
-                      <LogOut className="w-4 h-4" /> Logout
+                    <div onClick={() => navigate('/')} className="px-4 py-3 hover:bg-red-50 cursor-pointer flex items-center gap-3 text-sm text-red-600 font-medium transition border-t border-gray-100">
+                        <LogOut className="w-4 h-4" /> Logout
                     </div>
                   </div>
                 </div>
