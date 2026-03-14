@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Pages/Login';
 import Signup from './Pages/Signup';
 import ForgotPassword from './Pages/ForgotPassword';
+
 // --- Student Pages ---
 import StudLayout from './Pages/stud_layout';
 import StudDashboard from './Pages/stud_Dashboard';
@@ -17,6 +18,7 @@ import OwnerLayout from './Pages/owner_layout';
 import OwnerEditMenu from './Pages/owner_editmenu';
 import OwnerProfile from './Pages/owner_profile';
 import OwnerHistory from './Pages/owner_history'; // <-- Added!
+import OwnerActiveDebts from './Pages/owner_ActiveDebts'; // <-- From teammate!
 
 export default function App() {
   return (
@@ -34,7 +36,7 @@ export default function App() {
           <Route path="dashboard" element={<StudDashboard />} />
           <Route path="canteens" element={<StudCanteens />} />
           <Route path="profile" element={<StudProfile />} />
-          <Route path="history" element={<StudHistory />} /> {/* <-- Added Route! */}
+          <Route path="history" element={<StudHistory />} /> 
         </Route>
 
         {/* --- Protected Owner Routes --- */}
@@ -43,7 +45,8 @@ export default function App() {
           <Route index element={<Navigate to="editmenu" replace />} />
           <Route path="editmenu" element={<OwnerEditMenu />} />
           <Route path="profile" element={<OwnerProfile />} />
-          <Route path="history" element={<OwnerHistory />} /> {/* <-- Added Route! */}
+          <Route path="history" element={<OwnerHistory />} /> 
+          <Route path="debts" element={<OwnerActiveDebts/>}/> 
         </Route>
 
       </Routes>
