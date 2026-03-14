@@ -22,11 +22,13 @@ const Signup = () => {
   return (
     <div className="signup-page">
       <div className="signup-left-panel">
-        <img 
-          src={studentLogo} 
-          alt="CreditSnap Student Logo" 
-          className="brand-logo" 
-        />
+        <div className="signup-brand-logo-wrap">
+          <img 
+            src={studentLogo} 
+            alt="CreditSnap Student Logo" 
+            className="signup-brand-logo" 
+          />
+        </div>
       </div>
 
       <div className="signup-right-panel">
@@ -82,4 +84,4 @@ const Signup = () => {
   );
 };
 
-export default signup;
+export default Signup;

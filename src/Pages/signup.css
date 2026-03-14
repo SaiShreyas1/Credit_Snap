@@ -18,10 +18,20 @@
   background-color: #e5eff5; 
 }
 
-.brand-logo {
-  max-width: 350px; /* Slightly scaled down to fit nicely */
-  width: 80%;
-  height: auto;
+.signup-brand-logo-wrap {
+  width: min(82%, 420px);
+  height: min(72vh, 420px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signup-brand-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
 }
 
 /* Right side with the form */
@@ -131,8 +141,9 @@
   .signup-left-panel {
     padding: 20px 0;
   }
-  .brand-logo {
-    max-width: 200px;
+  .signup-brand-logo-wrap {
+    max-width: 250px;
+    max-height: 250px;
   }
   .signup-right-panel {
     padding: 20px;
