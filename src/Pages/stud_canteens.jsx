@@ -190,7 +190,11 @@ const StudentCanteens = () => {
             {/* Dynamic Filter Dropdown */}
             <div className="dropdown-container">
               <button className="dropdown-btn" onClick={() => setIsFilterOpen(!isFilterOpen)}>
-                {filterBy === 'all' ? 'Filter by' : filterBy} <i className="fa-solid fa-caret-down"></i>
+                {filterBy === 'all' ? 'Filter by' : filterBy} 
+                <i 
+                  className="fa-solid fa-caret-down" 
+                  style={{ transform: isFilterOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}
+                ></i>
               </button>
               {isFilterOpen && (
                 <div className="dropdown-menu">
@@ -213,7 +217,11 @@ const StudentCanteens = () => {
             {/* Dynamic Sort Dropdown */}
             <div className="dropdown-container">
               <button className="dropdown-btn" onClick={() => setIsSortOpen(!isSortOpen)}>
-                {sortBy === '' ? 'Sort by' : sortBy} <i className="fa-solid fa-caret-down"></i>
+                {sortBy === '' ? 'Sort by' : sortBy} 
+                <i 
+                  className="fa-solid fa-caret-down" 
+                  style={{ transform: isSortOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}
+                ></i>
               </button>
               {isSortOpen && (
                 <div className="dropdown-menu">
