@@ -50,7 +50,9 @@ export default function OwnerProfile() {
 
         {/* Action Buttons */}
         <div className="mt-14 flex justify-between gap-4 px-6">
-          <button className="cursor-pointer bg-[#262626] text-white px-8 py-3 rounded-full font-medium hover:bg-black transition shadow-sm w-1/2">
+          <button
+          onClick={() => navigate('/owner/change-password')} 
+           className="cursor-pointer bg-[#262626] text-white px-8 py-3 rounded-full font-medium hover:bg-black transition shadow-sm w-1/2">
             Change Password
           </button>
           <button className="cursor-pointer bg-[#0f172a] text-white px-8 py-3 rounded-full font-medium hover:bg-slate-900 transition shadow-sm w-1/2">

@@ -64,6 +64,7 @@ export default function App() {
           <Route path="history" element={<Ownerhistory/>}/>
           <Route path="analytics" element={<Owneranalytics />} />
           <Route path="help" element={<Ownerhelp />} />
+          <Route path="change-password" element={<ChangePassword />} />
         </Route>
       </Routes>
     </BrowserRouter>

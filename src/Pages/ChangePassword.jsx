@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Lock, ShieldCheck } from 'lucide-react';
+import { useLocation } from 'react-router-dom'; 
 
 export default function ChangePassword() {
+  const location = useLocation(); // <-- ADD THIS
+  const isOwner = location.pathname.includes('/owner'); // <-- ADD THIS
   const [passwords, setPasswords] = useState({
     currentPassword: '',
     newPassword: '',
@@ -141,13 +144,17 @@ export default function ChangePassword() {
           </div>
 
           <div className="pt-2">
-            <button
-              type="submit"
-              className="w-full bg-[#f97316] text-white font-bold py-3 rounded-xl hover:bg-orange-600 hover:shadow-md transition duration-200"
+           <button
+           type="submit"
+           className={`w-full text-white font-bold py-3 rounded-xl hover:shadow-md transition duration-200 ${
+           isOwner 
+            ? 'bg-[#192f60]         hover:bg-[#152142]' // <-- Color if it's the Owner
+           : 'bg-[#f97316] hover:bg-orange-600' // <-- Color if it's the Student
+           }`}
             >
-              Update Password
-            </button>
-          </div>
+           Update Password
+           </button>
+           </div>
           
         </form>
       </div>
