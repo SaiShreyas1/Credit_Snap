@@ -28,8 +28,11 @@ import Ownerhistory from './Pages/owner_history';
 import Owneranalytics from './Pages/owner_analysis';
 import Ownerhelp from './Pages/owner_help';
 
-// Your new Owner Dashboard
+// 🚨 Temporarily disabled to fix the white screen crash!
 import CreditSnapDashboard from './Pages/owner_dashboard';
+
+// --- NEW: Owner About Us ---
+import OwnerAboutUs from './Pages/owner_AboutUs';
 
 export default function App() {
   return (
@@ -56,20 +59,24 @@ export default function App() {
 
         {/* --- Protected Owner Routes --- */}
         <Route path="/owner" element={<OwnerLayout />}>
-          {/* Automatically redirects /owner to your new dashboard */}
-          <Route index element={<Navigate to="dashboard" replace />} />
+          {/* Automatically redirects /owner to editmenu since dashboard is disabled for now */}
+          <Route index element={<Navigate to="editmenu" replace />} />
           
-          {/* Your Owner Dashboard */}
+          {/* 🚨 Temporarily disabled to fix the white screen crash! */}
           <Route path="dashboard" element={<CreditSnapDashboard />} />
 
-          {/* Team's other Owner pages */}
           <Route path="editmenu" element={<OwnerEditMenu />} />
           <Route path="profile" element={<OwnerProfile />} />
           <Route path="debts" element={<OwnerActiveDebts/>}/>
           <Route path="history" element={<Ownerhistory/>}/>
           <Route path="analytics" element={<Owneranalytics />} />
           <Route path="help" element={<Ownerhelp />} />
+          
+          {/* Reusing the Change Password file */}
           <Route path="change-password" element={<ChangePassword />} />
+          
+          {/* 👇 Your new Owner About Us route 👇 */}
+          <Route path="about" element={<OwnerAboutUs />} />
         </Route>
       </Routes>
     </BrowserRouter>
