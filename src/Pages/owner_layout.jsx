@@ -61,7 +61,7 @@ export default function OwnerLayout() {
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Active Debts</span>}
             </div>
 
-            <div className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('analytics') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => navigate('/owner/analytics')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('analytics') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <BarChart2 className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Analytics</span>}
             </div>
@@ -71,11 +71,10 @@ export default function OwnerLayout() {
               {isSidebarOpen && <span className="text-sm whitespace-nowrap">History</span>}
             </div>
 
-            <div className="mx-2 py-3 px-2 flex flex-col items-center justify-center text-gray-300 hover:text-white cursor-pointer opacity-70 transition-all duration-300">
-              <HelpCircle className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
-              {isSidebarOpen && <span className="text-sm whitespace-nowrap">Help</span>}
+            <div onClick={() => navigate('/owner/help')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('help') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <HelpCircle className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
+            {isSidebarOpen && <span className="text-sm whitespace-nowrap">Help</span>}
             </div>
-
           </nav>
         </div>
         
@@ -95,7 +94,7 @@ export default function OwnerLayout() {
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 flex flex-col overflow-hidden relative transition-all duration-300">
         
-        <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-10 shrink-0">
+        <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-50 shrink-0">
           <div className="flex items-center h-full">
              <img src={canteenLogo} alt="CreditSnap Logo" className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2" 
                onError={(e) => e.target.src = "https://via.placeholder.com/150x50?text=Logo+Here"} 

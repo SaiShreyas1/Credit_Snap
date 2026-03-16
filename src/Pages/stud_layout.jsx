@@ -70,7 +70,7 @@ export default function StudLayout() {
             </div>
 
             {/* --- MERGED: Help button --- */}
-            <div className="mx-2 py-3 px-2 flex flex-col items-center justify-center text-gray-300 hover:text-white cursor-pointer opacity-70 transition-all duration-300">
+            <div onClick={() => navigate('/student/help')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('help') ? 'bg-[#ea580c] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <HelpCircle className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm whitespace-nowrap">Help</span>}
             </div>
@@ -94,7 +94,7 @@ export default function StudLayout() {
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 flex flex-col overflow-hidden relative transition-all duration-300">
         
-        <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-10 shrink-0">
+        <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-50 shrink-0">
           <div className="flex items-center h-full">
              <img src={studentLogo} alt="CreditSnap Logo" className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2" />
           </div>

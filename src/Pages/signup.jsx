@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './Signup.css';
+import './signup.css';
 import studentLogo from '../assets/Student_without_bg_logo.png'; 
 
 const Signup = () => {
@@ -22,11 +22,13 @@ const Signup = () => {
   return (
     <div className="signup-page">
       <div className="signup-left-panel">
-        <img 
-          src={studentLogo} 
-          alt="CreditSnap Student Logo" 
-          className="brand-logo" 
-        />
+        <div className="signup-brand-logo-wrap">
+          <img 
+            src={studentLogo} 
+            alt="CreditSnap Student Logo" 
+            className="signup-brand-logo" 
+          />
+        </div>
       </div>
 
       <div className="signup-right-panel">
@@ -73,7 +75,7 @@ const Signup = () => {
           </form>
 
           <div className="login-redirect">
-            <span className="light-text">Already have an account? </span>
+            <span className="light-text">Already have account? </span>
             <a href="/">Login.</a>
           </div>
         </div>
