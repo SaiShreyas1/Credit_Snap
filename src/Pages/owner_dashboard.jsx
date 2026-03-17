@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function CreditSnapDashboard() {
-  // State for the toggle switch (Red = false, Green = true)
-  const [isCanteenOpen, setIsCanteenOpen] = useState(false);
+  // 1. Check browser memory FIRST before setting the default state
+  const [isCanteenOpen, setIsCanteenOpen] = useState(() => {
+    const saved = localStorage.getItem('canteenStatus');
+    // If there is a saved state, use it. Otherwise, default to false (Closed)
+    return saved === 'true'; 
+  });
+
+  // 2. Every time the toggle is clicked, save the new status to browser memory
+  useEffect(() => {
+    localStorage.setItem('canteenStatus', isCanteenOpen);
+  }, [isCanteenOpen]);
 
   return (
     <div className="active-orders-container">
