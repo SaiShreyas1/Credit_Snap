@@ -35,7 +35,7 @@ export default function StudLayout() {
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
       
       {/* --- COLLAPSIBLE SIDEBAR --- */}
-      <aside className={`${isSidebarOpen ? 'w-48' : 'w-20'} bg-[#1e293b] text-white flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
+      <aside className={`${isSidebarOpen ? 'w-48' : 'w-20'} bg-linear-to-b from-[#0f172a] to-[#334f90] text-white flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
         <div>
           {/* Hamburger Menu Icon */}
           <div className={`p-4 flex transition-all duration-300 ${isSidebarOpen ? 'justify-start ml-2' : 'justify-center'}`}>
