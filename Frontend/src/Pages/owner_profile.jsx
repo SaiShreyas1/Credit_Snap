@@ -109,9 +109,9 @@ export default function OwnerProfile() {
               </button>
             </div>
             <div className="mt-6 flex justify-center">
-              <button onClick={() => navigate('/')} className="cursor-pointer bg-[#ea580c] text-white px-14 py-3 rounded-full font-medium text-lg hover:bg-orange-700 transition shadow-sm">
+              <button onClick={() => navigate('/')} className="cursor-pointer bg-[#C28813] text-white px-14 py-3 rounded-full font-medium text-lg hover:bg-black transition shadow-sm">
                 Log Out
-              </button>
+             </button>
             </div>
           </>
         ) : (
