@@ -1,17 +1,21 @@
 const express = require('express');
 const cors = require('cors');
+// Import your user routes (make sure the path matches your folder structure)
+const userRoutes = require('./routes/userRoutes'); 
 
 const app = express();
 
 // 1. Middlewares
-app.use(cors()); // Allows your React frontend to talk to this backend
-app.use(express.json()); // Allows your server to understand JSON data
+app.use(cors()); 
+app.use(express.json()); 
 
-// 2. A simple test route!
+// 2. Test route
 app.get('/', (req, res) => {
   res.send('Hello from the CreditSnap Backend Engine!');
 });
 
-// We will add more routes here later!
+// 3. Hook up your User Routes!
+// This means every route in userRoutes.js will now start with /api/users
+app.use('/api/users', userRoutes);
 
 module.exports = app;
