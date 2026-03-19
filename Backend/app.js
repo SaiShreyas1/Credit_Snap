@@ -4,7 +4,7 @@ const cors = require('cors');
 // Import both sets of routes safely!
 const canteenRoutes = require('./routes/canteenRoutes'); 
 const userRoutes = require('./routes/userRoutes'); 
-
+const ordersRouter = require('./routes/ordersRoute');
 const app = express();
 
 // 1. Middlewares
@@ -14,7 +14,7 @@ app.use(express.json()); // Allows your server to understand JSON data
 // 2. Hook up the routes!
 app.use('/api/canteens', canteenRoutes); // Your work
 app.use('/api/users', userRoutes);       // Your friend's work
-
+app.use('/api/v1/orders', ordersRouter);
 // 3. A simple test route!
 app.get('/', (req, res) => {
   res.send('Hello from the CreditSnap Backend Engine!');
