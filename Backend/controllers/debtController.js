@@ -1,38 +1,36 @@
 const Debt = require('../models/debtModel');
 const sendEmail = require('../utils/sendEmail'); 
 
-<<<<<<< HEAD
-// 💰 DEDUCT DEBT LOGIC (Paid Offline) - WITH EDGE CASES
-=======
-// 📡 FETCH ACTIVE DEBTS (The missing integration piece!)
+// 📡 1. FETCH ACTIVE DEBTS (Loads the UI List)
 exports.getActiveDebts = async (req, res) => {
   try {
-    // 1. Search the database for debts belonging to this specific canteen
-    // 2. Only grab debts that are greater than 0
+    // Make sure the user requesting this is actually logged in and assigned to a canteen
+    if (!req.user || !req.user.managedCanteen) {
+      throw new Error('Not authorized to view this canteen\'s debts.');
+    }
+
     const debts = await Debt.find({
       canteen: req.user.managedCanteen,
-      amountOwed: { $gt: 0 }
-    }).populate('student', 'name email rollNo limit'); // Grab the student's details too!
+      amountOwed: { $gt: 0 } // Only fetch students who actually owe money
+    }).populate('student', 'name email rollNo limit');
 
-    // 3. Send the data back to the React fetch() call
     res.status(200).json({ status: 'success', data: debts });
   } catch (error) {
     res.status(400).json({ status: 'fail', message: error.message });
   }
 };
 
-// 💰 DEDUCT DEBT LOGIC (Paid Offline)
->>>>>>> c4fc257393ed5c652513a2818cf7a41f8d6d950c
+// 💰 2. DEDUCT DEBT LOGIC (Paid Offline)
 exports.payOffline = async (req, res) => {
   try {
-    const { amountPaid } = req.body;
+    // Convert the input to a strict Number to prevent text inputs like "five"
+    const amountPaid = Number(req.body.amountPaid);
 
-    // EDGE CASE 1: Prevent negative numbers or zero
-    if (!amountPaid || amountPaid <= 0) {
-      throw new Error('Please enter a valid positive amount.');
+    // EDGE CASE 1: Prevent empty, negative, or non-number inputs
+    if (!amountPaid || isNaN(amountPaid) || amountPaid <= 0) {
+      throw new Error('Please enter a valid numeric amount greater than zero.');
     }
 
-    // Find the specific Debt record
     const debt = await Debt.findById(req.params.id);
     
     if (!debt) {
@@ -41,13 +39,11 @@ exports.payOffline = async (req, res) => {
 
     // EDGE CASE 2: Prevent paying more than what is owed
     if (amountPaid > debt.amountOwed) {
-      throw new Error(`Amount exceeds current debt! The maximum you can deduct is ₹${debt.amountOwed}.`);
+      throw new Error(`Amount exceeds current debt! The maximum deduction is ₹${debt.amountOwed}.`);
     }
 
     // Do the math
     debt.amountOwed = debt.amountOwed - amountPaid;
-
-    // Save the updated amount to the database
     await debt.save();
 
     res.status(200).json({
@@ -61,32 +57,41 @@ exports.payOffline = async (req, res) => {
   }
 };
 
-// 🔔 NOTIFY STUDENT LOGIC (Using Nodemailer)
+// 🔔 3. NOTIFY STUDENT LOGIC (Using Nodemailer)
+// 🔔 3. NOTIFY STUDENT LOGIC (Using Nodemailer)
 exports.notifyStudent = async (req, res) => {
   try {
-    const debt = await Debt.findById(req.params.id).populate('student');
+    // We now populate BOTH the student (for their email) AND the canteen (for its name)
+    const debt = await Debt.findById(req.params.id)
+      .populate('student')
+      .populate('canteen'); 
 
-    if (!debt || !debt.student) {
-      throw new Error('Debt or Student not found!');
+    if (!debt || !debt.student || !debt.canteen) {
+      throw new Error('Debt, Student, or Canteen record not found!');
     }
 
-    const studentEmail = debt.student.email;
+    // EDGE CASE 3: Don't spam students if their debt is already cleared
+    if (debt.amountOwed === 0) {
+      throw new Error(`${debt.student.name} has no pending debt. No email sent.`);
+    }
 
+    // The updated email message with the Canteen's actual name!
     const emailMessage = `
       Hello ${debt.student.name},
       
-      This is a reminder from your Canteen Owner. 
-      Your current pending total on Credit Snap is ₹${debt.amountOwed}.
+      This is a friendly reminder from ${debt.canteen.name} regarding your Credit Snap account. 
+      Your current pending total at our shop is ₹${debt.amountOwed}.
       
       Please clear this amount at your earliest convenience.
       
       Thanks,
-      Credit Snap Team
+      ${debt.canteen.name} & The Credit Snap Team
     `;
 
     await sendEmail({
-      email: studentEmail,
-      subject: 'Credit Snap: Pending Debt Reminder',
+      email: debt.student.email,
+      // We even put the canteen name in the subject line!
+      subject: `Credit Snap: Pending Debt Reminder from ${debt.canteen.name}`, 
       message: emailMessage
     });
 
