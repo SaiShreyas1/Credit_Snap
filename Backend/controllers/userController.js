@@ -8,7 +8,7 @@ const signToken = (id) => {
   });
 };
 
-// 🚀 1. SIGNUP LOGIC (WITH DEBUG LOGS)
+// 🚀 1. SIGNUP LOGIC
 exports.signup = async (req, res) => {
   try {
     console.log("Checkpoint 1: Request received from Thunder Client!");
@@ -71,4 +71,46 @@ exports.login = async (req, res) => {
   } catch (error) {
     res.status(400).json({ status: 'fail', message: error.message });
   }
+};
+
+// 🛡️ 3. THE BOUNCER: Middleware to protect routes
+exports.protect = async (req, res, next) => {
+  try {
+    // 1. Get the token from the Thunder Client "Auth" or "Headers" tab
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
+      return res.status(401).json({ message: 'You are not logged in! Please log in to get access.' });
+    }
+
+    // 2. Decode the token using your secret key
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // 3. Find the user in the database using the ID hidden inside the token
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+      return res.status(401).json({ message: 'The user belonging to this token no longer exists.' });
+    }
+
+    // 4. Attach the user data to the request so the next function can use it
+    req.user = currentUser;
+    next(); // Let them pass!
+
+  } catch (error) {
+    res.status(401).json({ message: 'Invalid token. Please log in again.' });
+  }
+};
+
+// 👤 4. GET MY PROFILE LOGIC
+exports.getMyProfile = (req, res) => {
+  // Because the 'protect' bouncer already found the user, we just send it back!
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: req.user
+    }
+  });
 };
