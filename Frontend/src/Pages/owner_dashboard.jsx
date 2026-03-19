@@ -1,79 +1,299 @@
 import React, { useState, useEffect } from 'react';
 
 export default function CreditSnapDashboard() {
+  // 1. Canteen Open/Closed State Memory
   const [isCanteenOpen, setIsCanteenOpen] = useState(() => {
     const saved = localStorage.getItem('canteenStatus');
     return saved === 'true'; 
   });
 
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // --- 1. FETCH LIVE ORDERS FROM BACKEND ---
-  const fetchOrders = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/v1/orders/my-orders', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (data.status === 'success') {
-        setOrders(data.data);
-      }
-      setLoading(false);
-    } catch (err) {
-      console.error("Error fetching orders:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchOrders();
-    // Optional: Refresh orders every 30 seconds
-    const interval = setInterval(fetchOrders, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     localStorage.setItem('canteenStatus', isCanteenOpen);
   }, [isCanteenOpen]);
 
-  // --- 2. BACKEND ACTION: ACCEPT/REJECT/REMOVE ---
-  const handleUpdateStatus = async (orderId, newStatus) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/v1/orders/update-status', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ orderId, status: newStatus })
-      });
-
-      const data = await response.json();
-      if (data.status === 'success') {
-        // Refresh the list to show the updated status/debt badge
-        fetchOrders();
-      } else {
-        alert(data.message); // Shows "Credit limit exceeded" if applicable
-      }
-    } catch (err) {
-      alert("Failed to update order.");
+  // 2. Orders State Memory
+  const [orders, setOrders] = useState(() => {
+    // Check if we have saved orders in the browser first!
+    const savedOrders = localStorage.getItem('canteenOrders');
+    if (savedOrders) {
+      return JSON.parse(savedOrders); // Convert the saved text back into an array
     }
+    // If nothing is saved yet, load these defaults
+    return [
+      {
+        id: 1,
+        name: "Sai Chaitanya",
+        phone: "+91xxxxxxxxx, Hall 3",
+        time: "12:30 AM",
+        items: ["Paneer Fried Rice x1", "Cold Coffee x1"], 
+        price: "₹80",
+        type: "pending" 
+      },
+      {
+        id: 2,
+        name: "Sai Shreyas",
+        phone: "+91xxxxxxxxx, Hall 12, A513",
+        time: "12:37 AM",
+        items: ["Cheese Maggie x1", "Chai x1"], 
+        price: "₹60",
+        type: "pending" 
+      },
+      {
+        id: 3,
+        name: "Ram Charan",
+        phone: "+91xxxxxxxxx, Hall 5, C204",
+        time: "12:42 AM",
+        items: ["Chicken Biryani x1", "Thumbs Up x1"],
+        price: "₹150",
+        type: "pending" 
+      },
+      {
+        id: 4,
+        name: "Rahul Kumar",
+        phone: "+91xxxxxxxxx, Hall 1, D102",
+        time: "12:15 AM",
+        items: ["Chicken Roll x1", "Coke x1"],
+        price: "₹90",
+        type: "debt" 
+      }
+    ];
+  });
+
+  // Save the orders array to browser memory EVERY time it changes
+  useEffect(() => {
+    localStorage.setItem('canteenOrders', JSON.stringify(orders));
+  }, [orders]);
+
+  // 3. Functions to handle button clicks
+  const removeOrder = (orderIdToRemove) => {
+    setOrders(orders.filter(order => order.id !== orderIdToRemove));
+  };
+
+  const acceptOrder = (orderIdToAccept) => {
+    setOrders(prevOrders => {
+      const orderToMove = prevOrders.find(order => order.id === orderIdToAccept);
+      if (!orderToMove) return prevOrders;
+      
+      const updatedOrder = { ...orderToMove, type: 'debt' };
+      const remainingOrders = prevOrders.filter(order => order.id !== orderIdToAccept);
+      
+      return [...remainingOrders, updatedOrder];
+    });
   };
 
   const clearAllOrders = () => {
-    // Usually, you'd want a backend "archive" route for this, 
-    // but for now, we'll just filter the UI
-    setOrders(orders.filter(order => order.status !== 'accepted'));
+    // ONLY clears orders that have been moved to the 'debt' section
+    setOrders(orders.filter(order => order.type !== 'debt'));
   };
-
-  if (loading) return <div className="p-8">Loading Dashboard...</div>;
 
   return (
     <div className="active-orders-container">
       <style>{`
-        /* ... Your existing CSS styles remain exactly the same ... */
+        .active-orders-container {
+          display: flex;
+          flex-direction: column;
+          height: 100%; 
+          width: 100%;
+          background-color: #EEF4ED; 
+          overflow: hidden;
+        }
+
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 30px 40px 20px 40px;
+          flex-shrink: 0;
+        }
+
+        .page-title {
+          font-size: 34px;
+          font-weight: 400;
+          color: #000;
+        }
+
+        .status-container {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          font-size: 22px;
+          font-weight: 400;
+          color: #000;
+        }
+
+        /* --- TOGGLE SWITCH --- */
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 64px;
+          height: 34px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-color: #D00000;
+          transition: .4s;
+          border-radius: 34px;
+        }
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 26px;
+          width: 26px;
+          left: 4px;
+          bottom: 4px;
+          background-color: white;
+          transition: .4s;
+          border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #38b000; }
+        input:checked + .slider:before { transform: translateX(30px); }
+
+        /* --- EMPTY STATE TEXT --- */
+        .empty-state-wrapper {
+          flex-grow: 1; 
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding-bottom: 80px; 
+        }
+
+        .empty-text {
+          font-family: "Righteous", "Arial Black", sans-serif;
+          font-size: 80px;
+          font-weight: 700;
+          color: #000;
+          letter-spacing: -1px;
+        }
+
+        /* --- ORDER CARDS --- */
+        .card-container {
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          gap: 20px;
+          padding: 0px 40px 40px 40px;
+          overflow-y: auto;
+          flex-grow: 1;
+        }
+
+        .clear-all-row {
+          display: flex;
+          justify-content: flex-end;
+          margin-bottom: -5px;
+        }
+
+        .clear-all-btn {
+          background: none;
+          border: none;
+          color: #D00000;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .clear-all-btn:hover { text-decoration: underline; }
+
+        .order-card {
+          background: white;
+          border-radius: 20px;
+          padding: 25px 35px;
+          display: grid;
+          grid-template-columns: 1.5fr 1fr 0.8fr; 
+          align-items: center;
+          gap: 30px; 
+          position: relative;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+          animation: fadeIn 0.3s ease;
+          flex: 0 0 auto; 
+          height: max-content; 
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .info-col h2 {
+          font-size: 22px;
+          font-weight: 500;
+          color: #000;
+          margin-bottom: 4px; 
+        }
+        .info-col p {
+          font-size: 13px;
+          color: #888;
+          margin-bottom: 2px; 
+          line-height: 1.4;
+        }
+
+        .items-col {
+          display: flex;
+          flex-direction: column;
+          gap: 4px; 
+          justify-content: center;
+        }
+        .item-text {
+          font-size: 16px;
+          color: #000;
+          font-weight: 400;
+        }
+
+        .action-col {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end; 
+          justify-content: center;
+          gap: 15px;
+        }
+        
+        .price {
+          font-size: 26px;
+          font-weight: 500;
+          color: #000;
+          margin-right: 25px; 
+        }
+
+        .btn-group {
+          display: flex;
+          gap: 15px;
+        }
+        .btn {
+          border: none;
+          padding: 8px 25px;
+          border-radius: 8px;
+          font-size: 15px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: 0.2s;
+        }
+        .btn-accept { background-color: #A8E6A3; color: #1E6019; }
+        .btn-reject { background-color: #FF9E9E; color: #7A1818; }
+        .btn:hover { filter: brightness(0.95); }
+        
+        .debt-badge {
+          background-color: #FFECCB;
+          color: #E68A00;
+          padding: 6px 20px;
+          border-radius: 20px;
+          font-size: 13px;
+          font-weight: 700;
+          margin-right: 5px;
+        }
+
+        .close-x {
+          position: absolute;
+          top: 15px;
+          right: 20px;
+          font-size: 20px; 
+          color: #999;
+          cursor: pointer;
+          background: none;
+          border: none;
+          transition: 0.2s;
+        }
+        .close-x:hover { color: #000; }
       `}</style>
 
       {/* Top Header Row */}
@@ -110,41 +330,38 @@ export default function CreditSnapDashboard() {
         <div className="card-container">
           
           <div className="clear-all-row">
-            <button className="clear-all-btn" onClick={clearAllOrders}>Clear History</button>
+            <button className="clear-all-btn" onClick={clearAllOrders}>Clear All</button>
           </div>
 
           {orders.map((order) => (
-            <div className="order-card" key={order._id}>
-              {/* Show X button if order is processed */}
-              {order.status !== 'pending' && (
-                <button className="close-x" onClick={() => handleUpdateStatus(order._id, 'archived')}>✕</button>
+            <div className="order-card" key={order.id}>
+              {/* Show X button only if it's a debt order */}
+              {order.type === 'debt' && (
+                <button className="close-x" onClick={() => removeOrder(order.id)}>✕</button>
               )}
               
               <div className="info-col">
-                {/* Student data comes from the .populate() in your backend */}
-                <h2>{order.student?.name || "Unknown Student"}</h2>
-                <p>Roll: {order.student?.rollNo}</p>
-                <p>Time: {new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                <h2>{order.name}</h2>
+                <p>Ph no. {order.phone}</p>
+                <p>Time: {order.time}</p>
               </div>
               
               <div className="items-col">
                 {order.items.map((item, index) => (
-                  <span className="item-text" key={index}>{item.name} x{item.quantity}</span>
+                  <span className="item-text" key={index}>{item}</span>
                 ))}
               </div>
               
               <div className="action-col">
-                <span className="price">₹{order.totalAmount}</span>
+                <span className="price" style={order.type === 'debt' ? { marginRight: '30px' } : {}}>{order.price}</span>
                 
-                {order.status === 'pending' ? (
+                {order.type === 'pending' ? (
                   <div className="btn-group">
-                    <button className="btn btn-accept" onClick={() => handleUpdateStatus(order._id, 'accepted')}>Accept</button>
-                    <button className="btn btn-reject" onClick={() => handleUpdateStatus(order._id, 'rejected')}>Reject</button>
+                    <button className="btn btn-accept" onClick={() => acceptOrder(order.id)}>Accept</button>
+                    <button className="btn btn-reject" onClick={() => removeOrder(order.id)}>Reject</button>
                   </div>
                 ) : (
-                  <span className={`debt-badge ${order.status === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {order.status === 'accepted' ? 'Added to Debt' : 'Rejected'}
-                  </span>
+                  <span className="debt-badge">Added to debt</span>
                 )}
               </div>
             </div>

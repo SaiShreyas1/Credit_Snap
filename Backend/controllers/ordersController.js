@@ -1,6 +1,6 @@
-const Order = require('../models/orderModel');
+const Order = require('../models/ordersModel');
 const User = require('../models/userModel');
-const Debt = require('../models/debtModel');
+// const Debt = require('../models/debtModel');
 
 // 🍕 STUDENT: Places order from /canteens
 exports.createOrder = async (req, res) => {
