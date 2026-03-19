@@ -1,30 +1,37 @@
 const Debt = require('../models/debtModel');
-const sendEmail = require('../utils/sendEmail'); // This is Tejas's Nodemailer tool!
+const sendEmail = require('../utils/sendEmail'); 
 
-// 💰 DEDUCT DEBT LOGIC (Paid Offline)
+// 💰 DEDUCT DEBT LOGIC (Paid Offline) - WITH EDGE CASES
 exports.payOffline = async (req, res) => {
   try {
-    // 1. Find the specific Debt record using the ID sent by React
+    const { amountPaid } = req.body;
+
+    // EDGE CASE 1: Prevent negative numbers or zero
+    if (!amountPaid || amountPaid <= 0) {
+      throw new Error('Please enter a valid positive amount.');
+    }
+
+    // Find the specific Debt record
     const debt = await Debt.findById(req.params.id);
     
     if (!debt) {
       throw new Error('Debt record not found!');
     }
 
-    // 2. Subtract the amount paid from the 'amountOwed' field
-    debt.amountOwed = debt.amountOwed - req.body.amountPaid;
-
-    // Make sure debt doesn't go below 0!
-    if (debt.amountOwed < 0) {
-      debt.amountOwed = 0;
+    // EDGE CASE 2: Prevent paying more than what is owed
+    if (amountPaid > debt.amountOwed) {
+      throw new Error(`Amount exceeds current debt! The maximum you can deduct is ₹${debt.amountOwed}.`);
     }
 
-    // 3. Save the updated amount to the database
+    // Do the math
+    debt.amountOwed = debt.amountOwed - amountPaid;
+
+    // Save the updated amount to the database
     await debt.save();
 
     res.status(200).json({
       status: 'success',
-      message: `Successfully deducted ₹${req.body.amountPaid}`,
+      message: `Successfully deducted ₹${amountPaid}`,
       data: { updatedDebt: debt.amountOwed }
     });
 
@@ -33,23 +40,17 @@ exports.payOffline = async (req, res) => {
   }
 };
 
-
 // 🔔 NOTIFY STUDENT LOGIC (Using Nodemailer)
 exports.notifyStudent = async (req, res) => {
   try {
-    // 1. Find the debt record. 
-    // .populate('student') is Mongoose magic! It takes the student's ID and 
-    // replaces it with their full profile (name, email) so we can use it!
     const debt = await Debt.findById(req.params.id).populate('student');
 
     if (!debt || !debt.student) {
       throw new Error('Debt or Student not found!');
     }
 
-    // 2. We now have the exact student's email!
     const studentEmail = debt.student.email;
 
-    // 3. Write the email
     const emailMessage = `
       Hello ${debt.student.name},
       
@@ -62,7 +63,6 @@ exports.notifyStudent = async (req, res) => {
       Credit Snap Team
     `;
 
-    // 4. Give the email to Tejas's Nodemailer tool to send it off!
     await sendEmail({
       email: studentEmail,
       subject: 'Credit Snap: Pending Debt Reminder',
