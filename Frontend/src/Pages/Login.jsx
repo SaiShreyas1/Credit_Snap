@@ -6,30 +6,61 @@ import canteenLogo from '../assets/Canteen_without_bg_logo.png';
 
 const Login = () => {
   const navigate = useNavigate();
+  
+  // --- STATES ---
   const [role, setRole] = useState('Student');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [loginError, setLoginError] = useState('');
 
-  const handleLogin = (e) => {
+  // --- LOGIN LOGIC ---
+  const handleLogin = async (e) => {
     e.preventDefault();
     const isStudent = role === 'Student';
 
-    // Validation Check for Students
+    // 1. Frontend Validation Check for IITK Emails
     if (isStudent && !email.endsWith('@iitk.ac.in')) {
       setEmailError('Access restricted: Please use your @iitk.ac.in email.');
-      return; // Stop the login process
+      return; 
     }
 
-    // If it passes, clear any old errors and proceed
+    // Clear any old errors before trying to log in
     setEmailError('');
-    console.log(`Logging in as ${role} with email: ${email}`);
+    setLoginError('');
     
-    // --- THE MAGIC CONNECTION ---
-    // Route the user to their correct dashboard!
-    if (isStudent) {
-      navigate('/student/dashboard');
-    } else {
-      navigate('/owner/editmenu');
+    // 2. THE MAGIC CONNECTION TO MONGODB
+    try {
+      const response = await fetch('http://localhost:5000/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email, password: password }),
+      });
+
+      const data = await response.json();
+
+      // 3. VALIDATE THE LOGIN
+      if (data.status === 'success') {
+        console.log("Login successful! VIP Token Generated.");
+        
+        // Save the token and user data to the browser's memory
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+
+        // Route the user based on their REAL role from the database
+        if (data.data.user.role === 'student') {
+          navigate('/student/dashboard');
+        } else if (data.data.user.role === 'owner') {
+          navigate('/owner/editmenu');
+        }
+      } else {
+        // If the password was wrong, or email wasn't found, show the error!
+        setLoginError(data.message);
+      }
+    } catch (error) {
+      setLoginError('Cannot connect to the backend server. Is nodemon running?');
     }
   };
 
@@ -55,20 +86,22 @@ const Login = () => {
             <button 
               type="button"
               className={`role-btn ${isStudent ? 'active-blue' : ''}`}
-              onClick={() => { setRole('Student'); setEmailError(''); }}
+              onClick={() => { setRole('Student'); setEmailError(''); setLoginError(''); }}
             >
               Student
             </button>
             <button 
               type="button"
               className={`role-btn ${!isStudent ? 'active-yellow' : ''}`}
-              onClick={() => { setRole('Canteen'); setEmailError(''); }}
+              onClick={() => { setRole('Canteen'); setEmailError(''); setLoginError(''); }}
             >
               Canteen
             </button>
           </div>
 
           <form className="login-form" onSubmit={handleLogin}>
+            
+            {/* --- EMAIL INPUT --- */}
             <div className="input-group">
               <input 
                 type="email" 
@@ -78,12 +111,20 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required 
               />
-              {/* This will only show up if there is an error */}
-              {emailError && <span className="error-text">{emailError}</span>}
+              {emailError && <span className="error-text" style={{color: 'red', marginTop: '5px', display: 'block'}}>{emailError}</span>}
             </div>
             
+            {/* --- PASSWORD INPUT --- */}
             <div className="input-group">
-              <input type="password" placeholder="Enter your password" className="custom-input" required />
+              <input 
+                type="password" 
+                placeholder="Enter your password" 
+                className="custom-input" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+              />
+              {loginError && <span className="error-text" style={{color: 'red', marginTop: '5px', display: 'block'}}>{loginError}</span>}
             </div>
             
             <div className="forgot-password-link">
