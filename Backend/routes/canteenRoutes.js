@@ -1,9 +1,10 @@
 const express = require('express');
 const canteenController = require('../controllers/canteenController');
-
+const userController = require('../controllers/userController');
 const router = express.Router();
-
+router.use(userController.protect);
 // 🏪 Canteen Operations
+router.get('/my', canteenController.getMyCanteen);
 router.post('/', canteenController.createCanteen); 
 router.put('/:canteenId/status', canteenController.updateCanteenStatus); // For the Open/Close switch
 

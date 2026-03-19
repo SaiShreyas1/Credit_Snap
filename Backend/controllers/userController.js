@@ -1,4 +1,5 @@
 const User = require('../models/userModel');
+const Canteen = require('../models/canteenModel');
 const jwt = require('jsonwebtoken');
 
 // 🛠️ HELPER FUNCTION: Generates the Token
@@ -22,6 +23,16 @@ exports.signup = async (req, res) => {
       rollNo: req.body.rollNo,
     });
     console.log("Checkpoint 3: User successfully saved to Database!");
+
+    // 🏆 FIXED: Automatically create a Canteen if the user is an owner!
+    if (newUser.role === 'owner') {
+      await Canteen.create({
+        name: `${newUser.name}'s Canteen`,
+        ownerId: newUser._id,
+        isOpen: false
+      });
+      console.log("Checkpoint 3.5: Canteen auto-created for new owner!");
+    }
 
     const token = signToken(newUser._id);
     console.log("Checkpoint 4: Token generated!");

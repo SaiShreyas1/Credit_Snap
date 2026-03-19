@@ -70,3 +70,16 @@ exports.deleteMenuItem = async (req, res) => {
     res.status(400).json({ status: 'fail', message: error.message });
   }
 };
+// In canteenController.js
+exports.getMyCanteen = async (req, res) => {
+  try {
+    // Assuming `req.user` is populated by `protect` middleware
+    const canteen = await Canteen.findOne({ ownerId: req.user._id });
+    if (!canteen) {
+      return res.status(404).json({ status: 'fail', message: 'No canteen found for this owner' });
+    }
+    res.status(200).json({ status: 'success', data: { canteen } });
+  } catch (error) {
+    res.status(400).json({ status: 'fail', message: error.message });
+  }
+};

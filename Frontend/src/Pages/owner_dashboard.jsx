@@ -1,70 +1,80 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios'; 
 
 export default function CreditSnapDashboard() {
-  // 1. Canteen Open/Closed State Memory
-  const [isCanteenOpen, setIsCanteenOpen] = useState(() => {
-    const saved = localStorage.getItem('canteenStatus');
-    return saved === 'true'; 
-  });
+  // ==========================================
+  // 1. CANTEEN DATABASE STATE (Integrated)
+  // ==========================================
+  const [canteen, setCanteen] = useState(null);
+  const [isCanteenOpen, setIsCanteenOpen] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('canteenStatus', isCanteenOpen);
-  }, [isCanteenOpen]);
-
-  // 2. Orders State Memory
+  // ==========================================
+  // 2. ORDERS LOCAL STATE (Kept from your original code)
+  // ==========================================
   const [orders, setOrders] = useState(() => {
-    // Check if we have saved orders in the browser first!
     const savedOrders = localStorage.getItem('canteenOrders');
     if (savedOrders) {
-      return JSON.parse(savedOrders); // Convert the saved text back into an array
+      return JSON.parse(savedOrders); 
     }
-    // If nothing is saved yet, load these defaults
     return [
-      {
-        id: 1,
-        name: "Sai Chaitanya",
-        phone: "+91xxxxxxxxx, Hall 3",
-        time: "12:30 AM",
-        items: ["Paneer Fried Rice x1", "Cold Coffee x1"], 
-        price: "₹80",
-        type: "pending" 
-      },
-      {
-        id: 2,
-        name: "Sai Shreyas",
-        phone: "+91xxxxxxxxx, Hall 12, A513",
-        time: "12:37 AM",
-        items: ["Cheese Maggie x1", "Chai x1"], 
-        price: "₹60",
-        type: "pending" 
-      },
-      {
-        id: 3,
-        name: "Ram Charan",
-        phone: "+91xxxxxxxxx, Hall 5, C204",
-        time: "12:42 AM",
-        items: ["Chicken Biryani x1", "Thumbs Up x1"],
-        price: "₹150",
-        type: "pending" 
-      },
-      {
-        id: 4,
-        name: "Rahul Kumar",
-        phone: "+91xxxxxxxxx, Hall 1, D102",
-        time: "12:15 AM",
-        items: ["Chicken Roll x1", "Coke x1"],
-        price: "₹90",
-        type: "debt" 
-      }
+      { id: 1, name: "Sai Chaitanya", phone: "+91xxxxxxxxx, Hall 3", time: "12:30 AM", items: ["Paneer Fried Rice x1", "Cold Coffee x1"], price: "₹80", type: "pending" },
+      { id: 2, name: "Sai Shreyas", phone: "+91xxxxxxxxx, Hall 12, A513", time: "12:37 AM", items: ["Cheese Maggie x1", "Chai x1"], price: "₹60", type: "pending" },
+      { id: 3, name: "Ram Charan", phone: "+91xxxxxxxxx, Hall 5, C204", time: "12:42 AM", items: ["Chicken Biryani x1", "Thumbs Up x1"], price: "₹150", type: "pending" },
+      { id: 4, name: "Rahul Kumar", phone: "+91xxxxxxxxx, Hall 1, D102", time: "12:15 AM", items: ["Chicken Roll x1", "Coke x1"], price: "₹90", type: "debt" }
     ];
   });
 
-  // Save the orders array to browser memory EVERY time it changes
   useEffect(() => {
     localStorage.setItem('canteenOrders', JSON.stringify(orders));
   }, [orders]);
 
-  // 3. Functions to handle button clicks
+  // ==========================================
+  // 3. FETCH CANTEEN ON LOAD (Integration!)
+  // ==========================================
+  useEffect(() => {
+    const fetchMyCanteen = async () => {
+      try {
+        const token = localStorage.getItem('token'); 
+        
+        // 🚨 Using the correct plural 'canteens' URL
+        const res = await axios.get('http://localhost:5000/api/canteens/my', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        setCanteen(res.data.data.canteen);
+        setIsCanteenOpen(res.data.data.canteen.isOpen); // Sets UI based on MongoDB!
+        localStorage.setItem('canteenId', res.data.data.canteen._id);
+      } catch (err) {
+        console.error("Failed to load canteen", err);
+      }
+    };
+    fetchMyCanteen();
+  }, []);
+
+  // ==========================================
+  // 4. TOGGLE SWITCH API CALL (Integration!)
+  // ==========================================
+  const toggleStatus = async () => {
+    if (!canteen) return;
+    try {
+      const newStatus = !isCanteenOpen;
+      const token = localStorage.getItem('token');
+      
+      // 🚨 Using the correct plural 'canteens' URL
+      await axios.put(`http://localhost:5000/api/canteens/${canteen._id}/status`, 
+        { isOpen: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setIsCanteenOpen(newStatus); // Updates the UI only if database update succeeds
+    } catch (err) {
+      console.error("Failed to update status", err);
+    }
+  };
+
+  // ==========================================
+  // 5. ORDER BUTTON LOGIC (Unchanged)
+  // ==========================================
   const removeOrder = (orderIdToRemove) => {
     setOrders(orders.filter(order => order.id !== orderIdToRemove));
   };
@@ -73,19 +83,19 @@ export default function CreditSnapDashboard() {
     setOrders(prevOrders => {
       const orderToMove = prevOrders.find(order => order.id === orderIdToAccept);
       if (!orderToMove) return prevOrders;
-      
       const updatedOrder = { ...orderToMove, type: 'debt' };
       const remainingOrders = prevOrders.filter(order => order.id !== orderIdToAccept);
-      
       return [...remainingOrders, updatedOrder];
     });
   };
 
   const clearAllOrders = () => {
-    // ONLY clears orders that have been moved to the 'debt' section
     setOrders(orders.filter(order => order.type !== 'debt'));
   };
 
+  // ==========================================
+  // 6. RENDER UI
+  // ==========================================
   return (
     <div className="active-orders-container">
       <style>{`
@@ -305,7 +315,7 @@ export default function CreditSnapDashboard() {
             <input 
               type="checkbox" 
               checked={isCanteenOpen} 
-              onChange={() => setIsCanteenOpen(!isCanteenOpen)} 
+              onChange={toggleStatus} // 🚨 INTEGRATED HERE!
             />
             <span className="slider"></span>
           </label>

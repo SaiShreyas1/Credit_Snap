@@ -53,7 +53,8 @@ const Login = () => {
         if (data.data.user.role === 'student') {
           navigate('/student/dashboard');
         } else if (data.data.user.role === 'owner') {
-          navigate('/owner/editmenu');
+          // 🏆 FIXED: Must route to dashboard first so Canteen ID is fetched and stored!
+          navigate('/owner/dashboard');
         }
       } else {
         // If the password was wrong, or email wasn't found, show the error!
