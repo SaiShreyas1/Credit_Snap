@@ -20,36 +20,47 @@ exports.getActiveDebts = async (req, res) => {
   }
 };
 
-// 💰 2. DEDUCT DEBT LOGIC (Paid Offline)
+// 💰 2. DEDUCT DEBT LOGIC (Updates BOTH Debt ticket and User profile)
 exports.payOffline = async (req, res) => {
   try {
-    // Convert the input to a strict Number to prevent text inputs like "five"
     const amountPaid = Number(req.body.amountPaid);
 
-    // EDGE CASE 1: Prevent empty, negative, or non-number inputs
     if (!amountPaid || isNaN(amountPaid) || amountPaid <= 0) {
       throw new Error('Please enter a valid numeric amount greater than zero.');
     }
 
-    const debt = await Debt.findById(req.params.id);
+    // ⭐ Notice we added .populate('student') here so we can edit the User too!
+    const debt = await Debt.findById(req.params.id).populate('student');
     
     if (!debt) {
       throw new Error('Debt record not found!');
     }
 
-    // EDGE CASE 2: Prevent paying more than what is owed
     if (amountPaid > debt.amountOwed) {
       throw new Error(`Amount exceeds current debt! The maximum deduction is ₹${debt.amountOwed}.`);
     }
 
-    // Do the math
+    // 1️⃣ Update the specific Canteen Debt Ticket
     debt.amountOwed = debt.amountOwed - amountPaid;
     await debt.save();
 
+    // 2️⃣ Update the Student's overall totalDebt in the Users collection
+    const student = debt.student; // We have the student data because of .populate()
+    student.totalDebt = student.totalDebt - amountPaid;
+    
+    // Safety check so totalDebt never goes below 0
+    if (student.totalDebt < 0) {
+      student.totalDebt = 0; 
+    }
+    await student.save();
+
     res.status(200).json({
       status: 'success',
-      message: `Successfully deducted ₹${amountPaid}`,
-      data: { updatedDebt: debt.amountOwed }
+      message: `Successfully deducted ₹${amountPaid} from both Canteen and Student records.`,
+      data: { 
+        canteenDebt: debt.amountOwed,
+        studentTotalDebt: student.totalDebt
+      }
     });
 
   } catch (err) {
