@@ -1,6 +1,23 @@
 const Debt = require('../models/debtModel');
 const sendEmail = require('../utils/sendEmail'); // This is Tejas's Nodemailer tool!
 
+// 📡 FETCH ACTIVE DEBTS (The missing integration piece!)
+exports.getActiveDebts = async (req, res) => {
+  try {
+    // 1. Search the database for debts belonging to this specific canteen
+    // 2. Only grab debts that are greater than 0
+    const debts = await Debt.find({
+      canteen: req.user.managedCanteen,
+      amountOwed: { $gt: 0 }
+    }).populate('student', 'name email rollNo limit'); // Grab the student's details too!
+
+    // 3. Send the data back to the React fetch() call
+    res.status(200).json({ status: 'success', data: debts });
+  } catch (error) {
+    res.status(400).json({ status: 'fail', message: error.message });
+  }
+};
+
 // 💰 DEDUCT DEBT LOGIC (Paid Offline)
 exports.payOffline = async (req, res) => {
   try {
