@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import { History, Search, ChevronDown, Filter, ArrowUpDown } from 'lucide-react';
 
 // Helper to convert DD-MM-YYYY HH:MM PM to a sortable JS Date object
@@ -15,13 +16,64 @@ export default function OwnerHistory() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Sorting and Filtering States
-  const [sortConfig, setSortConfig] = useState(''); // 'date_desc', 'date_asc', 'amount_asc', 'amount_desc'
+  const [sortConfig, setSortConfig] = useState(''); 
   const [filterAmount, setFilterAmount] = useState({ min: '', max: '' });
   const [filterDate, setFilterDate] = useState({ start: '', end: '' });
+
+  // 1. Hook up the history data state
+  const [historyData, setHistoryData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Refs for clicking outside to close dropdowns
   const sortRef = useRef(null);
   const filterRef = useRef(null);
+
+  // 2. Fetch completed orders / offline payments
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:5000/api/orders/my-orders", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.data.status === "success") {
+          // Filter to only show Accepted orders (which includes offline payments!)
+          const completedOrders = res.data.data.filter(o => o.status === 'accepted');
+
+          // Map it perfectly to fit your UI's logic
+          const formattedHistory = completedOrders.map(order => {
+            const dateObj = new Date(order.createdAt);
+            
+            // Format to DD-MM-YYYY
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            
+            // Format to hh:mm A
+            const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+            return {
+              id: order._id,
+              name: order.student?.name || "Unknown Student",
+              phone: order.student?.phone || "+91 XXXXXXXXXX",
+              amount: order.totalAmount,
+              date: `${day}-${month}-${year}`, // Matches your parseDateTime logic!
+              time: timeStr
+            };
+          });
+
+          setHistoryData(formattedHistory);
+        }
+      } catch (err) {
+        console.error("Failed to load history:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -32,27 +84,15 @@ export default function OwnerHistory() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const [historyData] = useState([
-    { id: 1, name: 'Lekha Harsha', phone: '+91 XXXXXXXXXX', amount: 1500, date: '30-01-2026', time: '2:37 PM' },
-    { id: 2, name: 'Ram Charan', phone: '+91 XXXXXXXXXX', amount: 1000, date: '29-01-2026', time: '4:34 PM' },
-    { id: 3, name: 'Sai Chaitanya', phone: '+91 XXXXXXXXXX', amount: 1200, date: '29-01-2026', time: '3:32 PM' },
-    { id: 4, name: 'Sai Shreyas', phone: '+91 XXXXXXXXXX', amount: 500, date: '27-01-2026', time: '11:47 PM' },
-    { id: 5, name: 'Tejas Reddy', phone: '+91 XXXXXXXXXX', amount: 600, date: '27-01-2026', time: '9:30 PM' },
-    { id: 6, name: 'Sai Shreyas', phone: '+91 XXXXXXXXXX', amount: 800, date: '25-01-2026', time: '8:47 PM' },
-  ]);
-
   // Apply Filters & Search
   let processedData = historyData.filter(record => {
-    // Search
     const matchesSearch = record.name.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Amount Filter
     const amount = record.amount;
     const min = filterAmount.min === '' ? 0 : parseFloat(filterAmount.min);
     const max = filterAmount.max === '' ? Infinity : parseFloat(filterAmount.max);
     const matchesAmount = amount >= min && amount <= max;
 
-    // Date Filter (simple string matching for HTML date inputs YYYY-MM-DD vs DD-MM-YYYY)
     let matchesDate = true;
     if (filterDate.start || filterDate.end) {
       const recordDateObj = parseDateTime(record.date, '12:00 AM');
@@ -81,9 +121,11 @@ export default function OwnerHistory() {
     });
   }
 
+  if (loading) return <div className="p-8"><p>Loading History...</p></div>;
+
   return (
     <div className="p-8">
-      {/* Action Bar: Search & Filters - REMOVED z-20 so it stops fighting the header! */}
+      {/* Action Bar: Search & Filters */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         
         <div className="flex items-center bg-white border border-[#D9D9D9] rounded-full px-5 py-2.5 flex-1 max-w-lg shadow-sm focus-within:border-[#eab308] transition-colors">
@@ -152,7 +194,7 @@ export default function OwnerHistory() {
         </div>
       </div>
 
-      {/* History List - REMOVED z-10 so it stops fighting the header! */}
+      {/* History List */}
       <div className="space-y-4">
         {processedData.length === 0 ? (
            <div className="bg-white p-12 rounded-2xl shadow-sm border border-[#D9D9D9] flex flex-col items-center justify-center min-h-[400px]">

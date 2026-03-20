@@ -1,14 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { Search, ChevronDown, CheckCircle, BellRing, AlertTriangle, X, IndianRupee } from 'lucide-react';
-
-const STUDENTS = [
-  { id: 1, name: "Sai Shreyas",   phone: "+91xxxxxxxxxx", hall: "Hall 12 A513", email: "kshreyas@iitk.ac.in",      debt: 2000, limit: 3000 },
-  { id: 2, name: "Tejas",         phone: "+91xxxxxxxxxx", hall: "Hall 3 B116",  email: "tejas@iitk.ac.in",         debt: 1000, limit: 2000 },
-  { id: 3, name: "Sai Chaitanya", phone: "+91xxxxxxxxxx", hall: "Hall 3 B116",  email: "chaitanya@iitk.ac.in",     debt: 2200, limit: 3000 },
-  { id: 4, name: "Lekha Harsha",  phone: "+91xxxxxxxxxx", hall: "Hall 3 F116",  email: "harsha@iitk.ac.in",        debt: 4500, limit: 5000 },
-  { id: 5, name: "Haneesh",       phone: "+91xxxxxxxxxx", hall: "Hall 3 A212",  email: "haneesh@reddy.iitk.ac.in", debt: 2000, limit: 3000 },
-  { id: 6, name: "Ram Charan",    phone: "+91xxxxxxxxxx", hall: "Hall 3 E147",  email: "ramcharan@iitk.ac.in",     debt: 3000, limit: 5000 },
-];
 
 export default function ActiveDebtsContent() {
   const [search, setSearch] = useState("");
@@ -16,23 +8,64 @@ export default function ActiveDebtsContent() {
   const [sortOpen, setSortOpen] = useState(false);
   const [filterBy, setFilterBy] = useState("all");
   const [sortBy, setSortBy] = useState("default");
-  const [students, setStudents] = useState(STUDENTS);
+  
+  // 1. Swap hardcoded students for empty array & add loading state
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
-
-  // --- NEW: Payment Modal State ---
   const [payModal, setPayModal] = useState({ isOpen: false, student: null, amount: '' });
+
+  // 2. FETCH REAL DEBTS FROM BACKEND
+  const fetchDebts = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:5000/api/debts/active", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.data.status === "success") {
+        // Map backend keys to match your exact UI keys!
+        const mappedDebts = res.data.data.map(d => ({
+          id: d._id,
+          name: d.student?.name || "Unknown Student",
+          phone: d.student?.phone || "+91 XXXXXXXXXX",
+          hall: d.student?.hall || "N/A",
+          email: d.student?.email || "N/A",
+          debt: d.amountOwed,
+          limit: d.student?.limit || 5000 // Fallback limit
+        }));
+        setStudents(mappedDebts);
+      }
+    } catch (err) {
+      console.error("Error fetching debts:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDebts();
+  }, []);
 
   const showToast = (msg, type = 'success') => { 
     setToast({ msg, type }); 
     setTimeout(() => setToast(null), 3000); 
   };
 
-  const handleNotify = (id) => {
-    const s = students.find(s => s.id === id);
-    showToast(`Notification sent to ${s.name}`, 'info');
+  // 3. WIRE UP THE NOTIFY BUTTON
+  const handleNotify = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(`http://localhost:5000/api/debts/${id}/notify`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const s = students.find(s => s.id === id);
+      showToast(`Notification email sent to ${s.name}`, 'info');
+    } catch (err) {
+      alert("Failed to send notification.");
+    }
   };
 
-  // --- NEW: Payment Handlers ---
   const openPayModal = (student) => {
     setPayModal({ isOpen: true, student: student, amount: '' });
   };
@@ -41,7 +74,8 @@ export default function ActiveDebtsContent() {
     setPayModal({ isOpen: false, student: null, amount: '' });
   };
 
-  const confirmPayment = () => {
+  // 4. WIRE UP THE PAY OFFLINE BUTTON
+  const confirmPayment = async () => {
     const paymentAmount = parseFloat(payModal.amount);
     const targetStudent = payModal.student;
 
@@ -49,32 +83,31 @@ export default function ActiveDebtsContent() {
       alert("Please enter a valid amount greater than 0.");
       return;
     }
-
     if (paymentAmount > targetStudent.debt) {
       alert(`Amount cannot exceed the total debt of ₹${targetStudent.debt}!`);
       return;
     }
 
-    const newDebt = targetStudent.debt - paymentAmount;
-
-    if (newDebt === 0) {
-      // If debt is 0, completely REMOVE the student from the active list
-      setStudents(prev => prev.filter(s => s.id !== targetStudent.id));
-      showToast(`${targetStudent.name} has cleared all their debts!`, 'success');
-    } else {
-      // Otherwise, just update their remaining debt
-      setStudents(prev => prev.map(s => s.id === targetStudent.id ? { ...s, debt: newDebt } : s));
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `http://localhost:5000/api/debts/${targetStudent.id}/pay`, 
+        { amountPaid: paymentAmount },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Success! Refetch debts and show toast
       showToast(`₹${paymentAmount} paid offline for ${targetStudent.name}.`, 'success');
+      fetchDebts(); 
+      closePayModal();
+    } catch (err) {
+      alert(err.response?.data?.message || "Payment failed");
     }
-
-    closePayModal();
   };
 
   // --- DERIVED STATE (Filters & Sorting) ---
   let list = students.filter(s => {
-    // Automatically hide anyone who somehow has 0 debt
     if (s.debt <= 0) return false; 
-
     const q = search.toLowerCase();
     if (q && !s.name.toLowerCase().includes(q) && !s.email.toLowerCase().includes(q)) return false;
     if (filterBy === "critical" && s.debt / s.limit < 0.8) return false;
@@ -98,6 +131,8 @@ export default function ActiveDebtsContent() {
     if (sortBy === 'debt_low') return "Debt: Low → High";
     return "Sort by";
   };
+
+  if (loading) return <div className="p-8"><p>Loading Active Debts...</p></div>;
 
   return (
     <>
@@ -145,7 +180,6 @@ export default function ActiveDebtsContent() {
           </div>
         </div>
       )}
-
 
       {/* ========================================================= */}
       {/* MAIN CONTENT PAGE */}
