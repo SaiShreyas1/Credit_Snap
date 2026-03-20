@@ -1,43 +1,51 @@
 const Debt = require('../models/debtModel');
-const sendEmail = require('../utils/sendEmail'); 
+const Order = require('../models/ordersModel'); // 👈 ADD THIS LINE
+const sendEmail = require('../utils/sendEmail');
 
-// 📡 1. FETCH ACTIVE DEBTS (Loads the UI List)
+const Canteen = require('../models/canteenModel'); // 👈 Make sure Canteen is imported!
+
+// Get all active debts for the logged-in owner's canteen
 exports.getActiveDebts = async (req, res) => {
   try {
-    // Make sure the user requesting this is actually logged in and assigned to a canteen
-    if (!req.user || !req.user.managedCanteen) {
-      throw new Error('Not authorized to view this canteen\'s debts.');
-    }
+    // 1. Find the Canteen that belongs to the logged-in Owner
+    const myCanteen = await Canteen.findOne({ ownerId: req.user.id });
+    
+    // 2. THE FIX: Search for debts using the Owner's ID (your friend's logic) 
+    // OR the Canteen ID (your logic) so nothing gets missed!
+    const activeDebts = await Debt.find({ 
+      $or: [
+        { canteen: req.user.id }, 
+        { canteen: myCanteen ? myCanteen._id : null }
+      ],
+      amountOwed: { $gt: 0 } 
+    }).populate('student', 'name rollNo phone email'); 
 
-    const debts = await Debt.find({
-      canteen: req.user.managedCanteen,
-      amountOwed: { $gt: 0 } // Only fetch students who actually owe money
-    }).populate('student', 'name email rollNo limit');
-
-    res.status(200).json({ status: 'success', data: debts });
+    res.status(200).json({
+      status: 'success',
+      data: activeDebts
+    });
   } catch (error) {
-    res.status(400).json({ status: 'fail', message: error.message });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
-// 💰 2. DEDUCT DEBT LOGIC (Updates BOTH Debt ticket and User profile)
+// 💰 2. DEDUCT DEBT LOGIC (Updates Debt, User, AND creates History Receipt)
 exports.payOffline = async (req, res) => {
   try {
     const amountPaid = Number(req.body.amountPaid);
 
     if (!amountPaid || isNaN(amountPaid) || amountPaid <= 0) {
-      throw new Error('Please enter a valid numeric amount greater than zero.');
+      return res.status(400).json({ status: 'fail', message: 'Please enter a valid numeric amount greater than zero.' });
     }
 
-    // ⭐ Notice we added .populate('student') here so we can edit the User too!
     const debt = await Debt.findById(req.params.id).populate('student');
     
     if (!debt) {
-      throw new Error('Debt record not found!');
+      return res.status(404).json({ status: 'fail', message: 'Debt record not found!' });
     }
 
     if (amountPaid > debt.amountOwed) {
-      throw new Error(`Amount exceeds current debt! The maximum deduction is ₹${debt.amountOwed}.`);
+      return res.status(400).json({ status: 'fail', message: `Amount exceeds current debt! The maximum deduction is ₹${debt.amountOwed}.` });
     }
 
     // 1️⃣ Update the specific Canteen Debt Ticket
@@ -45,18 +53,27 @@ exports.payOffline = async (req, res) => {
     await debt.save();
 
     // 2️⃣ Update the Student's overall totalDebt in the Users collection
-    const student = debt.student; // We have the student data because of .populate()
+    const student = debt.student; 
     student.totalDebt = student.totalDebt - amountPaid;
-    
-    // Safety check so totalDebt never goes below 0
-    if (student.totalDebt < 0) {
-      student.totalDebt = 0; 
-    }
+    if (student.totalDebt < 0) student.totalDebt = 0; 
     await student.save();
+
+    // 3️⃣ NEW: Create a "Receipt" in the Orders collection for the History page!
+    await Order.create({
+      student: student._id,
+      canteen: debt.canteen,
+      items: [{
+        name: 'Offline Debt Payment', // Identifies this as a payment, not food!
+        quantity: 1,
+        price: amountPaid
+      }],
+      totalAmount: amountPaid,
+      status: 'accepted' // Automatically accepted so it gets the green tag in the UI
+    });
 
     res.status(200).json({
       status: 'success',
-      message: `Successfully deducted ₹${amountPaid} from both Canteen and Student records.`,
+      message: `Successfully deducted ₹${amountPaid} and recorded the transaction in History.`,
       data: { 
         canteenDebt: debt.amountOwed,
         studentTotalDebt: student.totalDebt
@@ -64,54 +81,65 @@ exports.payOffline = async (req, res) => {
     });
 
   } catch (err) {
-    res.status(400).json({ status: 'fail', message: err.message });
+    res.status(500).json({ status: 'error', message: err.message });
   }
 };
 
 // 🔔 3. NOTIFY STUDENT LOGIC (Using Nodemailer)
-// 🔔 3. NOTIFY STUDENT LOGIC (Using Nodemailer)
 exports.notifyStudent = async (req, res) => {
   try {
-    // We now populate BOTH the student (for their email) AND the canteen (for its name)
+    // 1. Fetch debt and populate both student and canteen
     const debt = await Debt.findById(req.params.id)
-      .populate('student')
-      .populate('canteen'); 
+      .populate('student', 'name email')
+      .populate('canteen', 'name'); 
 
-    if (!debt || !debt.student || !debt.canteen) {
-      throw new Error('Debt, Student, or Canteen record not found!');
+    // 2. Strict safety check for the core records
+    if (!debt || !debt.student) {
+      return res.status(404).json({ 
+        status: 'fail', 
+        message: 'Debt or Student record not found in the database!' 
+      });
     }
 
-    // EDGE CASE 3: Don't spam students if their debt is already cleared
+    // 3. Prevent sending emails for cleared debts
     if (debt.amountOwed === 0) {
-      throw new Error(`${debt.student.name} has no pending debt. No email sent.`);
+      return res.status(400).json({ 
+        status: 'fail', 
+        message: `${debt.student.name} has no pending debt.` 
+      });
     }
 
-    // The updated email message with the Canteen's actual name!
+    // 4. THE FAIL-SAFE: Safely grab the Canteen Name
+    const canteenName = debt.canteen && debt.canteen.name 
+      ? debt.canteen.name 
+      : "our canteen";
+
+    // 5. Draft the email
     const emailMessage = `
       Hello ${debt.student.name},
       
-      This is a friendly reminder from ${debt.canteen.name} regarding your Credit Snap account. 
+      This is a friendly reminder from ${canteenName} regarding your Credit Snap account. 
       Your current pending total at our shop is ₹${debt.amountOwed}.
       
       Please clear this amount at your earliest convenience.
       
       Thanks,
-      ${debt.canteen.name} & The Credit Snap Team
+      ${canteenName} & The Credit Snap Team
     `;
 
+    // 6. Send the email
     await sendEmail({
       email: debt.student.email,
-      // We even put the canteen name in the subject line!
-      subject: `Credit Snap: Pending Debt Reminder from ${debt.canteen.name}`, 
+      subject: `Credit Snap: Pending Debt Reminder from ${canteenName}`, 
       message: emailMessage
     });
 
     res.status(200).json({
       status: 'success',
-      message: `Notification sent to ${debt.student.name}`
+      message: `Notification sent to ${debt.student.name} from ${canteenName}`
     });
 
   } catch (err) {
-    res.status(500).json({ status: 'fail', message: err.message });
+    res.status(500).json({ status: 'error', message: err.message });
   }
 };

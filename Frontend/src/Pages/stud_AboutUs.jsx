@@ -38,8 +38,8 @@ export default function AboutUs() {
                   {/* Added strokeWidth={0} to remove the outline and make it solid */}
                   <Mail className="w-6 h-6" fill="currentColor" strokeWidth={0} />
                 </div>
-                <a href="mailto:support@creditsnap.com" className="text-[#6366f1] text-[17px] hover:underline">
-                  support@creditsnap.com
+                <a href="mailto:creditsnapiitk24@gmail.com" className="text-[#6366f1] text-[17px] hover:underline">
+                  creditsnapiitk24@gmail.com
                 </a>
               </div>
               
@@ -48,7 +48,7 @@ export default function AboutUs() {
                   {/* Added strokeWidth={0} to remove the outline and make it solid */}
                   <Phone className="w-6 h-6" fill="currentColor" strokeWidth={0} />
                 </div>
-                <span className="text-black text-[17px]">+91 1122334455</span>
+                <span className="text-black text-[17px]">+91 63034 52600</span>
               </div>
             </div>
           </div>

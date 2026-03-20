@@ -44,7 +44,6 @@ exports.getOwnerOrders = async (req, res) => {
 };
 
 // 3. OWNER: Accept/Reject Order & Update Debt
-// This is called when the Owner clicks "Accept" or "Reject"
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
@@ -52,28 +51,28 @@ exports.updateOrderStatus = async (req, res) => {
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    // logic: Only increase debt if the order is being ACCEPTED for the first time
+    // LOGIC: Only increase debt if the order is being ACCEPTED for the first time
     if (status === 'accepted' && order.status === 'pending') {
       const student = await User.findById(order.student);
 
-      // Check if student is over their credit limit
-      if (student.totalDebt + order.totalAmount > student.limit) {
+      // 1. Check if student is over their credit limit
+      const limit = student.creditLimit || student.limit || 5000;
+      if (student.totalDebt + order.totalAmount > limit) {
         return res.status(400).json({ 
           status: 'fail', 
           message: 'Student credit limit exceeded!' 
         });
       }
 
-      // Update Student's total debt in User Model
-      await User.findByIdAndUpdate(order.student, { 
-        $inc: { totalDebt: order.totalAmount } 
-      });
+      // 2. Update Student's total debt in User Model
+      student.totalDebt += order.totalAmount;
+      await student.save();
 
-      // Update Canteen-specific debt in Debt Model
+      // 3. THE MAGIC: Create or update the specific Canteen Debt Ticket!
       await Debt.findOneAndUpdate(
-        { student: order.student, canteen: order.canteen },
-        { $inc: { amountOwed: order.totalAmount } },
-        { upsert: true }
+        { student: order.student, canteen: order.canteen }, // Find the exact Khata
+        { $inc: { amountOwed: order.totalAmount } },        // Add the new order amount
+        { upsert: true, new: true }                         // If it doesn't exist, create it!
       );
     }
 
@@ -89,7 +88,6 @@ exports.updateOrderStatus = async (req, res) => {
     res.status(400).json({ status: 'fail', message: error.message });
   }
 };
-
 // 4. STUDENT: View personal order history
 exports.getStudentOrders = async (req, res) => {
   try {
