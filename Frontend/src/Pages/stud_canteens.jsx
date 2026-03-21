@@ -50,7 +50,7 @@ const StudentCanteens = () => {
   useEffect(() => {
     const fetchCanteens = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await axios.get('http://localhost:5000/api/canteens', {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -72,7 +72,7 @@ const StudentCanteens = () => {
   // ==========================================
   const handlePlaceDebtRequest = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       
       const orderData = {
         canteenId: selectedCanteen._id,
@@ -100,7 +100,7 @@ const StudentCanteens = () => {
   // 4. HELPER FUNCTIONS
   // ==========================================
   const goToMenu = async (canteen) => {
-    if (canteen.status === "Closed" || !canteen.isOpen) return;
+    if (canteen.status === "Closed") return;
     
     try {
       const response = await axios.get(`http://localhost:5000/api/canteens/${canteen._id}/menu`);
@@ -295,7 +295,7 @@ const StudentCanteens = () => {
           )}
 
           {displayCanteens.map(canteen => {
-            const isOpen = canteen.status === "Open" || canteen.isOpen;
+            const isOpen = canteen.status === "Open";
             return (
               <div 
                 key={canteen._id} 
@@ -319,7 +319,7 @@ const StudentCanteens = () => {
       {step === 'menu' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
           
-          {(selectedCanteen.status === "Closed" || !selectedCanteen.isOpen) && (
+          {(selectedCanteen.status === "Closed") && (
             <div className="col-span-1 md:col-span-2 bg-white rounded-2xl p-10 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-2">
                 <AlertTriangle className="w-10 h-10 text-orange-400" />
                 <h2 className="text-2xl font-semibold text-black mb-1">Canteen Closed</h2>
@@ -328,13 +328,13 @@ const StudentCanteens = () => {
             </div>
           )}
 
-          {selectedCanteen.isOpen && displayMenu.length === 0 && (
+          {selectedCanteen.status === "Open" && displayMenu.length === 0 && (
             <div className="col-span-2 text-center text-gray-500 py-10 text-xl font-bold bg-white rounded-2xl border border-gray-100 shadow-sm">
                 This canteen has no food items available right now!
             </div>
           )}
 
-          {selectedCanteen.isOpen && displayMenu.length > 0 && displayMenu.map(item => (
+          {selectedCanteen.status === "Open" && displayMenu.length > 0 && displayMenu.map(item => (
             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center transition hover:shadow-md" key={item._id}>
               <div>
                 <h3 className="text-xl font-medium text-black mb-1">{item.name}</h3>

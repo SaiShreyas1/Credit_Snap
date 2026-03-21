@@ -46,8 +46,8 @@ const Login = () => {
         console.log("Login successful! VIP Token Generated.");
 
         // Save the token and user data to the browser's memory
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(data.data.user));
 
         // Route the user based on their REAL role from the database
         if (data.data.user.role === 'student') {

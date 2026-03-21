@@ -9,8 +9,8 @@ export default function OwnerEditMenu() {
   // 🚨 Starts empty because we will fetch real data from MongoDB!
   const [menuItems, setMenuItems] = useState([]);
 
-  const canteenId = localStorage.getItem('canteenId'); // Saved from dashboard!
-  const token = localStorage.getItem('token');
+  const canteenId = sessionStorage.getItem('canteenId'); // Saved from dashboard!
+  const token = sessionStorage.getItem('token');
   // ==========================================
   // 2. INTERACTION STATE (Modals & Filters)
   // ==========================================
@@ -38,7 +38,7 @@ export default function OwnerEditMenu() {
   useEffect(() => {
     const fetchCanteenAndMenu = async () => {
       try {
-        let currentCanteenId = localStorage.getItem('canteenId');
+        let currentCanteenId = sessionStorage.getItem('canteenId');
 
         // 🏆 FIXED: If user jumped straight to edit menu, fetch their Canteen ID securely!
         if (!currentCanteenId) {
@@ -46,7 +46,7 @@ export default function OwnerEditMenu() {
             headers: { Authorization: `Bearer ${token}` }
           });
           currentCanteenId = canteenRes.data.data.canteen._id;
-          localStorage.setItem('canteenId', currentCanteenId);
+          sessionStorage.setItem('canteenId', currentCanteenId);
         }
 
         // Now fetch the actual menu items using the real Canteen ID

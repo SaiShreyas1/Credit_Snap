@@ -37,8 +37,8 @@ import OwnerAboutUs from './Pages/owner_AboutUs';
 export default function App() {
   // A robust component to check for a token AND the correct role before allowing access
   const RoleProtectedRoute = ({ children, allowedRole }) => {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
+    const token = sessionStorage.getItem('token');
+    const userStr = sessionStorage.getItem('user');
 
     if (!token || !userStr) {
       // If there's no token or user data, kick them back to login
