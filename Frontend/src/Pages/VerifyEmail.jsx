@@ -21,19 +21,11 @@ const VerifyEmail = () => {
         const data = await response.json();
 
         if (data.status === 'success') {
-          setStatus('Email verified successfully! Logging you in...');
+          setStatus('Email verified successfully! Redirecting to login...');
           
-          // Save the token and user data to the browser's memory
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.data.user));
-
           // Wait a brief moment so they can read the success message
           setTimeout(() => {
-            if (data.data.user.role === 'student') {
-              navigate('/student/dashboard');
-            } else if (data.data.user.role === 'owner') {
-              navigate('/owner/editmenu');
-            }
+            navigate('/');
           }, 2000);
         } else {
           setStatus('Verification failed: ' + data.message);

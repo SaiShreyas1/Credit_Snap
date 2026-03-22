@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,16 +7,51 @@ export default function OwnerProfile() {
   
   // 1. Master State
   const [ownerInfo, setOwnerInfo] = useState({
-    canteenName: "Hall 1 Canteen",
-    adminName: "Ramesh Kumar",
-    email: "hall1canteen@iitk.ac.in",
-    phone: "91+XXXXXXXXXX",
-    timings: "4:00 PM - 4:00 AM",
+    canteenName: "Loading...",
+    adminName: "Loading...",
+    email: "Loading...",
+    phone: "Loading...",
+    timings: "Loading...",
   });
 
   // 2. Edit Mode State
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(ownerInfo);
+
+  // 🚀 FETCH PROFILE ON MOUNT
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return navigate('/');
+
+        const response = await fetch('http://localhost:5000/api/users/my-profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          const user = data.data.user;
+          const canteen = data.data.canteen;
+          
+          const newInfo = {
+            canteenName: canteen?.name || "Not Set",
+            adminName: user.name || "Not Set",
+            email: user.email || "Not Set",
+            phone: user.phoneNo || "Not Set",
+            timings: canteen?.timings || "4:00 PM - 4:00 AM",
+          };
+          
+          setOwnerInfo(newInfo);
+          setEditForm(newInfo);
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      }
+    };
+    
+    fetchProfile();
+  }, [navigate]);
 
   // 3. Handlers
   const handleEditClick = () => {
@@ -28,10 +63,28 @@ export default function OwnerProfile() {
     setIsEditing(false);
   };
 
-  const handleSaveClick = () => {
-    setOwnerInfo(editForm); // save the new data
-    setIsEditing(false);
-    // TODO: Send data to backend here!
+  const handleSaveClick = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/users/update-my-profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(editForm)
+      });
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setOwnerInfo(editForm); // save the new data locally to reflect changes
+        setIsEditing(false);
+      } else {
+        alert(data.message || 'Error updating profile');
+      }
+    } catch (err) {
+      alert('Network Error: Could not connect to backend.');
+    }
   };
 
   const handleChange = (e) => {

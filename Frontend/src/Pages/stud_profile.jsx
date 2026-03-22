@@ -19,23 +19,41 @@ export default function StudProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(studentInfo);
 
-  // Fetch actual user data on load
+  // Fetch actual user data on load from API to ensure it's up to date
   React.useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      const realData = {
-        name: user.name || "N/A",
-        email: user.email || "N/A",
-        phone: user.phoneNo || "N/A",
-        rollNo: user.rollNo || "N/A",
-        hallNo: user.hallNo || "Not Provided",
-        roomNo: user.roomNo || "Not Provided"
-      };
-      setStudentInfo(realData);
-      setEditForm(realData);
-    }
-  }, []);
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return navigate('/');
+
+        const response = await fetch('http://localhost:5000/api/users/my-profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          const user = data.data.user;
+          const realData = {
+            name: user.name || "N/A",
+            email: user.email || "N/A",
+            phone: user.phoneNo || "N/A",
+            rollNo: user.rollNo || "N/A",
+            hallNo: user.hallNo || "Not Provided",
+            roomNo: user.roomNo || "Not Provided"
+          };
+          setStudentInfo(realData);
+          setEditForm(realData);
+          
+          // Also gently update local storage so other parts of the app are up to date
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      }
+    };
+    
+    fetchProfile();
+  }, [navigate]);
 
   // 3. Handlers
   const handleEditClick = () => {
@@ -47,10 +65,40 @@ export default function StudProfile() {
     setIsEditing(false);
   };
 
-  const handleSaveClick = () => {
-    setStudentInfo(editForm); // save the new data
-    setIsEditing(false);
-    // TODO: Send data to backend here!
+  const handleSaveClick = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/users/update-my-profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(editForm)
+      });
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        const updatedUser = data.data.user;
+        
+        // Update local state
+        setStudentInfo({
+          ...editForm,
+          name: updatedUser.name,
+          phone: updatedUser.phoneNo,
+          hallNo: updatedUser.hallNo,
+          roomNo: updatedUser.roomNo
+        });
+        setIsEditing(false);
+        
+        // Sync local storage so header/layout knows about the updated name!
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } else {
+        alert(data.message || 'Error updating profile');
+      }
+    } catch (err) {
+      alert('Network Error: Could not connect to backend.');
+    }
   };
 
   const handleChange = (e) => {

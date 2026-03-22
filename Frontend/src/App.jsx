@@ -14,11 +14,11 @@ import StudLayout from './Pages/stud_layout';
 import StudDashboard from './Pages/stud_Dashboard';
 import StudCanteens from './Pages/stud_Canteens';
 import StudProfile from './Pages/stud_profile';
-import StudHistory from './Pages/stud_history'; 
+import StudHistory from './Pages/stud_history';
 import ChangePassword from './Pages/ChangePassword';
 
 // Added New Student Pages
-import StudViewDebts from './Pages/stud_ViewDebts'; 
+import StudViewDebts from './Pages/stud_ViewDebts';
 import StudAboutUs from './Pages/stud_Aboutus';
 import StudentHelp from './Pages/stud_help';
 
@@ -38,6 +38,29 @@ import CreditSnapDashboard from './Pages/owner_dashboard';
 import OwnerAboutUs from './Pages/owner_AboutUs';
 
 export default function App() {
+  // A robust component to check for a token AND the correct role before allowing access
+  const RoleProtectedRoute = ({ children, allowedRole }) => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+
+    if (!token || !userStr) {
+      // If there's no token or user data, kick them back to login
+      return <Navigate to="/" replace />;
+    }
+
+    try {
+      const user = JSON.parse(userStr);
+      if (user.role !== allowedRole) {
+        // If a student tries to access owner pages (or vice versa), kick them to their own dashboard!
+        return <Navigate to={`/${user.role}/dashboard`} replace />;
+      }
+    } catch (e) {
+      return <Navigate to="/" replace />;
+    }
+
+    return children;
+  };
+
   return (
     <BrowserRouter>
       <Routes>
@@ -50,7 +73,7 @@ export default function App() {
         <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
 
         {/* --- Protected Student Routes --- */}
-        <Route path="/student" element={<StudLayout />}>
+        <Route path="/student" element={<RoleProtectedRoute allowedRole="student"><StudLayout /></RoleProtectedRoute>}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<StudDashboard />} />
           <Route path="canteens" element={<StudCanteens />} />
@@ -58,29 +81,29 @@ export default function App() {
           <Route path="history" element={<StudHistory />} />
           <Route path="help" element={<StudentHelp />} />
           <Route path="change-password" element={<ChangePassword />} />
-          
-          <Route path="debts" element={<StudViewDebts />} /> 
+
+          <Route path="debts" element={<StudViewDebts />} />
           <Route path="about" element={<StudAboutUs />} />
         </Route>
 
         {/* --- Protected Owner Routes --- */}
-        <Route path="/owner" element={<OwnerLayout />}>
+        <Route path="/owner" element={<RoleProtectedRoute allowedRole="owner"><OwnerLayout /></RoleProtectedRoute>}>
           {/* Automatically redirects /owner to editmenu since dashboard is disabled for now */}
           <Route index element={<Navigate to="dashboard" replace />} />
-          
+
           {/* 🚨 Temporarily disabled to fix the white screen crash! */}
           <Route path="dashboard" element={<CreditSnapDashboard />} />
 
           <Route path="editmenu" element={<OwnerEditMenu />} />
           <Route path="profile" element={<OwnerProfile />} />
-          <Route path="debts" element={<OwnerActiveDebts/>}/>
-          <Route path="history" element={<Ownerhistory/>}/>
+          <Route path="debts" element={<OwnerActiveDebts />} />
+          <Route path="history" element={<Ownerhistory />} />
           <Route path="analytics" element={<Owneranalytics />} />
           <Route path="help" element={<Ownerhelp />} />
-          
+
           {/* Reusing the Change Password file */}
           <Route path="change-password" element={<ChangePassword />} />
-          
+
           {/* 👇 Your new Owner About Us route 👇 */}
           <Route path="about" element={<OwnerAboutUs />} />
         </Route>

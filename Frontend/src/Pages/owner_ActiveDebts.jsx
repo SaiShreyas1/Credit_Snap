@@ -1,311 +1,258 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { Search, ChevronDown, CheckCircle, BellRing, AlertTriangle, X, IndianRupee } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, ChevronDown, Filter, ArrowDownUp, AlertTriangle } from 'lucide-react';
 
-export default function ActiveDebtsContent() {
-  const [search, setSearch] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
-  const [filterBy, setFilterBy] = useState("all");
-  const [sortBy, setSortBy] = useState("default");
-  
-  // 1. Swap hardcoded students for empty array & add loading state
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState(null);
-  const [payModal, setPayModal] = useState({ isOpen: false, student: null, amount: '' });
+// Mock data simulating backend response
+const canteenDebtsData = [
+  {
+    id: '1',
+    name: 'Hall 10 Canteen',
+    currentDebt: 3915,
+    limit: 5000,
+    totalPaid: 6500,
+    transactions: [
+      { id: 't1', date: 'Dec 20, 2025', time: '5:30pm', type: 'Paid Online', amount: -500 },
+      { id: 't2', date: 'Dec 19, 2025', time: '7:35pm', type: 'Paid Offline', amount: -1000 },
+      { id: 't3', date: 'Dec 16, 2025', time: '10:30pm', type: 'Debt taken', amount: 350 },
+      { id: 't4', date: 'Dec 16, 2025', time: '5:50pm', type: 'Debt taken', amount: 200 },
+    ]
+  },
+  { id: '2', name: 'Hall 1 Canteen', currentDebt: 1180, limit: 10000, totalPaid: 1200, transactions: [] },
+  { id: '3', name: 'Hall 12 Canteen', currentDebt: 875, limit: 6000, totalPaid: 500, transactions: [] },
+  { id: '4', name: 'Hall 6 Canteen', currentDebt: 530, limit: 5000, totalPaid: 200, transactions: [] },
+  { id: '5', name: 'Hall 3 Canteen', currentDebt: 0, limit: 3000, totalPaid: 1500, transactions: [] }
+];
 
-  // 2. FETCH REAL DEBTS FROM BACKEND
-  const fetchDebts = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/debts/active", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (res.data.status === "success") {
-        // Map backend keys to match your exact UI keys!
-        const mappedDebts = res.data.data.map(d => ({
-          id: d._id,
-          name: d.student?.name || "Unknown Student",
-          phone: d.student?.phone || "+91 XXXXXXXXXX",
-          hall: d.student?.hall || "N/A",
-          email: d.student?.email || "N/A",
-          debt: d.amountOwed,
-          limit: d.student?.limit || 5000 // Fallback limit
-        }));
-        setStudents(mappedDebts);
-      }
-    } catch (err) {
-      console.error("Error fetching debts:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDebts();
-  }, []);
-
-  const showToast = (msg, type = 'success') => { 
-    setToast({ msg, type }); 
-    setTimeout(() => setToast(null), 3000); 
-  };
-
-  // 3. WIRE UP THE NOTIFY BUTTON
-  const handleNotify = async (id) => {
-    try {
-      const token = localStorage.getItem("token");
-      await axios.post(`http://localhost:5000/api/debts/${id}/notify`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const s = students.find(s => s.id === id);
-      showToast(`Notification email sent to ${s.name}`, 'info');
-    } catch (err) {
-      alert("Failed to send notification.");
-    }
-  };
-
-  const openPayModal = (student) => {
-    setPayModal({ isOpen: true, student: student, amount: '' });
-  };
-
-  const closePayModal = () => {
-    setPayModal({ isOpen: false, student: null, amount: '' });
-  };
-
-  // 4. WIRE UP THE PAY OFFLINE BUTTON
-  const confirmPayment = async () => {
-    const paymentAmount = parseFloat(payModal.amount);
-    const targetStudent = payModal.student;
-
-    if (isNaN(paymentAmount) || paymentAmount <= 0) {
-      alert("Please enter a valid amount greater than 0.");
-      return;
-    }
-    if (paymentAmount > targetStudent.debt) {
-      alert(`Amount cannot exceed the total debt of ₹${targetStudent.debt}!`);
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `http://localhost:5000/api/debts/${targetStudent.id}/pay`, 
-        { amountPaid: paymentAmount },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      // Success! Refetch debts and show toast
-      showToast(`₹${paymentAmount} paid offline for ${targetStudent.name}.`, 'success');
-      fetchDebts(); 
-      closePayModal();
-    } catch (err) {
-      alert(err.response?.data?.message || "Payment failed");
-    }
-  };
-
-  // --- DERIVED STATE (Filters & Sorting) ---
-  let list = students.filter(s => {
-    if (s.debt <= 0) return false; 
-    const q = search.toLowerCase();
-    if (q && !s.name.toLowerCase().includes(q) && !s.email.toLowerCase().includes(q)) return false;
-    if (filterBy === "critical" && s.debt / s.limit < 0.8) return false;
-    if (filterBy === "safe"     && s.debt / s.limit >= 0.8) return false;
-    return true;
-  });
-  
-  if (sortBy === "debt_high") list = [...list].sort((a, b) => b.debt - a.debt);
-  if (sortBy === "debt_low")  list = [...list].sort((a, b) => a.debt - b.debt);
-  if (sortBy === "name")      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
-
-  const getFilterText = () => {
-    if (filterBy === 'critical') return "Critical (≥80%)";
-    if (filterBy === 'safe') return "Safe (<80%)";
-    return "Filter by";
-  };
-
-  const getSortText = () => {
-    if (sortBy === 'name') return "Name (A-Z)";
-    if (sortBy === 'debt_high') return "Debt: High → Low";
-    if (sortBy === 'debt_low') return "Debt: Low → High";
-    return "Sort by";
-  };
-
-  if (loading) return <div className="p-8"><p>Loading Active Debts...</p></div>;
+// Sub-component for individual Canteen Debt Cards
+const DebtCard = ({ data }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <>
-      {/* ========================================================= */}
-      {/* OFFLINE PAYMENT MODAL */}
-      {/* ========================================================= */}
-      {payModal.isOpen && (
-        <div className="fixed inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[450px] p-8 relative border border-gray-100">
-            <X onClick={closePayModal} className="absolute top-5 right-5 w-5 h-5 text-gray-400 cursor-pointer hover:text-red-500 transition" />
-            
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Log Offline Payment</h2>
-            <p className="text-sm text-gray-500 mb-6">Recording payment for <strong className="text-gray-800">{payModal.student?.name}</strong>.</p>
-            
-            <div className="bg-gray-50 rounded-xl p-4 mb-6 flex justify-between items-center border border-gray-100">
-              <span className="text-gray-600 font-medium">Current Debt:</span>
-              <span className="text-xl font-bold text-red-600">₹{payModal.student?.debt}</span>
-            </div>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 transition-all hover:shadow-md overflow-hidden">
+      {/* Top Visible Row */}
+      <div 
+        className="p-6 flex justify-between items-center cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <h2 className="text-xl font-medium text-gray-900">
+          {data.name}
+        </h2>
 
-            <div className="mb-8">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Amount Paid Offline</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <IndianRupee className="h-5 w-5 text-gray-400" />
-                </div>
-                <input 
-                  type="number" 
-                  value={payModal.amount} 
-                  onChange={(e) => setPayModal({ ...payModal, amount: e.target.value })} 
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#eab308] focus:border-[#eab308] outline-none text-lg transition-colors" 
-                  placeholder="e.g. 500" 
-                  autoFocus
-                />
+        <div className="flex items-center gap-6">
+          <div className="flex flex-col items-end gap-1.5">
+            <p className="text-sm text-gray-800 font-medium">
+              Debt: {data.currentDebt}/{data.limit}
+            </p>
+            {data.currentDebt > 0 ? (
+              <button 
+                className="bg-[#6366f1] hover:bg-[#4f46e5] text-white px-5 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  alert(`Clearing debt for ${data.name}`);
+                }}
+              >
+                Clear Debt
+              </button>
+            ) : (
+              <div className="bg-[#D1FAE5] text-[#065F46] px-5 py-1.5 rounded-lg text-sm font-medium">
+                Settled
               </div>
-            </div>
+            )}
+          </div>
+          <ChevronDown 
+            className={`w-6 h-6 text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
+          />
+        </div>
+      </div>
 
-            <div className="flex justify-end gap-3">
-              <button onClick={closePayModal} className="cursor-pointer px-5 py-2.5 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition">
-                Cancel
-              </button>
-              <button onClick={confirmPayment} className="cursor-pointer bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg transition shadow-sm flex items-center gap-2">
-                <CheckCircle className="w-5 h-5" /> Confirm Payment
-              </button>
-            </div>
+      {/* Expanded Transactions Section */}
+      {isExpanded && (
+        <div className="px-6 pb-6 pt-2 border-t border-gray-50 bg-gray-50/50">
+          <div className="flex justify-end mb-4 mt-2">
+            <span className="bg-white border border-gray-200 shadow-sm px-4 py-2 rounded-lg text-gray-800 font-medium text-sm">
+              Total Paid: <span className="text-green-600 ml-1">₹{data.totalPaid}</span>
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {data.transactions.length > 0 ? (
+              data.transactions.map((txn) => (
+                <div key={txn.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex justify-between items-center">
+                  <div className="text-gray-700">
+                    <p className="font-medium text-gray-900">{txn.date}</p>
+                    <p className="text-sm text-gray-500">{txn.time}</p>
+                  </div>
+                  <div className="text-gray-800 font-medium">
+                    {txn.type}
+                  </div>
+                  <div className={`font-semibold text-lg ${txn.amount < 0 ? 'text-green-600' : 'text-red-500'}`}>
+                    {txn.amount < 0 ? `-${'₹' + Math.abs(txn.amount)}` : `+₹${txn.amount}`}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center bg-white rounded-xl border border-gray-100 py-6 text-gray-500">
+                No recent transactions found.
+              </div>
+            )}
           </div>
         </div>
       )}
+    </div>
+  );
+};
 
-      {/* ========================================================= */}
-      {/* MAIN CONTENT PAGE */}
-      {/* ========================================================= */}
-      <div className="p-8 pb-32">
+// Main View Debts Component
+export default function ViewDebts() {
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Dropdown States
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  
+  // Active Selections
+  const [activeFilter, setActiveFilter] = useState('All'); 
+  const [activeSort, setActiveSort] = useState('A-Z'); 
+
+  // Refs for clicking outside
+  const filterRef = useRef(null);
+  const sortRef = useRef(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (filterRef.current && !filterRef.current.contains(event.target)) setIsFilterOpen(false);
+      if (sortRef.current && !sortRef.current.contains(event.target)) setIsSortOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // --- LOGIC: Filter and Sort ---
+  let processedDebts = [...canteenDebtsData];
+
+  // 1. Search
+  if (searchTerm) {
+    processedDebts = processedDebts.filter(canteen => 
+      canteen.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }
+
+  // 2. Filter
+  if (activeFilter === 'Unpaid') {
+    processedDebts = processedDebts.filter(canteen => canteen.currentDebt > 0);
+  } else if (activeFilter === 'Paid') {
+    processedDebts = processedDebts.filter(canteen => canteen.currentDebt === 0);
+  }
+
+  // 3. Sort
+  processedDebts.sort((a, b) => {
+    if (activeSort === 'High to Low') return b.currentDebt - a.currentDebt;
+    if (activeSort === 'Low to High') return a.currentDebt - b.currentDebt;
+    if (activeSort === 'A-Z') return a.name.localeCompare(b.name);
+    if (activeSort === 'Z-A') return b.name.localeCompare(a.name);
+    return 0;
+  });
+
+  return (
+    <main className="p-10 pb-32 w-full h-full bg-[#F8FAFC] overflow-y-auto relative">
         
-        {/* TOP ROW: Search & Filters */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center bg-white px-4 py-2.5 rounded-full shadow-sm w-[500px] border border-gray-100 focus-within:border-[#eab308] transition-colors">
-            <Search className="w-5 h-5 text-gray-400 mr-2" />
-            <input 
-              type="text" 
-              placeholder="Search for Username or Email" 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="bg-transparent outline-none w-full text-gray-700"
-            />
-          </div>
-
-          <div className="flex gap-4">
-            <div className="relative">
-              <button onClick={() => { setFilterOpen(!filterOpen); setSortOpen(false); }} className="cursor-pointer bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg shadow-sm flex items-center gap-2 transition min-w-[150px] justify-between">
-                {getFilterText()} <ChevronDown className="w-4 h-4" />
-              </button>
-              {filterOpen && (
-                <div className="absolute right-0 mt-3 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
-                  <div onClick={() => { setFilterBy('all'); setFilterOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${filterBy === 'all' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>All Active Debts</div>
-                  <div onClick={() => { setFilterBy('critical'); setFilterOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${filterBy === 'critical' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Critical (≥80%)</div>
-                  <div onClick={() => { setFilterBy('safe'); setFilterOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${filterBy === 'safe' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Safe (&lt;80%)</div>
-                </div>
-              )}
-            </div>
-
-            <div className="relative">
-              <button onClick={() => { setSortOpen(!sortOpen); setFilterOpen(false); }} className="cursor-pointer bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg shadow-sm flex items-center gap-2 transition min-w-[150px] justify-between">
-                {getSortText()} <ChevronDown className="w-4 h-4" />
-              </button>
-              {sortOpen && (
-                <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
-                  <div onClick={() => { setSortBy('default'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortBy === 'default' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Default</div>
-                  <div onClick={() => { setSortBy('name'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortBy === 'name' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Name (A-Z)</div>
-                  <div onClick={() => { setSortBy('debt_high'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortBy === 'debt_high' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Debt: High → Low</div>
-                  <div onClick={() => { setSortBy('debt_low'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortBy === 'debt_low' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Debt: Low → High</div>
-                </div>
-              )}
-            </div>
-          </div>
+      {/* DYNAMIC TOP ROW (Matches Canteens Page exactly) */}
+      <div className="flex justify-between items-center mb-10 gap-6">
+        
+        {/* Large Pill-shaped Search Bar */}
+        <div className="bg-white rounded-full flex items-center px-6 py-3.5 w-[450px] shadow-sm border border-gray-100 focus-within:ring-2 focus-within:ring-[#f97316] focus-within:border-[#f97316] transition">
+          <Search className="w-5 h-5 text-gray-400 mr-3" />
+          <input 
+            type="text" 
+            placeholder="Search for Canteen" 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full outline-none text-gray-700 bg-transparent text-lg"
+          />
         </div>
 
-        {/* HEADER ROW */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-semibold text-gray-900">Active Debts</h1>
-        </div>
-
-        {/* DYNAMIC CARDS LIST */}
-        <div className="flex flex-col gap-5 relative">
+        {/* Orange Filter & Sort Buttons */}
+        <div className="flex gap-4">
           
-          {list.length === 0 && (
-            <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-3">
-              <CheckCircle className="w-12 h-12 text-green-500 mb-2" />
-              <p className="text-2xl font-semibold text-gray-800">All debts cleared!</p>
-              <p className="text-gray-500">There are no active debts matching your criteria right now.</p>
-              {search || filterBy !== 'all' ? (
-                <button onClick={() => { setSearch(''); setFilterBy('all'); setSortBy('default'); }} className="cursor-pointer mt-4 bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg transition text-sm">Clear Filters</button>
-              ) : null}
-            </div>
-          )}
-
-          {list.map(s => {
-            const isCritical = s.debt / s.limit >= 0.8;
-            
-            return (
-              <div key={s.id} className={`bg-white rounded-2xl p-6 shadow-sm border ${isCritical ? 'border-red-200' : 'border-gray-100'} flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition hover:shadow-md`}>
-                
-                <div>
-                  <h3 className="text-xl font-medium text-gray-900 mb-1">{s.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    Ph no. {s.phone}, {s.hall}, Mail: {s.email}
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-end gap-3 w-full md:w-auto">
-                  <div className="text-[15px] font-medium text-gray-700">
-                    Total Debt: <span className={`font-bold ${isCritical ? 'text-red-600' : 'text-[#1e293b]'}`}>₹{s.debt.toLocaleString()}/{s.limit.toLocaleString()}</span>
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    {/* Opens the specific payment modal for this student */}
-                    <button 
-                      onClick={() => openPayModal(s)} 
-                      className="cursor-pointer font-semibold px-5 py-2 rounded-full transition text-sm flex items-center gap-1.5 bg-[#eab308] hover:bg-yellow-500 text-[#1e293b]"
-                    >
-                      <IndianRupee className="w-4 h-4" /> Paid Offline
-                    </button>
-                    <button 
-                      onClick={() => handleNotify(s.id)} 
-                      className="cursor-pointer font-semibold px-5 py-2 rounded-full transition text-sm flex items-center gap-1.5 bg-[#1e293b] hover:bg-slate-800 text-white"
-                    >
-                      <BellRing className="w-4 h-4" /> Notify Now
-                    </button>
-                  </div>
-                </div>
-
+          {/* Filter Dropdown */}
+          <div className="relative" ref={filterRef}>
+            <button 
+              onClick={() => { setIsFilterOpen(!isFilterOpen); setIsSortOpen(false); }} 
+              className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-6 py-3.5 rounded-xl shadow-md flex items-center gap-2 transition min-w-[150px] justify-between text-lg"
+            >
+              <div className="flex items-center gap-2">
+                  <Filter className="w-5 h-5" /> 
+                  {activeFilter === 'All' ? 'Filter by' : activeFilter}
               </div>
-            );
-          })}
-        </div>
+              <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isFilterOpen && (
+              <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                {['All', 'Unpaid', 'Paid'].map((option) => (
+                  <div 
+                    key={option}
+                    onClick={() => { setActiveFilter(option); setIsFilterOpen(false); }} 
+                    className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${activeFilter === option ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}
+                  >
+                    {option === 'All' ? 'All Canteens' : `${option} Only`}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* TOAST */}
-        {toast && (
-          <div className="fixed bottom-8 right-8 z-50 animate-bounce">
-            <div className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl text-white font-medium ${toast.type === 'success' ? 'bg-green-600' : 'bg-[#1e293b]'}`}>
-              {toast.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <BellRing className="w-5 h-5 text-[#eab308]" />}
-              {toast.msg}
-              <button onClick={() => setToast(null)} className="ml-4 text-white/70 hover:text-white transition cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+          {/* Sort Dropdown */}
+          <div className="relative" ref={sortRef}>
+            <button 
+              onClick={() => { setIsSortOpen(!isSortOpen); setIsFilterOpen(false); }} 
+              className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-6 py-3.5 rounded-xl shadow-md flex items-center gap-2 transition min-w-[170px] justify-between text-lg"
+            >
+              <div className="flex items-center gap-2">
+                  <ArrowDownUp className="w-5 h-5" /> 
+                  {activeSort === 'A-Z' ? 'Sort by' : activeSort}
+              </div>
+              <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isSortOpen && (
+              <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                {['A-Z', 'Z-A', 'High to Low', 'Low to High'].map((option) => (
+                  <div 
+                    key={option}
+                    onClick={() => { setActiveSort(option); setIsSortOpen(false); }} 
+                    className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${activeSort === option ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}
+                  >
+                    {option.includes('High') ? `Debt: ${option}` : `Name: ${option}`}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+
+      {/* Canteen Debt List */}
+      <div className="flex flex-col">
+        {processedDebts.length > 0 ? (
+          processedDebts.map((canteen) => (
+            <DebtCard key={canteen.id} data={canteen} />
+          ))
+        ) : (
+          <div className="bg-white rounded-2xl p-10 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-3">
+            <AlertTriangle className="w-10 h-10 text-orange-400" />
+            <p className="text-xl font-semibold text-gray-800">No canteens match your search.</p>
+            <button 
+              onClick={() => {setSearchTerm(''); setActiveFilter('All'); setActiveSort('A-Z');}}
+              className="mt-2 bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-5 py-2 rounded-lg transition text-sm"
+            >
+              Clear All Filters
+            </button>
           </div>
         )}
-
-        {(filterOpen || sortOpen) && (
-          <div onClick={() => { setFilterOpen(false); setSortOpen(false); }} className="fixed inset-0 z-40" />
-        )}
-
       </div>
-    </>
+
+    </main>
   );
 }

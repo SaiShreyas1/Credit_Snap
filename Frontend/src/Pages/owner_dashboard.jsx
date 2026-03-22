@@ -2,15 +2,35 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 export default function OwnerDashboard() {
-  // --- 1. STATES ---
+  // ==========================================
+  // 1. CANTEEN DATABASE STATE (Integrated)
+  // ==========================================
+  const [canteen, setCanteen] = useState(null);
+  const [isCanteenOpen, setIsCanteenOpen] = useState(false);
+
+  // ==========================================
+  // 2. ORDERS DATABASE STATE (Friend's code)
+  // ==========================================
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isCanteenOpen, setIsCanteenOpen] = useState(() => {
-    const saved = localStorage.getItem('canteenStatus');
-    return saved === 'true'; 
-  });
 
-  // --- 2. FETCH ORDERS FROM DATABASE ---
+  // ==========================================
+  // 3. FETCH DATA ON LOAD
+  // ==========================================
+  const fetchMyCanteen = async () => {
+    try {
+      const token = localStorage.getItem('token'); 
+      const res = await axios.get('http://localhost:5000/api/canteens/my', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCanteen(res.data.data.canteen);
+      setIsCanteenOpen(res.data.data.canteen.isOpen); // Sets UI based on MongoDB!
+      localStorage.setItem('canteenId', res.data.data.canteen._id);
+    } catch (err) {
+      console.error("Failed to load canteen", err);
+    }
+  };
+
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -29,16 +49,33 @@ export default function OwnerDashboard() {
   };
 
   useEffect(() => {
+    fetchMyCanteen();
     fetchOrders();
     const interval = setInterval(fetchOrders, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('canteenStatus', isCanteenOpen);
-  }, [isCanteenOpen]);
+  // ==========================================
+  // 4. API ACTIONS
+  // ==========================================
+  const toggleStatus = async () => {
+    if (!canteen) {
+      alert("⚠️ ERROR: Cannot toggle status! Your Owner account does not have a Canteen registered in the MongoDB database yet. Please run the backend fix script.");
+      return;
+    }
+    try {
+      const newStatus = !isCanteenOpen;
+      const token = localStorage.getItem('token');
+      await axios.put(`http://localhost:5000/api/canteens/${canteen._id}/status`, 
+        { isOpen: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setIsCanteenOpen(newStatus); 
+    } catch (err) {
+      console.error("Failed to update status", err);
+    }
+  };
 
-  // --- 3. ACTIONS ---
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
@@ -46,7 +83,6 @@ export default function OwnerDashboard() {
         { orderId, status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       if (response.data.status === 'success') {
         fetchOrders();
       }
@@ -56,15 +92,16 @@ export default function OwnerDashboard() {
   };
 
   const removeOrder = (orderId) => {
-    // This local filter mimics the old UI's "remove" behavior for rejected/closed items
     setOrders(orders.filter(order => order._id !== orderId));
   };
 
   const clearAllOrders = () => {
-    // Mimics the old UI logic: clears everything that is already "accepted" (debt) or rejected
     setOrders(orders.filter(order => order.status === 'pending'));
   };
 
+  // ==========================================
+  // 6. RENDER UI
+  // ==========================================
   return (
     <div className="active-orders-container">
       <style>{`
@@ -282,7 +319,7 @@ export default function OwnerDashboard() {
             <input 
               type="checkbox" 
               checked={isCanteenOpen} 
-              onChange={() => setIsCanteenOpen(!isCanteenOpen)} 
+              onChange={toggleStatus} // 🚨 INTEGRATED HERE!
             />
             <span className="slider"></span>
           </label>

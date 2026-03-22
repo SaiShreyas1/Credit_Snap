@@ -1,29 +1,23 @@
-import React, { useState } from 'react';
-// Added Trash2 for the delete icon!
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Search, ChevronDown, Plus, Edit3, AlertTriangle, X, Trash2 } from 'lucide-react';
 
 export default function OwnerEditMenu() {
   // ==========================================
-  // 1. MASTER DATA STATE
+  // 1. MASTER DATA STATE & AUTH
   // ==========================================
-  const [menuItems, setMenuItems] = useState([
-    { id: 1, name: "Plain Maggie", price: 25, isAvailable: true },
-    { id: 2, name: "Plain Dosa", price: 50, isAvailable: true },
-    { id: 3, name: "Masala Maggie", price: 35, isAvailable: true },
-    { id: 4, name: "Masala Dosa", price: 60, isAvailable: true },
-    { id: 5, name: "Butter Maggie", price: 45, isAvailable: true },
-    { id: 6, name: "Paneer Dosa", price: 80, isAvailable: true },
-    { id: 7, name: "Cheese Maggie", price: 50, isAvailable: true },
-    { id: 8, name: "Pizza Dosa", price: 120, isAvailable: true },
-  ]);
+  // 🚨 Starts empty because we will fetch real data from MongoDB!
+  const [menuItems, setMenuItems] = useState([]);
 
+  const canteenId = localStorage.getItem('canteenId'); // Saved from dashboard!
+  const token = localStorage.getItem('token');
   // ==========================================
-  // 2. INTERACTION STATE
+  // 2. INTERACTION STATE (Modals & Filters)
   // ==========================================
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all'); 
-  const [activeSort, setActiveSort] = useState(''); 
-  
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeSort, setActiveSort] = useState('');
+
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
 
@@ -39,12 +33,57 @@ export default function OwnerEditMenu() {
   const [newPrice, setNewPrice] = useState('');
 
   // ==========================================
-  // 3. HANDLERS
+  // 3. API FETCH (On Page Load)
   // ==========================================
-  const toggleAvailability = (id) => {
-    setMenuItems(menuItems.map(item => 
-      item.id === id ? { ...item, isAvailable: !item.isAvailable } : item
-    ));
+  useEffect(() => {
+    const fetchCanteenAndMenu = async () => {
+      try {
+        let currentCanteenId = localStorage.getItem('canteenId');
+
+        // 🏆 FIXED: If user jumped straight to edit menu, fetch their Canteen ID securely!
+        if (!currentCanteenId) {
+          const canteenRes = await axios.get('http://localhost:5000/api/canteens/my', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          currentCanteenId = canteenRes.data.data.canteen._id;
+          localStorage.setItem('canteenId', currentCanteenId);
+        }
+
+        // Now fetch the actual menu items using the real Canteen ID
+        const res = await axios.get(`http://localhost:5000/api/canteens/${currentCanteenId}/menu`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        setMenuItems(res.data.data.menu.map(item => ({ ...item, id: item._id })));
+      } catch (err) {
+        console.error("Failed to load menu or canteen data...", err);
+      }
+    };
+
+    if (token) fetchCanteenAndMenu();
+  }, [token]);
+
+  // ==========================================
+  // 4. HANDLERS (Integrated with Backend)
+  // ==========================================
+
+  // --- TOGGLE AVAILABILITY ---
+  const toggleAvailability = async (id) => {
+    const item = menuItems.find(i => i.id === id);
+    if (!item) return;
+
+    try {
+      await axios.put(`http://localhost:5000/api/canteens/menu/${id}`,
+        { isAvailable: !item.isAvailable },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // Update UI only if DB call succeeds
+      setMenuItems(menuItems.map(i =>
+        i.id === id ? { ...i, isAvailable: !i.isAvailable } : i
+      ));
+    } catch (err) {
+      console.error("Error toggling availability:", err);
+    }
   };
 
   // --- ADD ITEM LOGIC ---
@@ -54,19 +93,30 @@ export default function OwnerEditMenu() {
     setIsAddModalOpen(true);
   };
 
-  const handleConfirmAdd = () => {
+  const handleConfirmAdd = async () => {
+    // 1. Validate Input First!
     if (!newName.trim() || !newPrice.trim() || isNaN(newPrice) || parseFloat(newPrice) < 0) {
       alert("Please enter a valid Name and Price.");
       return;
     }
-    const newItem = {
-      id: Date.now(), 
-      name: newName,
-      price: parseFloat(newPrice),
-      isAvailable: true 
-    };
-    setMenuItems([newItem, ...menuItems]); 
-    setIsAddModalOpen(false);
+
+    // 2. Send to Database
+    try {
+      const res = await axios.post(`http://localhost:5000/api/canteens/${canteenId}/menu`,
+        { name: newName, price: parseFloat(newPrice), isAvailable: true },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const newItem = res.data.data.menuItem;
+      // 3. Add to UI and Close Modal
+      setMenuItems([{ ...newItem, id: newItem._id }, ...menuItems]);
+      setIsAddModalOpen(false);
+      setNewName('');
+      setNewPrice('');
+    } catch (err) {
+      console.error("Error adding item:", err);
+      alert("Failed to add item to database");
+    }
   };
 
   // --- EDIT ITEM LOGIC ---
@@ -77,30 +127,54 @@ export default function OwnerEditMenu() {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
+    // 1. Validate Input First!
     if (!editName.trim() || !editPrice.trim() || isNaN(editPrice) || parseFloat(editPrice) < 0) {
       alert("Please enter a valid Name and Price.");
       return;
     }
-    setMenuItems(menuItems.map(item =>
-      item.id === itemToEdit.id ? { ...item, name: editName, price: parseFloat(editPrice) } : item
-    ));
-    setIsEditModalOpen(false);
-    setItemToEdit(null);
+
+    // 2. Send updates to Database
+    try {
+      const res = await axios.put(`http://localhost:5000/api/canteens/menu/${itemToEdit.id}`,
+        { name: editName, price: parseFloat(editPrice) },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const updatedItem = res.data.data.menuItem;
+
+      // 3. Update UI and Close Modal
+      setMenuItems(menuItems.map(item =>
+        item.id === itemToEdit.id ? { ...updatedItem, id: updatedItem._id } : item
+      ));
+      setIsEditModalOpen(false);
+      setItemToEdit(null);
+    } catch (err) {
+      console.error("Error saving edits:", err);
+      alert("Failed to save edits to database");
+    }
   };
 
   // --- DELETE ITEM LOGIC ---
-  const handleDeleteItem = (id) => {
-    // Built-in browser confirmation dialog
+  const handleDeleteItem = async (id) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this item?");
     if (confirmDelete) {
-      // Filter out the item with the matching ID
-      setMenuItems(menuItems.filter(item => item.id !== id));
+      try {
+        await axios.delete(`http://localhost:5000/api/canteens/menu/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // Remove from UI after DB confirms deletion
+        setMenuItems(menuItems.filter(item => item.id !== id));
+      } catch (err) {
+        console.error("Error deleting item:", err);
+        alert("Failed to delete item from database");
+      }
     }
   };
 
   // ==========================================
-  // 4. DERIVED STATE (Filters & Sorting)
+  // 5. DERIVED STATE (Filters & Sorting)
   // ==========================================
   let filteredAndSortedMenu = [...menuItems]
     .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -130,7 +204,7 @@ export default function OwnerEditMenu() {
   };
 
   // ==========================================
-  // 5. RENDER
+  // 6. RENDER
   // ==========================================
   return (
     <>
@@ -143,24 +217,24 @@ export default function OwnerEditMenu() {
             <div className="space-y-8 mb-12 px-4">
               <div className="flex items-center justify-between">
                 <label className="text-gray-900 font-medium text-lg">Item Name:</label>
-                <input 
-                  type="text" 
-                  value={newName} 
-                  onChange={(e) => setNewName(e.target.value)} 
-                  className="w-48 text-center border-b-2 border-gray-900 focus:border-[#eab308] outline-none pb-1 bg-transparent text-lg placeholder-gray-300" 
-                  placeholder="e.g. Cheese Dosa" 
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="w-48 text-center border-b-2 border-gray-900 focus:border-[#eab308] outline-none pb-1 bg-transparent text-lg placeholder-gray-300"
+                  placeholder="e.g. Cheese Dosa"
                 />
               </div>
               <div className="flex items-center justify-between">
                 <label className="text-gray-900 font-medium text-lg">Price:</label>
                 <div className="w-48 flex items-center justify-center border-b-2 border-gray-900 focus-within:border-[#eab308] pb-1">
-                   <span className="text-gray-900 text-lg mr-1">₹</span>
-                   <input 
-                    type="number" 
-                    value={newPrice} 
-                    onChange={(e) => setNewPrice(e.target.value)} 
-                    className="w-16 text-center outline-none bg-transparent text-lg placeholder-gray-300" 
-                    placeholder="120" 
+                  <span className="text-gray-900 text-lg mr-1">₹</span>
+                  <input
+                    type="number"
+                    value={newPrice}
+                    onChange={(e) => setNewPrice(e.target.value)}
+                    className="w-16 text-center outline-none bg-transparent text-lg placeholder-gray-300"
+                    placeholder="120"
                   />
                 </div>
               </div>
@@ -205,14 +279,14 @@ export default function OwnerEditMenu() {
 
       {/* 3. MAIN CONTENT PAGE */}
       <div className="p-8 pb-32">
-        
+
         {/* TOP ROW: Search & Filters */}
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center bg-white px-4 py-2.5 rounded-full shadow-sm w-[500px] border border-gray-100">
             <Search className="w-5 h-5 text-gray-400 mr-2" />
-            <input 
-              type="text" 
-              placeholder="Search for Item" 
+            <input
+              type="text"
+              placeholder="Search for Item"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent outline-none w-full text-gray-700"
@@ -226,9 +300,9 @@ export default function OwnerEditMenu() {
               </button>
               {isFilterDropdownOpen && (
                 <div className="absolute right-0 mt-3 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
-                  <div onClick={() => {setActiveFilter('all'); setIsFilterDropdownOpen(false)}} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeFilter === 'all' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>All Items</div>
-                  <div onClick={() => {setActiveFilter('available'); setIsFilterDropdownOpen(false)}} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeFilter === 'available' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Available Only</div>
-                  <div onClick={() => {setActiveFilter('unavailable'); setIsFilterDropdownOpen(false)}} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeFilter === 'unavailable' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Unavailable Only</div>
+                  <div onClick={() => { setActiveFilter('all'); setIsFilterDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeFilter === 'all' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>All Items</div>
+                  <div onClick={() => { setActiveFilter('available'); setIsFilterDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeFilter === 'available' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Available Only</div>
+                  <div onClick={() => { setActiveFilter('unavailable'); setIsFilterDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeFilter === 'unavailable' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Unavailable Only</div>
                 </div>
               )}
             </div>
@@ -239,9 +313,9 @@ export default function OwnerEditMenu() {
               </button>
               {isSortDropdownOpen && (
                 <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
-                  <div onClick={() => {setActiveSort('price-low-high'); setIsSortDropdownOpen(false)}} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'price-low-high' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Price: Low to High</div>
-                  <div onClick={() => {setActiveSort('price-high-low'); setIsSortDropdownOpen(false)}} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'price-high-low' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Price: High to Low</div>
-                  <div onClick={() => {setActiveSort('name-a-z'); setIsSortDropdownOpen(false)}} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'name-a-z' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Name: A to Z</div>
+                  <div onClick={() => { setActiveSort('price-low-high'); setIsSortDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'price-low-high' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Price: Low to High</div>
+                  <div onClick={() => { setActiveSort('price-high-low'); setIsSortDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'price-high-low' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Price: High to Low</div>
+                  <div onClick={() => { setActiveSort('name-a-z'); setIsSortDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'name-a-z' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Name: A to Z</div>
                 </div>
               )}
             </div>
@@ -277,14 +351,14 @@ export default function OwnerEditMenu() {
               <div className="flex flex-col items-end gap-3">
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-medium text-gray-500">Available</span>
-                  <div 
+                  <div
                     onClick={() => toggleAvailability(item.id)}
                     className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ease-in-out ${item.isAvailable ? 'bg-green-500' : 'bg-gray-300'}`}
                   >
                     <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ease-in-out ${item.isAvailable ? 'translate-x-6' : 'translate-x-0'}`}></div>
                   </div>
                 </div>
-                
+
                 {/* BUTTONS ROW: Edit and Delete */}
                 <div className="flex items-center gap-2">
                   <button onClick={() => handleEditClick(item)} className="cursor-pointer flex items-center gap-1 text-sm font-semibold text-gray-600 border border-gray-200 bg-gray-50 hover:bg-gray-100 px-3 py-1 rounded-full transition">

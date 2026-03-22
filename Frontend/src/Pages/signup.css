@@ -15,7 +15,49 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #e5eff5; 
+  transition: background-color 0.4s ease;
+}
+
+/* --- THEMES --- */
+.bg-yellow-theme { background-color: #FFFDE7; }
+.bg-blue-theme { background-color: #e5eff5; }
+
+/* --- DYNAMIC BUTTONS --- */
+.btn-yellow { background-color: #D4AC0D; }
+.btn-yellow:hover { background-color: #B8860B; }
+
+.btn-blue { background-color: #183B66; }
+.btn-blue:hover { background-color: #0F2540; }
+
+/* --- ROLE SELECTOR --- */
+.role-selector {
+  display: flex;
+  border-radius: 8px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.selector-yellow { background-color: #FFFDE7; }
+.selector-blue { background-color: #e5eff5; }
+
+.role-btn {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.active-yellow {
+  background-color: #D4AC0D;
+  color: #FFFFFF;
+}
+
+.active-blue {
+  background-color: #183B66;
+  color: #FFFFFF;
 }
 
 .signup-brand-logo-wrap {
@@ -97,7 +139,6 @@
 
 /* Sign Up Button */
 .primary-signup-btn {
-  background-color: #183B66;
   color: #FFFFFF;
   border: none;
   padding: 12px;
@@ -107,12 +148,8 @@
   cursor: pointer;
   width: 75%;
   display: block; 
-  margin: 15px auto 0 auto; /* Reduced top margin */
+  margin: 15px auto 0 auto;
   transition: background-color 0.3s ease;
-}
-
-.primary-signup-btn:hover {
-  background-color: #0F2540;
 }
 
 /* Text and Links */

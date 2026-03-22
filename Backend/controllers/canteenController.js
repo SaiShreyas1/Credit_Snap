@@ -1,5 +1,6 @@
 const Canteen = require('../models/canteenModel');
 const MenuItem = require('../models/menuItemModel');
+const User = require('../models/userModel');
 
 // ==========================================
 // CANTEEN SETTINGS (For the Dashboard)
@@ -71,14 +72,38 @@ exports.deleteMenuItem = async (req, res) => {
   }
 };
 // controllers/canteenController.js
+
+// Get my canteen (For the Owner Dashboard)
+exports.getMyCanteen = async (req, res) => {
+  try {
+    // Assuming `req.user` is populated by `protect` middleware
+    const canteen = await Canteen.findOne({ ownerId: req.user._id });
+    if (!canteen) {
+      return res.status(404).json({ status: 'fail', message: 'No canteen found for this owner' });
+    }
+    res.status(200).json({ status: 'success', data: { canteen } });
+  } catch (error) {
+    res.status(400).json({ status: 'fail', message: error.message });
+  }
+};
+
+// Get all canteens
 exports.getAllCanteens = async (req, res) => {
   try {
-    // We fetch all users who are registered as owners
-    const canteens = await User.find({ role: 'owner' }).select('name status timings');
+    // 🏆 FIXED: Fetch actual Canteens from db, and populate owner's name
+    const canteens = await Canteen.find().populate('ownerId', 'name');
     
+    // Map data to the clean format the frontend expects
+    const formattedCanteens = canteens.map(c => ({
+      _id: c._id, 
+      name: c.name || (c.ownerId && c.ownerId.name) || "Unnamed Canteen",
+      status: c.isOpen ? "Open" : "Closed",
+      timings: "4:00 PM - 4:00 AM" // You can add this to the model later!
+    }));
+
     res.status(200).json({
       status: 'success',
-      data: canteens
+      data: formattedCanteens
     });
   } catch (err) {
     res.status(404).json({ status: 'fail', message: err.message });

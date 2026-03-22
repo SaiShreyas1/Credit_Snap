@@ -7,7 +7,7 @@ const canteenSchema = new mongoose.Schema({
   },
   ownerId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', 
+    ref: 'User',
     required: [true, 'A canteen must belong to an owner']
   },
   isOpen: {

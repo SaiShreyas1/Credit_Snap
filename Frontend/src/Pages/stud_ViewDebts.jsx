@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Search, ChevronDown, Filter, ArrowDownUp, AlertTriangle } from 'lucide-react';
 
 // Mock data simulating backend response
 const canteenDebtsData = [
@@ -15,38 +16,10 @@ const canteenDebtsData = [
       { id: 't4', date: 'Dec 16, 2025', time: '5:50pm', type: 'Debt taken', amount: 200 },
     ]
   },
-  {
-    id: '2',
-    name: 'Hall 1 Canteen',
-    currentDebt: 1180,
-    limit: 10000,
-    totalPaid: 1200,
-    transactions: []
-  },
-  {
-    id: '3',
-    name: 'Hall 12 Canteen',
-    currentDebt: 875,
-    limit: 6000,
-    totalPaid: 500,
-    transactions: []
-  },
-  {
-    id: '4',
-    name: 'Hall 6 Canteen',
-    currentDebt: 530,
-    limit: 5000,
-    totalPaid: 200,
-    transactions: []
-  },
-  {
-    id: '5',
-    name: 'Hall 3 Canteen',
-    currentDebt: 0, 
-    limit: 3000,
-    totalPaid: 1500,
-    transactions: []
-  }
+  { id: '2', name: 'Hall 1 Canteen', currentDebt: 1180, limit: 10000, totalPaid: 1200, transactions: [] },
+  { id: '3', name: 'Hall 12 Canteen', currentDebt: 875, limit: 6000, totalPaid: 500, transactions: [] },
+  { id: '4', name: 'Hall 6 Canteen', currentDebt: 530, limit: 5000, totalPaid: 200, transactions: [] },
+  { id: '5', name: 'Hall 3 Canteen', currentDebt: 0, limit: 3000, totalPaid: 1500, transactions: [] }
 ];
 
 // Sub-component for individual Canteen Debt Cards
@@ -54,62 +27,72 @@ const DebtCard = ({ data }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="mb-4">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 transition-all hover:shadow-md overflow-hidden">
+      {/* Top Visible Row */}
       <div 
-        className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col sm:flex-row justify-between items-center cursor-pointer hover:shadow-md transition-shadow"
+        className="p-6 flex justify-between items-center cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h2 className="text-xl font-medium text-gray-800 mb-2 sm:mb-0">
+        <h2 className="text-xl font-medium text-gray-900">
           {data.name}
         </h2>
 
-        <div className="flex items-center gap-4 sm:gap-6">
-          <div className="text-right">
-            <p className="text-base text-gray-900 mb-1">
+        <div className="flex items-center gap-6">
+          <div className="flex flex-col items-end gap-1.5">
+            <p className="text-sm text-gray-800 font-medium">
               Debt: {data.currentDebt}/{data.limit}
             </p>
-            <button 
-              className={`cursor-pointer px-4 py-1 rounded-md text-sm font-medium transition-colors ${data.currentDebt > 0 ? 'bg-[#5b52d6] hover:bg-[#4a42b0] text-white' : 'bg-green-100 text-green-700 cursor-default'}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                if(data.currentDebt > 0) alert(`Clearing debt for ${data.name}`);
-              }}
-            >
-              {data.currentDebt > 0 ? 'Clear Debt' : 'Settled'}
-            </button>
+            {data.currentDebt > 0 ? (
+              <button 
+                className="bg-[#6366f1] hover:bg-[#4f46e5] text-white px-5 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  alert(`Clearing debt for ${data.name}`);
+                }}
+              >
+                Clear Debt
+              </button>
+            ) : (
+              <div className="bg-[#D1FAE5] text-[#065F46] px-5 py-1.5 rounded-lg text-sm font-medium">
+                Settled
+              </div>
+            )}
           </div>
-          <div className="text-gray-500">
-            <i className="fa-solid fa-chevron-down" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease', fontSize: '18px' }}></i>
-          </div>
+          <ChevronDown 
+            className={`w-6 h-6 text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
+          />
         </div>
       </div>
 
+      {/* Expanded Transactions Section */}
       {isExpanded && (
-        <div className="mt-3 pl-2 pr-2">
-          <div className="flex justify-end mb-3">
-            <span className="bg-white border border-gray-200 shadow-sm px-4 py-1.5 rounded-md text-gray-800 font-medium">
-              Total Paid: <span className="text-green-600">₹{data.totalPaid}</span>
+        <div className="px-6 pb-6 pt-2 border-t border-gray-50 bg-gray-50/50">
+          <div className="flex justify-end mb-4 mt-2">
+            <span className="bg-white border border-gray-200 shadow-sm px-4 py-2 rounded-lg text-gray-800 font-medium text-sm">
+              Total Paid: <span className="text-green-600 ml-1">₹{data.totalPaid}</span>
             </span>
           </div>
 
           <div className="space-y-3">
             {data.transactions.length > 0 ? (
               data.transactions.map((txn) => (
-                <div key={txn.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex justify-between items-center">
+                <div key={txn.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex justify-between items-center">
                   <div className="text-gray-700">
-                    <p className="font-medium">{txn.date}</p>
-                    <p className="text-sm">{txn.time}</p>
+                    <p className="font-medium text-gray-900">{txn.date}</p>
+                    <p className="text-sm text-gray-500">{txn.time}</p>
                   </div>
                   <div className="text-gray-800 font-medium">
                     {txn.type}
                   </div>
-                  <div className={`font-semibold ${txn.amount < 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  <div className={`font-semibold text-lg ${txn.amount < 0 ? 'text-green-600' : 'text-red-500'}`}>
                     {txn.amount < 0 ? `-${'₹' + Math.abs(txn.amount)}` : `+₹${txn.amount}`}
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-500 italic py-4">No recent transactions found.</p>
+              <div className="text-center bg-white rounded-xl border border-gray-100 py-6 text-gray-500">
+                No recent transactions found.
+              </div>
             )}
           </div>
         </div>
@@ -128,7 +111,7 @@ export default function ViewDebts() {
   
   // Active Selections
   const [activeFilter, setActiveFilter] = useState('All'); 
-  const [activeSort, setActiveSort] = useState(''); 
+  const [activeSort, setActiveSort] = useState('A-Z'); 
 
   // Refs for clicking outside
   const filterRef = useRef(null);
@@ -170,115 +153,106 @@ export default function ViewDebts() {
     return 0;
   });
 
-  // --- EXACT CSS FROM CANTEENS PAGE ---
-  const styles = `
-    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
-
-    .controls-row { display: flex; justify-content: space-between; margin-bottom: 30px; align-items: center;}
-    .search-bar { background: white; padding: 12px 20px; border-radius: 25px; display: flex; align-items: center; width: 450px; border: 1px solid #ddd;}
-    .search-bar i { color: #A0ABC0;}
-    .search-bar input { border: none; outline: none; margin-left: 10px; width: 100%; font-size: 16px; color: #333;}
-    
-    .filter-sort { display: flex; gap: 10px;}
-    .dropdown-container { position: relative; }
-    .dropdown-btn { background: #f97316; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; min-width: 130px; display: flex; justify-content: space-between; align-items: center; font-size: 15px;}
-    .dropdown-menu { position: absolute; top: 110%; left: 0; background: white; width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; z-index: 10; border: 1px solid #eee;}
-    .dropdown-menu div { padding: 10px; text-align: center; cursor: pointer; font-weight: 500; border-bottom: 1px solid #eee; color: #333;}
-    .dropdown-menu div:hover { background: #f9f9f9; color: #f97316;}
-  `;
-
   return (
-    <>
-      <style>{styles}</style>
-      
-      {/* THE FIX: Removed overflow-y-auto, min-h-screen, and h-full */}
-      <main className="p-8 pb-32 w-full">
+    <main className="p-10 pb-32 w-full h-full bg-[#F8FAFC] overflow-y-auto relative">
         
-        {/* Top Controls (Search, Filter, Sort) exactly matched to Canteens */}
-        <div className="controls-row">
-          <div className="search-bar">
-            <i className="fa-solid fa-magnifying-glass"></i>
-            <input 
-              type="text" 
-              placeholder="Search for Canteen" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+      {/* DYNAMIC TOP ROW (Matches Canteens Page exactly) */}
+      <div className="flex justify-between items-center mb-10 gap-6">
+        
+        {/* Large Pill-shaped Search Bar */}
+        <div className="bg-white rounded-full flex items-center px-6 py-3.5 w-[450px] shadow-sm border border-gray-100 focus-within:ring-2 focus-within:ring-[#f97316] focus-within:border-[#f97316] transition">
+          <Search className="w-5 h-5 text-gray-400 mr-3" />
+          <input 
+            type="text" 
+            placeholder="Search for Canteen" 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full outline-none text-gray-700 bg-transparent text-lg"
+          />
+        </div>
+
+        {/* Orange Filter & Sort Buttons */}
+        <div className="flex gap-4">
           
-          <div className="filter-sort">
+          {/* Filter Dropdown */}
+          <div className="relative" ref={filterRef}>
+            <button 
+              onClick={() => { setIsFilterOpen(!isFilterOpen); setIsSortOpen(false); }} 
+              className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-6 py-3.5 rounded-xl shadow-md flex items-center gap-2 transition min-w-[150px] justify-between text-lg"
+            >
+              <div className="flex items-center gap-2">
+                  <Filter className="w-5 h-5" /> 
+                  {activeFilter === 'All' ? 'Filter by' : activeFilter}
+              </div>
+              <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+            </button>
             
-            {/* Filter Dropdown */}
-            <div className="dropdown-container" ref={filterRef}>
-              <button className="dropdown-btn" onClick={() => setIsFilterOpen(!isFilterOpen)}>
-                {activeFilter === 'All' ? 'Filter by' : activeFilter} 
-                <i 
-                  className="fa-solid fa-caret-down" 
-                  style={{ transform: isFilterOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}
-                ></i>
-              </button>
-              {isFilterOpen && (
-                <div className="dropdown-menu">
-                  {['All', 'Unpaid', 'Paid'].map((option) => (
-                    <div 
-                      key={option} 
-                      onClick={() => { setActiveFilter(option); setIsFilterOpen(false); }}
-                      style={{ color: activeFilter === option ? '#f97316' : '#333' }}
-                    >
-                      {option}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Sort Dropdown */}
-            <div className="dropdown-container" ref={sortRef}>
-              <button className="dropdown-btn" onClick={() => setIsSortOpen(!isSortOpen)}>
-                {activeSort === '' ? 'Sort by' : activeSort} 
-                <i 
-                  className="fa-solid fa-caret-down" 
-                  style={{ transform: isSortOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}
-                ></i>
-              </button>
-              {isSortOpen && (
-                <div className="dropdown-menu">
-                  {['High to Low', 'Low to High', 'A-Z', 'Z-A'].map((option) => (
-                    <div 
-                      key={option} 
-                      onClick={() => { setActiveSort(option); setIsSortOpen(false); }}
-                      style={{ color: activeSort === option ? '#f97316' : '#333' }}
-                    >
-                      {option}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
+            {isFilterOpen && (
+              <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                {['All', 'Unpaid', 'Paid'].map((option) => (
+                  <div 
+                    key={option}
+                    onClick={() => { setActiveFilter(option); setIsFilterOpen(false); }} 
+                    className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${activeFilter === option ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}
+                  >
+                    {option === 'All' ? 'All Canteens' : `${option} Only`}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Canteen Debt List */}
-        <div className="max-w-5xl mx-auto">
-          {processedDebts.length > 0 ? (
-            processedDebts.map((canteen) => (
-              <DebtCard key={canteen.id} data={canteen} />
-            ))
-          ) : (
-            <div className="bg-white rounded-xl p-10 text-center border border-gray-200 shadow-sm mt-4">
-              <p className="text-gray-500 text-lg font-medium">No canteens match your current filters.</p>
-              <button 
-                onClick={() => {setSearchTerm(''); setActiveFilter('All'); setActiveSort('');}}
-                className="mt-4 text-[#f97316] font-semibold hover:underline cursor-pointer bg-transparent border-none"
-              >
-                Clear all filters
-              </button>
-            </div>
-          )}
-        </div>
+          {/* Sort Dropdown */}
+          <div className="relative" ref={sortRef}>
+            <button 
+              onClick={() => { setIsSortOpen(!isSortOpen); setIsFilterOpen(false); }} 
+              className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-6 py-3.5 rounded-xl shadow-md flex items-center gap-2 transition min-w-[170px] justify-between text-lg"
+            >
+              <div className="flex items-center gap-2">
+                  <ArrowDownUp className="w-5 h-5" /> 
+                  {activeSort === 'A-Z' ? 'Sort by' : activeSort}
+              </div>
+              <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isSortOpen && (
+              <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                {['A-Z', 'Z-A', 'High to Low', 'Low to High'].map((option) => (
+                  <div 
+                    key={option}
+                    onClick={() => { setActiveSort(option); setIsSortOpen(false); }} 
+                    className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${activeSort === option ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}
+                  >
+                    {option.includes('High') ? `Debt: ${option}` : `Name: ${option}`}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-      </main>
-    </>
+        </div>
+      </div>
+
+      {/* Canteen Debt List */}
+      <div className="flex flex-col">
+        {processedDebts.length > 0 ? (
+          processedDebts.map((canteen) => (
+            <DebtCard key={canteen.id} data={canteen} />
+          ))
+        ) : (
+          <div className="bg-white rounded-2xl p-10 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-3">
+            <AlertTriangle className="w-10 h-10 text-orange-400" />
+            <p className="text-xl font-semibold text-gray-800">No canteens match your search.</p>
+            <button 
+              onClick={() => {setSearchTerm(''); setActiveFilter('All'); setActiveSort('A-Z');}}
+              className="mt-2 bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-5 py-2 rounded-lg transition text-sm"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        )}
+      </div>
+
+    </main>
   );
 }

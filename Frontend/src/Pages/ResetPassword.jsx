@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import './ForgotPassword.css';
 import studentLogo from '../assets/Student_without_bg_logo.png'; 
+import canteenLogo from '../assets/Canteen_without_bg_logo.png';
 
 const ResetPassword = () => {
   const { token } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Read the role from query parameters (e.g., ?role=owner)
+  const queryParams = new URLSearchParams(location.search);
+  const role = queryParams.get('role') || 'Student'; // Default to student
+  const isOwner = role.toLowerCase() === 'owner';
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -60,9 +67,9 @@ const ResetPassword = () => {
 
   return (
     <div className="forgot-page">
-      <div className="forgot-left-panel">
+      <div className={`forgot-left-panel ${isOwner ? 'bg-yellow-theme' : 'bg-blue-theme'}`}>
         <img 
-          src={studentLogo} 
+          src={isOwner ? canteenLogo : studentLogo} 
           alt="CreditSnap Logo" 
           className="brand-logo" 
         />
@@ -70,7 +77,7 @@ const ResetPassword = () => {
 
       <div className="forgot-right-panel">
         <div className="form-container">
-          <h1 className="forgot-heading">RESET PASSWORD</h1>
+          <h1 className="forgot-heading" style={{ color: isOwner ? '#eab308' : '#1e3a8a' }}>RESET PASSWORD</h1>
           
           <p className="instruction-text">
             Enter your new password below.
@@ -102,7 +109,7 @@ const ResetPassword = () => {
               {errorMsg && <span className="error-text">{errorMsg}</span>}
             </div>
             
-            <button type="submit" className="primary-forgot-btn" disabled={isSubmitting}>
+            <button type="submit" className={`primary-forgot-btn ${isOwner ? 'btn-yellow' : 'btn-blue'}`} disabled={isSubmitting}>
               {isSubmitting ? 'RESETTING...' : 'UPDATE PASSWORD'}
             </button>
           </form>
