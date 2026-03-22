@@ -1,6 +1,7 @@
 const Order = require('../models/ordersModel');
 const User = require('../models/userModel');
 const Debt = require('../models/debtModel');
+const Canteen = require('../models/canteenModel'); // 👈 ADDED: Need this to find the owner's canteen!
 
 // 1. STUDENT: Place an order
 // This is called when the student clicks "Place Debt Request" in React
@@ -8,12 +9,22 @@ exports.createOrder = async (req, res) => {
   try {
     const { canteenId, items, totalAmount } = req.body;
 
-    const newOrder = await Order.create({
+    let newOrder = await Order.create({
       student: req.user.id, // ID from the student's login token
       canteen: canteenId,   // ID of Hall 1 (69bc3ae4...)
       items,
       totalAmount
     });
+
+    // Populate student data so the frontend can display the student name immediately
+    newOrder = await newOrder.populate('student', 'name rollNo phone');
+
+    // 📡 EMIT TO SOCKET.IO ROOM
+    const io = req.app.get('io');
+    if (io && canteenId) {
+      console.log(`📢 Emitting newOrder to room: ${canteenId}`);
+      io.to(canteenId.toString()).emit('newOrder', newOrder);
+    }
 
     res.status(201).json({
       status: 'success',
@@ -28,8 +39,20 @@ exports.createOrder = async (req, res) => {
 // This is called when the Owner (Hall 1) opens their dashboard
 exports.getOwnerOrders = async (req, res) => {
   try {
-    // We search for orders where 'canteen' matches the logged-in Owner's ID
-    const orders = await Order.find({ canteen: req.user.id })
+    // 1️⃣ Find the specific Canteen that belongs to this logged-in Owner
+    const myCanteen = await Canteen.findOne({ ownerId: req.user.id });
+    
+    // If the owner hasn't created a canteen yet, there are no orders
+    if (!myCanteen) {
+      return res.status(200).json({
+        status: 'success',
+        results: 0,
+        data: []
+      });
+    }
+
+    // 2️⃣ We search for orders where 'canteen' matches the Owner's Canteen ID (NOT their User ID!)
+    const orders = await Order.find({ canteen: myCanteen._id })
       .populate('student', 'name rollNo phone') // Fetches student details from User collection
       .sort('-createdAt'); // Newest orders at the top
 
@@ -48,7 +71,7 @@ exports.updateOrderStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
 
-    const order = await Order.findById(orderId);
+    let order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
     // LOGIC: Only increase debt if the order is being ACCEPTED for the first time
@@ -79,6 +102,16 @@ exports.updateOrderStatus = async (req, res) => {
     // Save the new status (accepted/rejected)
     order.status = status;
     await order.save();
+
+    // Populate canteen to send back to student
+    order = await order.populate('canteen', 'name');
+
+    // 📡 EMIT TO STUDENT'S SOCKET.IO ROOM
+    const io = req.app.get('io');
+    if (io && order.student) {
+      console.log(`📢 Emitting orderStatusUpdated to student room: ${order.student}`);
+      io.to(order.student.toString()).emit('orderStatusUpdated', order);
+    }
 
     res.status(200).json({
       status: 'success',
