@@ -1,20 +1,42 @@
 const Order = require('../models/ordersModel');
+const Canteen = require('../models/canteenModel');
 const mongoose = require('mongoose');
 
 exports.getOwnerAnalytics = async (req, res) => {
   try {
-    // 1. Match the ID that is ACTUALLY saved in your Orders collection
-    // Since ordersController saves the Owner's User ID as the 'canteen', we use req.user.id
-    const searchId = new mongoose.Types.ObjectId(req.user.id);
+    // 1. Look up the specific Canteen owned by the logged-in user
+    const myCanteen = await Canteen.findOne({ ownerId: req.user.id });
 
-    // 2. Define valid statuses (Make sure you actually 'accept' orders in the UI!)
-    const validStatuses = ['accepted', 'completed']; // Removed 'Added to debt' as it's not in your model enum
+    // 🛡️ Safety Check: If the owner has no canteen yet, return empty charts
+    if (!myCanteen) {
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          popularOrdersData: [],
+          weeklyOrdersData: [],
+          earningsData: []
+        }
+      });
+    }
+
+    // 2. Use the ACTUAL Canteen ID for the database search
+    const searchId = myCanteen._id;
+
+    // 3. Define valid statuses (only count accepted/completed orders)
+    const validStatuses = ['accepted', 'completed'];
+
+    // 🎯 THE FIX: Create a base match condition that EXCLUDES offline debt payments
+    const baseMatchCondition = {
+      canteen: searchId,
+      status: { $in: validStatuses },
+      'items.name': { $ne: 'Offline Debt Payment' } // 👈 Ignores the receipts!
+    };
 
     // ==========================================
     // PIE CHART: Most Ordered Items (Top 5)
     // ==========================================
     const popularOrdersRaw = await Order.aggregate([
-      { $match: { canteen: searchId, status: { $in: validStatuses } } },
+      { $match: baseMatchCondition },
       { $unwind: '$items' },
       { $group: { _id: '$items.name', value: { $sum: '$items.quantity' } } },
       { $sort: { value: -1 } },
@@ -35,10 +57,16 @@ exports.getOwnerAnalytics = async (req, res) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const weeklyOrdersRaw = await Order.aggregate([
-      { $match: { canteen: searchId, status: { $in: validStatuses }, createdAt: { $gte: sevenDaysAgo } } },
+      { 
+        $match: { 
+          ...baseMatchCondition, // Spread the base conditions
+          createdAt: { $gte: sevenDaysAgo } 
+        } 
+      },
       { $group: { _id: { $dayOfWeek: '$createdAt' }, orders: { $sum: 1 } } }
     ]);
 
+    // MongoDB $dayOfWeek returns 1 for Sunday, 7 for Saturday
     const dayNamesMap = { 1: 'Sun', 2: 'Mon', 3: 'Tue', 4: 'Wed', 5: 'Thu', 6: 'Fri', 7: 'Sat' };
     const weeklyOrdersData = [2, 3, 4, 5, 6, 7, 1].map(num => {
       const found = weeklyOrdersRaw.find(d => d._id === num);
@@ -52,7 +80,7 @@ exports.getOwnerAnalytics = async (req, res) => {
     // MONTHLY EARNINGS: Revenue by Month
     // ==========================================
     const earningsRaw = await Order.aggregate([
-      { $match: { canteen: searchId, status: { $in: validStatuses } } },
+      { $match: baseMatchCondition },
       { $group: { _id: { $month: '$createdAt' }, earnings: { $sum: '$totalAmount' } } },
       { $sort: { '_id': 1 } }
     ]);

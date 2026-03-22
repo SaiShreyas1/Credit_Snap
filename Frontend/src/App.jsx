@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import axios from 'axios'; // 👈 1. ADD THIS IMPORT
 
 // --- Authentication Pages ---
 import Login from './Pages/Login';
@@ -37,11 +38,38 @@ import CreditSnapDashboard from './Pages/owner_dashboard';
 // --- NEW: Owner About Us ---
 import OwnerAboutUs from './Pages/owner_AboutUs';
 
+// ==========================================
+// 🛡️ THE PERMANENT 401 FIX (GLOBAL INTERCEPTOR)
+// ==========================================
+axios.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    // If the backend rejects the token because it's expired or invalid
+    if (error.response && error.response.status === 401) {
+      console.warn("Token expired or invalid. Auto-logging out...");
+      
+      // Wipe everything clean so it doesn't get stuck in a loop
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      
+      // Kick them back to the Login page ("/")
+      window.location.href = '/'; 
+    }
+    return Promise.reject(error);
+  }
+);
+// ==========================================
+
 export default function App() {
   // A robust component to check for a token AND the correct role before allowing access
   const RoleProtectedRoute = ({ children, allowedRole }) => {
-    const token = sessionStorage.getItem('token');
-    const userStr = sessionStorage.getItem('user');
+    // Note: Since we recently switched some logic to localStorage, I'm checking both here to be safe!
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    const userStr = sessionStorage.getItem('user') || localStorage.getItem('user');
 
     if (!token || !userStr) {
       // If there's no token or user data, kick them back to login
@@ -81,7 +109,6 @@ export default function App() {
           <Route path="history" element={<StudHistory />} />
           <Route path="help" element={<StudentHelp />} />
           <Route path="change-password" element={<ChangePassword />} />
-
           <Route path="debts" element={<StudViewDebts />} />
           <Route path="about" element={<StudAboutUs />} />
         </Route>
@@ -100,11 +127,7 @@ export default function App() {
           <Route path="history" element={<Ownerhistory />} />
           <Route path="analytics" element={<Owneranalytics />} />
           <Route path="help" element={<Ownerhelp />} />
-
-          {/* Reusing the Change Password file */}
           <Route path="change-password" element={<ChangePassword />} />
-
-          {/* 👇 Your new Owner About Us route 👇 */}
           <Route path="about" element={<OwnerAboutUs />} />
         </Route>
       </Routes>
