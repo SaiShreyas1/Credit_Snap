@@ -1,6 +1,7 @@
 const Order = require('../models/ordersModel');
 const User = require('../models/userModel');
 const Debt = require('../models/debtModel');
+const Canteen = require('../models/canteenModel'); // 👈 ADDED: Need this to find the owner's canteen!
 
 // 1. STUDENT: Place an order
 // This is called when the student clicks "Place Debt Request" in React
@@ -28,8 +29,20 @@ exports.createOrder = async (req, res) => {
 // This is called when the Owner (Hall 1) opens their dashboard
 exports.getOwnerOrders = async (req, res) => {
   try {
-    // We search for orders where 'canteen' matches the logged-in Owner's ID
-    const orders = await Order.find({ canteen: req.user.id })
+    // 1️⃣ Find the specific Canteen that belongs to this logged-in Owner
+    const myCanteen = await Canteen.findOne({ ownerId: req.user.id });
+    
+    // If the owner hasn't created a canteen yet, there are no orders
+    if (!myCanteen) {
+      return res.status(200).json({
+        status: 'success',
+        results: 0,
+        data: []
+      });
+    }
+
+    // 2️⃣ We search for orders where 'canteen' matches the Owner's Canteen ID (NOT their User ID!)
+    const orders = await Order.find({ canteen: myCanteen._id })
       .populate('student', 'name rollNo phone') // Fetches student details from User collection
       .sort('-createdAt'); // Newest orders at the top
 

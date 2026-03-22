@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import axios from 'axios';
 
 // Mock data simulating backend response (Same as in View Debts)
 const canteenDebtsData = [
@@ -17,6 +18,25 @@ export default function StudDashboard() {
   const [totalDebt, setTotalDebt] = useState(initialTotalDebt); 
   const [alerts, setAlerts] = useState([]); 
   const [currentOrders, setCurrentOrders] = useState([]); 
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const token = sessionStorage.getItem('token');
+        if (!token) return;
+        const res = await axios.get('http://localhost:5000/api/orders/my-active-orders', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data.status === 'success') {
+          setCurrentOrders(res.data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch orders:', err);
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   return (
     <main className="p-8 overflow-y-auto flex-1 bg-gray-50 min-h-screen">
@@ -64,12 +84,22 @@ export default function StudDashboard() {
             currentOrders.map((order, index) => (
               <div key={index} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-1">{order.items}</h3>
-                  <p className="text-gray-600 text-sm">{order.canteen}, <span className="text-gray-500">{order.time}</span></p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-1">
+                    {order.items?.map(i => `${i.quantity}x ${i.name}`).join(', ')}
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    {order.canteen?.name || 'Unknown Canteen'}, <span className="text-gray-500">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold tracking-wide">{order.status}</span>
-                  <span className="font-semibold text-blue-900">Price: <span className="text-blue-600">₹{order.price}</span></span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
+                    order.status === 'pending' ? 'bg-orange-100 text-orange-700' :
+                    order.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  </span>
+                  <span className="font-semibold text-blue-900">Price: <span className="text-blue-600">₹{order.totalAmount}</span></span>
                 </div>
               </div>
             ))
