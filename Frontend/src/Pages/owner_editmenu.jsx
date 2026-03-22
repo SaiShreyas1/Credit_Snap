@@ -374,6 +374,10 @@ export default function OwnerEditMenu() {
           ))}
         </div>
 
+        {(isFilterDropdownOpen || isSortDropdownOpen) && (
+          <div onClick={() => { setIsFilterDropdownOpen(false); setIsSortDropdownOpen(false); }} className="fixed inset-0 z-40" />
+        )}
+
       </div>
     </>
   );

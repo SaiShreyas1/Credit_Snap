@@ -36,8 +36,8 @@ export default function AboutUs() {
                 <div className="text-[#6366f1]">
                   <Mail className="w-6 h-6" fill="currentColor" strokeWidth={0} />
                 </div>
-                <a href="mailto:support@creditsnap.com" className="text-[#6366f1] text-[17px] hover:underline">
-                  support@creditsnap.com
+                <a href="mailto:creditsnapiitk24.com" className="text-[#6366f1] text-[17px] hover:underline">
+                  creditsnapiitk24.com
                 </a>
               </div>
               

@@ -74,8 +74,8 @@ export default function Help() {
           <h2 className="text-3xl lg:text-4xl font-medium mb-3">Contact Us</h2>
           <p className="text-lg lg:text-xl text-gray-800 font-medium">
             For any queries email to:{' '}
-            <a href="mailto:CreditSnap@gmail.com" className="text-blue-600 hover:text-blue-800 font-normal transition-colors">
-              CreditSnap@gmail.com
+            <a href="mailto:creditsnapiitk24@gmail.com" className="text-blue-600 hover:text-blue-800 font-normal transition-colors">
+              creditsnapiitk24@gmail.com
             </a>
           </p>
         </div>
