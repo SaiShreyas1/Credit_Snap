@@ -7,16 +7,53 @@ export default function StudProfile() {
   
   // 1. Master State
   const [studentInfo, setStudentInfo] = useState({
-    name: "Shreyas",
-    email: "Shreyas@iitk.ac.in",
-    phone: "91+XXXXXXXXXX",
-    rollNo: "24XXXX",
-    roomNo: "A-513 , Hall 12"
+    name: "Loading...",
+    email: "Loading...",
+    phone: "Loading...",
+    rollNo: "Loading...",
+    hallNo: "Not Provided",
+    roomNo: "Not Provided"
   });
 
   // 2. Edit Mode State
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(studentInfo);
+
+  // Fetch actual user data on load from API to ensure it's up to date
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        if (!token) return navigate('/');
+
+        const response = await fetch('http://localhost:5000/api/users/my-profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          const user = data.data.user;
+          const realData = {
+            name: user.name || "N/A",
+            email: user.email || "N/A",
+            phone: user.phoneNo || "N/A",
+            rollNo: user.rollNo || "N/A",
+            hallNo: user.hallNo || "Not Provided",
+            roomNo: user.roomNo || "Not Provided"
+          };
+          setStudentInfo(realData);
+          setEditForm(realData);
+          
+          // Also gently update local storage so other parts of the app are up to date
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      }
+    };
+    
+    fetchProfile();
+  }, [navigate]);
 
   // 3. Handlers
   const handleEditClick = () => {
@@ -28,10 +65,40 @@ export default function StudProfile() {
     setIsEditing(false);
   };
 
-  const handleSaveClick = () => {
-    setStudentInfo(editForm); // save the new data
-    setIsEditing(false);
-    // TODO: Send data to backend here!
+  const handleSaveClick = async () => {
+    try {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/users/update-my-profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(editForm)
+      });
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        const updatedUser = data.data.user;
+        
+        // Update local state
+        setStudentInfo({
+          ...editForm,
+          name: updatedUser.name,
+          phone: updatedUser.phoneNo,
+          hallNo: updatedUser.hallNo,
+          roomNo: updatedUser.roomNo
+        });
+        setIsEditing(false);
+        
+        // Sync local storage so header/layout knows about the updated name!
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } else {
+        alert(data.message || 'Error updating profile');
+      }
+    } catch (err) {
+      alert('Network Error: Could not connect to backend.');
+    }
   };
 
   const handleChange = (e) => {
@@ -82,6 +149,15 @@ export default function StudProfile() {
             <span className={isEditing ? "text-gray-500" : ""}>{studentInfo.rollNo}</span>
           </div>
           
+          <div className="flex items-center">
+            <span className="w-40 font-medium shrink-0">Hall No :</span>
+            {isEditing ? (
+              <input type="text" name="hallNo" value={editForm.hallNo} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition" />
+            ) : (
+              <span>{studentInfo.hallNo}</span>
+            )}
+          </div>
+
           <div className="flex items-center">
             <span className="w-40 font-medium shrink-0">Room No :</span>
             {isEditing ? (

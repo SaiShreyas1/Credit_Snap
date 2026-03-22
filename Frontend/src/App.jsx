@@ -5,6 +5,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Pages/Login';
 import Signup from './Pages/signup';
 import ForgotPassword from './Pages/ForgotPassword';
+import ResetPassword from './Pages/ResetPassword';
+import VerifyEmail from './Pages/VerifyEmail';
+import VerifyEmailPending from './Pages/VerifyEmailPending';
 
 // --- Student Pages ---
 import StudLayout from './Pages/stud_layout';
@@ -65,6 +68,9 @@ export default function App() {
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
 
         {/* --- Protected Student Routes --- */}
         <Route path="/student" element={<RoleProtectedRoute allowedRole="student"><StudLayout /></RoleProtectedRoute>}>

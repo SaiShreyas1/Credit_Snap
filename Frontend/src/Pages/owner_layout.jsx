@@ -7,8 +7,36 @@ export default function OwnerLayout() {
   const navigate = useNavigate();
   const location = useLocation(); 
 
-  const [userProfile, setUserProfile] = useState({ name: "Hall 1 Admin", role: "Canteen Owner" }); 
+  const [userProfile, setUserProfile] = useState({ name: "Loading...", role: "Canteen Owner" }); 
   const [notifications, setNotifications] = useState([]); 
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch('http://localhost:5000/api/users/my-profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          const user = data.data.user;
+          const canteen = data.data.canteen;
+          
+          setUserProfile({
+            name: canteen?.name || user.name || "Admin",
+            role: "Canteen Owner"
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile for layout:', error);
+      }
+    };
+    
+    fetchProfile();
+  }, [location.pathname]); 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 

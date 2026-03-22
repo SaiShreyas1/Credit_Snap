@@ -53,10 +53,38 @@ export default function ChangePassword() {
     }
 
     try {
-      setSuccess('Password updated successfully!');
-      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' }); 
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('You are not logged in!');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/users/updatePassword', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword: passwords.currentPassword,
+          newPassword: passwords.newPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        setSuccess('Password updated successfully!');
+        setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' }); 
+        
+        // Update token in local storage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+      } else {
+        setError(data.message || 'Failed to update password. Please try again.');
+      }
     } catch (err) {
-      setError('Failed to update password. Please try again.');
+      setError('Failed to update password. Please try again or check your connection.');
     }
   };
 

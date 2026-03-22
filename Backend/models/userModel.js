@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -14,6 +15,12 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  phoneNo: {
+    type: String,
+    required: [true, 'Please provide a phone number'],
+    unique: true,
+    trim: true
+  },
   password: {
     type: String,
     required: [true, 'Please provide a password'],
@@ -25,6 +32,13 @@ const userSchema = new mongoose.Schema({
     enum: ['student', 'owner'],
     default: 'student'
   },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: String,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
   // --- Student Only Fields ---
   rollNo: {
     type: String,
@@ -32,6 +46,14 @@ const userSchema = new mongoose.Schema({
     required: function() { 
       return this.role === 'student'; 
     }
+  },
+  hallNo: {
+    type: String,
+    required: function() { return this.role === 'student'; }
+  },
+  roomNo: {
+    type: String,
+    required: function() { return this.role === 'student'; }
   },
   totalDebt: {
     type: Number,
@@ -49,7 +71,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function() { 
   // If the password wasn't modified, skip this
   if (!this.isModified('password')) return; 
-
+  
   // Hash the password with a strength of 12
   this.password = await bcrypt.hash(this.password, 12);
 });
@@ -57,6 +79,23 @@ userSchema.pre('save', async function() {
 // Helper method to check if a typed password matches the database hash
 userSchema.methods.correctPassword = async function(candidatePassword, userPassword) {
   return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+// 🔑 Generate a random, temporary reset token
+userSchema.methods.createPasswordResetToken = function() {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  // We hash it to store in database for security
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  // Token expires in 10 minutes
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+
+  // We return the plain, UNHASHED token to send via email
+  return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);

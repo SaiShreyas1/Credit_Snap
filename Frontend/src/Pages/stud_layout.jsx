@@ -11,6 +11,28 @@ export default function StudLayout() {
   const [notifications, setNotifications] = useState([]); 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch('http://localhost:5000/api/users/my-profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          setUserProfile(data.data.user);
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile for student layout:', error);
+      }
+    };
+    
+    fetchProfile();
+  }, [location.pathname]);
   
   // --- NEW: Sidebar Toggle State ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './Login.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import studentLogo from '../assets/Student_without_bg_logo.png';
 import canteenLogo from '../assets/Canteen_without_bg_logo.png';
 
@@ -130,7 +130,7 @@ const Login = () => {
 
             <div className="forgot-password-link">
               <span className="light-text">Have Trouble in sign in? </span>
-              <a href="/forgot-password">Forgot Password.</a>
+              <Link to="/forgot-password" state={{ role }}>Forgot Password.</Link>
             </div>
 
             <button
