@@ -18,7 +18,7 @@ export default function ActiveDebtsContent() {
   // 2. FETCH REAL DEBTS FROM BACKEND
   const fetchDebts = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const res = await axios.get("http://localhost:5000/api/debts/active", {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -55,7 +55,7 @@ export default function ActiveDebtsContent() {
   // 3. WIRE UP THE NOTIFY BUTTON
   const handleNotify = async (id) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       await axios.post(`http://localhost:5000/api/debts/${id}/notify`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -89,7 +89,7 @@ export default function ActiveDebtsContent() {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       await axios.post(
         `http://localhost:5000/api/debts/${targetStudent.id}/pay`, 
         { amountPaid: paymentAmount },
