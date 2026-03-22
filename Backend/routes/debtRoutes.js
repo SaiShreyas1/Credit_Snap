@@ -6,7 +6,7 @@ const router = express.Router();
 
 // 🛡️ SECURITY: Require a valid login token for ALL debt routes
 router.use(userController.protect);
-
+router.get('/my-debts', debtController.getMyDebts);
 // 📡 THE INTEGRATION ROUTE: React calls this to get the cards
 router.get('/active', debtController.getActiveDebts);
 

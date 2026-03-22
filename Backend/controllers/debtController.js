@@ -143,3 +143,20 @@ exports.notifyStudent = async (req, res) => {
     res.status(500).json({ status: 'error', message: err.message });
   }
 };
+// Get all debts for the logged-in STUDENT
+exports.getMyDebts = async (req, res) => {
+  try {
+    // Find debts for this student where the amount is greater than 0
+    const debts = await Debt.find({ 
+      student: req.user.id,
+      amountOwed: { $gt: 0 } 
+    }).populate('canteen', 'name'); // Pulls the Canteen name
+
+    res.status(200).json({
+      status: 'success',
+      data: debts
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};

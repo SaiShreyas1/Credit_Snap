@@ -1,26 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, Filter, ArrowDownUp, AlertTriangle } from 'lucide-react';
-
-// Mock data simulating backend response
-const canteenDebtsData = [
-  {
-    id: '1',
-    name: 'Hall 10 Canteen',
-    currentDebt: 3915,
-    limit: 5000,
-    totalPaid: 6500,
-    transactions: [
-      { id: 't1', date: 'Dec 20, 2025', time: '5:30pm', type: 'Paid Online', amount: -500 },
-      { id: 't2', date: 'Dec 19, 2025', time: '7:35pm', type: 'Paid Offline', amount: -1000 },
-      { id: 't3', date: 'Dec 16, 2025', time: '10:30pm', type: 'Debt taken', amount: 350 },
-      { id: 't4', date: 'Dec 16, 2025', time: '5:50pm', type: 'Debt taken', amount: 200 },
-    ]
-  },
-  { id: '2', name: 'Hall 1 Canteen', currentDebt: 1180, limit: 10000, totalPaid: 1200, transactions: [] },
-  { id: '3', name: 'Hall 12 Canteen', currentDebt: 875, limit: 6000, totalPaid: 500, transactions: [] },
-  { id: '4', name: 'Hall 6 Canteen', currentDebt: 530, limit: 5000, totalPaid: 200, transactions: [] },
-  { id: '5', name: 'Hall 3 Canteen', currentDebt: 0, limit: 3000, totalPaid: 1500, transactions: [] }
-];
+import axios from 'axios';
+import { Search, ChevronDown, Filter, ArrowDownUp, AlertTriangle, Loader2 } from 'lucide-react';
 
 // Sub-component for individual Canteen Debt Cards
 const DebtCard = ({ data }) => {
@@ -44,10 +24,10 @@ const DebtCard = ({ data }) => {
             </p>
             {data.currentDebt > 0 ? (
               <button 
-                className="bg-[#6366f1] hover:bg-[#4f46e5] text-white px-5 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                className="bg-[#6366f1] hover:bg-[#4f46e5] text-white px-5 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  alert(`Clearing debt for ${data.name}`);
+                  alert(`Clearing debt for ${data.name} will be integrated later!`);
                 }}
               >
                 Clear Debt
@@ -74,7 +54,7 @@ const DebtCard = ({ data }) => {
           </div>
 
           <div className="space-y-3">
-            {data.transactions.length > 0 ? (
+            {data.transactions && data.transactions.length > 0 ? (
               data.transactions.map((txn) => (
                 <div key={txn.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex justify-between items-center">
                   <div className="text-gray-700">
@@ -91,7 +71,7 @@ const DebtCard = ({ data }) => {
               ))
             ) : (
               <div className="text-center bg-white rounded-xl border border-gray-100 py-6 text-gray-500">
-                No recent transactions found.
+                No recent transactions found. (History coming soon)
               </div>
             )}
           </div>
@@ -103,6 +83,8 @@ const DebtCard = ({ data }) => {
 
 // Main View Debts Component
 export default function ViewDebts() {
+  const [debts, setDebts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Dropdown States
@@ -113,11 +95,9 @@ export default function ViewDebts() {
   const [activeFilter, setActiveFilter] = useState('All'); 
   const [activeSort, setActiveSort] = useState('A-Z'); 
 
-  // Refs for clicking outside
   const filterRef = useRef(null);
   const sortRef = useRef(null);
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (filterRef.current && !filterRef.current.contains(event.target)) setIsFilterOpen(false);
@@ -126,25 +106,59 @@ export default function ViewDebts() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+// 1. FETCH STUDENT DEBTS FROM BACKEND
+  useEffect(() => {
+    const fetchMyDebts = async () => {
+      try {
+        // 🚨 THE FIX: Check both storages just in case!
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        
+        if (!token) {
+          console.error("NO TOKEN FOUND IN BROWSER!");
+          setLoading(false);
+          return;
+        }
 
+        const res = await axios.get('http://localhost:5000/api/debts/my-debts', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.data.status === 'success') {
+          console.log("MY DEBTS:", res.data.data); // Let's see what we get!
+          const mappedData = res.data.data.map(d => ({
+            id: d._id,
+            name: d.canteen?.name || "Unknown Canteen",
+            currentDebt: d.amountOwed,
+            limit: 3000, 
+            totalPaid: 0, 
+            transactions: [] 
+          }));
+          setDebts(mappedData);
+        }
+      } catch (err) {
+        console.error("Failed to fetch debts", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMyDebts();
+  }, []);
   // --- LOGIC: Filter and Sort ---
-  let processedDebts = [...canteenDebtsData];
+  let processedDebts = [...debts];
 
-  // 1. Search
   if (searchTerm) {
     processedDebts = processedDebts.filter(canteen => 
       canteen.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }
 
-  // 2. Filter
   if (activeFilter === 'Unpaid') {
     processedDebts = processedDebts.filter(canteen => canteen.currentDebt > 0);
   } else if (activeFilter === 'Paid') {
     processedDebts = processedDebts.filter(canteen => canteen.currentDebt === 0);
   }
 
-  // 3. Sort
   processedDebts.sort((a, b) => {
     if (activeSort === 'High to Low') return b.currentDebt - a.currentDebt;
     if (activeSort === 'Low to High') return a.currentDebt - b.currentDebt;
@@ -153,14 +167,21 @@ export default function ViewDebts() {
     return 0;
   });
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full pt-20">
+         <Loader2 className="w-10 h-10 animate-spin text-[#f97316] mb-4" />
+         <p className="text-xl text-gray-600 font-medium">Fetching your debts...</p>
+      </div>
+    );
+  }
+
   return (
     <main className="p-10 pb-32 w-full h-full bg-[#F8FAFC] overflow-y-auto relative">
         
-      {/* DYNAMIC TOP ROW (Matches Canteens Page exactly) */}
+      {/* DYNAMIC TOP ROW */}
       <div className="flex justify-between items-center mb-10 gap-6">
-        
-        {/* Large Pill-shaped Search Bar */}
-        <div className="bg-white rounded-full flex items-center px-6 py-3.5 w-[450px] shadow-sm border border-gray-100 focus-within:ring-2 focus-within:ring-[#f97316] focus-within:border-[#f97316] transition">
+        <div className="bg-white rounded-full flex items-center px-6 py-3.5 w-[450px] shadow-sm border border-gray-100 focus-within:ring-2 focus-within:ring-[#f97316] transition">
           <Search className="w-5 h-5 text-gray-400 mr-3" />
           <input 
             type="text" 
@@ -171,10 +192,7 @@ export default function ViewDebts() {
           />
         </div>
 
-        {/* Orange Filter & Sort Buttons */}
         <div className="flex gap-4">
-          
-          {/* Filter Dropdown */}
           <div className="relative" ref={filterRef}>
             <button 
               onClick={() => { setIsFilterOpen(!isFilterOpen); setIsSortOpen(false); }} 
@@ -202,7 +220,6 @@ export default function ViewDebts() {
             )}
           </div>
 
-          {/* Sort Dropdown */}
           <div className="relative" ref={sortRef}>
             <button 
               onClick={() => { setIsSortOpen(!isSortOpen); setIsFilterOpen(false); }} 
@@ -229,7 +246,6 @@ export default function ViewDebts() {
               </div>
             )}
           </div>
-
         </div>
       </div>
 
@@ -242,10 +258,10 @@ export default function ViewDebts() {
         ) : (
           <div className="bg-white rounded-2xl p-10 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-3">
             <AlertTriangle className="w-10 h-10 text-orange-400" />
-            <p className="text-xl font-semibold text-gray-800">No canteens match your search.</p>
+            <p className="text-xl font-semibold text-gray-800">No debts found!</p>
             <button 
               onClick={() => {setSearchTerm(''); setActiveFilter('All'); setActiveSort('A-Z');}}
-              className="mt-2 bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-5 py-2 rounded-lg transition text-sm"
+              className="mt-2 bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-5 py-2 rounded-lg transition text-sm cursor-pointer"
             >
               Clear All Filters
             </button>
