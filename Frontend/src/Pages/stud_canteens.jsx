@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useLocation } from 'react-router-dom';
 import { Search, ArrowLeft, Filter, ArrowDownUp, Plus, Minus, ShoppingCart, AlertTriangle, ChevronsUpDown, ChevronDown } from 'lucide-react'; 
 
 const StudentCanteens = () => {
+  const location = useLocation();
   // ==========================================
   // 1. STATES
   // ==========================================
@@ -129,6 +131,11 @@ const StudentCanteens = () => {
     setCurrentSort("name-az");
   };
 
+  // Reset to list view when clicking "Canteens" in sidebar again
+  useEffect(() => {
+    goToList();
+  }, [location.key]);
+
   const updateQuantity = (id, delta) => {
     setCart(prev => {
       const newQty = (prev[id] || 0) + delta;
@@ -233,25 +240,27 @@ const StudentCanteens = () => {
           <div className="flex gap-4">
             
             {/* Filter Dropdown */}
-            <div className="relative" ref={filterRef}>
-              <button 
-                onClick={() => { setIsFilterDropdownOpen(!isFilterDropdownOpen); setIsSortDropdownOpen(false); }} 
-                className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-6 py-3.5 rounded-xl shadow-md flex items-center gap-2 transition min-w-[150px] justify-between text-lg"
-              >
-                <div className="flex items-center gap-2">
-                    <Filter className="w-5 h-5" /> 
-                    {step === 'list' ? getFilterText() : "Filter"}
-                </div>
-                <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isFilterDropdownOpen && (
-                <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
-                  <div onClick={() => { setCurrentFilter('all'); setIsFilterDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentFilter === 'all' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>All Canteens</div>
-                  <div onClick={() => { setCurrentFilter('open'); setIsFilterDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentFilter === 'open' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>Open Only</div>
-                </div>
-              )}
-            </div>
+            {step === 'list' && (
+              <div className="relative" ref={filterRef}>
+                <button 
+                  onClick={() => { setIsFilterDropdownOpen(!isFilterDropdownOpen); setIsSortDropdownOpen(false); }} 
+                  className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-6 py-3.5 rounded-xl shadow-md flex items-center gap-2 transition min-w-[150px] justify-between text-lg"
+                >
+                  <div className="flex items-center gap-2">
+                      <Filter className="w-5 h-5" /> 
+                      {getFilterText()}
+                  </div>
+                  <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isFilterDropdownOpen && (
+                  <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                    <div onClick={() => { setCurrentFilter('all'); setIsFilterDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentFilter === 'all' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>All Canteens</div>
+                    <div onClick={() => { setCurrentFilter('open'); setIsFilterDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentFilter === 'open' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>Open Only</div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Sort Dropdown */}
             <div className="relative" ref={sortRef}>
