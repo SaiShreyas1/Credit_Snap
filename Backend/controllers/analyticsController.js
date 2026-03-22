@@ -1,14 +1,29 @@
 const Order = require('../models/ordersModel');
+const Canteen = require('../models/canteenModel'); // 👈 REQUIRED: Added to look up the canteen
 const mongoose = require('mongoose');
 
 exports.getOwnerAnalytics = async (req, res) => {
   try {
-    // 1. Match the ID that is ACTUALLY saved in your Orders collection
-    // Since ordersController saves the Owner's User ID as the 'canteen', we use req.user.id
-    const searchId = new mongoose.Types.ObjectId(req.user.id);
+    // 1. Look up the specific Canteen owned by the logged-in user
+    const myCanteen = await Canteen.findOne({ ownerId: req.user.id });
 
-    // 2. Define valid statuses (Make sure you actually 'accept' orders in the UI!)
-    const validStatuses = ['accepted', 'completed']; // Removed 'Added to debt' as it's not in your model enum
+    // 🛡️ Safety Check: If the owner has no canteen yet, return empty charts
+    if (!myCanteen) {
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          popularOrdersData: [],
+          weeklyOrdersData: [],
+          earningsData: []
+        }
+      });
+    }
+
+    // 2. Use the ACTUAL Canteen ID for the database search
+    const searchId = myCanteen._id;
+
+    // 3. Define valid statuses (only count accepted/completed orders for revenue)
+    const validStatuses = ['accepted', 'completed'];
 
     // ==========================================
     // PIE CHART: Most Ordered Items (Top 5)
@@ -39,6 +54,7 @@ exports.getOwnerAnalytics = async (req, res) => {
       { $group: { _id: { $dayOfWeek: '$createdAt' }, orders: { $sum: 1 } } }
     ]);
 
+    // MongoDB $dayOfWeek returns 1 for Sunday, 7 for Saturday
     const dayNamesMap = { 1: 'Sun', 2: 'Mon', 3: 'Tue', 4: 'Wed', 5: 'Thu', 6: 'Fri', 7: 'Sat' };
     const weeklyOrdersData = [2, 3, 4, 5, 6, 7, 1].map(num => {
       const found = weeklyOrdersRaw.find(d => d._id === num);
