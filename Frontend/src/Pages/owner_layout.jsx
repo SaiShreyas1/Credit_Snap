@@ -124,7 +124,9 @@ export default function OwnerLayout() {
         
         <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-50 shrink-0">
           <div className="flex items-center h-full">
-             <img src={canteenLogo} alt="CreditSnap Logo" className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2" 
+             <img src={canteenLogo} alt="CreditSnap Logo" 
+               onClick={() => navigate('/owner/dashboard')}
+               className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2 cursor-pointer hover:opacity-80 transition" 
                onError={(e) => e.target.src = "https://via.placeholder.com/150x50?text=Logo+Here"} 
              />
           </div>

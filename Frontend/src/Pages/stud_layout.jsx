@@ -118,7 +118,10 @@ export default function StudLayout() {
         
         <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-50 shrink-0">
           <div className="flex items-center h-full">
-             <img src={studentLogo} alt="CreditSnap Logo" className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2" />
+             <img src={studentLogo} alt="CreditSnap Logo" 
+                onClick={() => navigate('/student/dashboard')}
+                className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2 cursor-pointer hover:opacity-80 transition" 
+             />
           </div>
           
           <div className="flex items-center gap-6 pr-2">
