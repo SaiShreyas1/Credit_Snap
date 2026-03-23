@@ -21,6 +21,18 @@ export default function StudDashboard() {
       if (res.data.status === 'success') {
         const sum = res.data.data.reduce((total, d) => total + d.amountOwed, 0);
         setTotalDebt(sum);
+
+        // Generate Alerts for any canteen debt that is 80% or more of the 3000 limit (>= ₹2400)
+        const generatedAlerts = [];
+        res.data.data.forEach(d => {
+          if (d.amountOwed >= 2400) {
+            generatedAlerts.push({
+              canteen: d.canteen?.name || "Unknown Canteen",
+              message: `Debt is at ₹${d.amountOwed} (≥80% of ₹3000 limit)`
+            });
+          }
+        });
+        setAlerts(generatedAlerts);
       }
     } catch (err) {
       console.error('Failed to fetch debts:', err);
@@ -98,12 +110,12 @@ export default function StudDashboard() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl p-4 flex-1 shadow-sm border border-gray-100 max-w-md">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="bg-white rounded-2xl p-4 flex-1 shadow-sm border border-gray-100 max-w-md flex flex-col h-40">
+          <div className="flex items-center gap-2 mb-3 shrink-0">
             <AlertTriangle className="w-5 h-5 text-orange-500" />
             <h2 className="text-xl font-semibold text-gray-800">Alerts</h2>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 overflow-y-auto flex-1 pr-2 custom-scrollbar">
             {alerts.length === 0 ? (
               <p className="text-gray-500 text-sm italic">You have no active alerts.</p>
             ) : (

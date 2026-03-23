@@ -8,12 +8,28 @@ const Canteen = require('../models/canteenModel'); // 👈 ADDED: Need this to f
 exports.createOrder = async (req, res) => {
   try {
     const { canteenId, items, totalAmount } = req.body;
+    
+    // Explicitly cast to Number to prevent Javascript string concatenation bugs!
+    const numTotalAmount = Number(totalAmount);
+
+    // 0. CHECK LIMITS BEFORE CREATING ORDER
+    const student = await User.findById(req.user.id);
+
+    const existingDebt = await Debt.findOne({ student: req.user.id, canteen: canteenId });
+    const currentCanteenDebt = existingDebt ? existingDebt.amountOwed : 0;
+    
+    if (currentCanteenDebt + numTotalAmount > 3000) {
+      return res.status(400).json({
+        status: 'fail',
+        message: `Request failed! You will exceed the ₹3000 debt limit at this canteen (Current debt: ₹${currentCanteenDebt}).`
+      });
+    }
 
     let newOrder = await Order.create({
       student: req.user.id, // ID from the student's login token
       canteen: canteenId,   // ID of Hall 1 (69bc3ae4...)
       items,
-      totalAmount
+      totalAmount: numTotalAmount
     });
 
     // Populate student data so the frontend can display the student name immediately
@@ -78,12 +94,14 @@ exports.updateOrderStatus = async (req, res) => {
     if (status === 'accepted' && order.status === 'pending') {
       const student = await User.findById(order.student);
 
-      // 1. Check if student is over their credit limit
-      const limit = student.creditLimit || student.limit || 5000;
-      if (student.totalDebt + order.totalAmount > limit) {
-        return res.status(400).json({ 
-          status: 'fail', 
-          message: 'Student credit limit exceeded!' 
+      // 1. Check if student is over the PER-CANTEEN credit limit (₹3000)
+      const existingDebt = await Debt.findOne({ student: order.student, canteen: order.canteen });
+      const currentCanteenDebt = existingDebt ? existingDebt.amountOwed : 0;
+      
+      if (currentCanteenDebt + order.totalAmount > 3000) {
+        return res.status(400).json({
+          status: 'fail',
+          message: `Per-canteen debt limit of ₹3000 exceeded! Current debt is ₹${currentCanteenDebt}.`
         });
       }
 
