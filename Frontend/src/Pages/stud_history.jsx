@@ -177,7 +177,7 @@ export default function StudHistory() {
       <div className="flex bg-gray-200/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-1.5 mb-8 shadow-inner relative z-10">
         <button
           onClick={() => { setActiveTab('order'); setFilterStatus(''); }}
-          className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
+          className={`cursor-pointer flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
             activeTab === 'order' 
               ? 'bg-[#ea580c] text-white shadow-md transform scale-[1.01]' 
               : 'text-gray-500 hover:text-gray-800 hover:bg-white/60'
@@ -187,7 +187,7 @@ export default function StudHistory() {
         </button>
         <button
           onClick={() => { setActiveTab('debt'); setFilterStatus(''); }}
-          className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
+          className={`cursor-pointer flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
             activeTab === 'debt' 
               ? 'bg-[#ea580c] text-white shadow-md transform scale-[1.01]' 
               : 'text-gray-500 hover:text-gray-800 hover:bg-white/60'
