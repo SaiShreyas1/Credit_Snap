@@ -1,22 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Search, ChevronDown, Filter, ArrowDownUp, AlertTriangle, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
+import { Search, ChevronDown, Filter, ArrowDownUp, AlertTriangle, Loader2 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
-// Sub-component for individual Canteen Debt Cards
+// Sub-component for individual Canteen Debt Cards (SIMPLIFIED)
 const DebtCard = ({ data }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border mb-4 transition-all duration-300 overflow-hidden ${
-      isExpanded ? 'border-indigo-100 shadow-md ring-1 ring-indigo-50/50' : 'border-gray-100 hover:shadow-md hover:border-gray-200'
-    }`}>
-      {/* Top Visible Row */}
-      <div 
-        className="p-5 flex justify-between items-center cursor-pointer select-none group"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <h2 className="text-lg font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 transition-all duration-300 overflow-hidden hover:shadow-md hover:border-gray-200">
+      <div className="p-5 flex justify-between items-center select-none">
+        
+        <h2 className="text-lg font-bold text-gray-800">
           {data.name}
         </h2>
 
@@ -41,53 +34,8 @@ const DebtCard = ({ data }) => {
               </div>
             )}
           </div>
-          <div className={`p-1.5 rounded-full transition-colors ${isExpanded ? 'bg-indigo-50 text-indigo-500' : 'bg-gray-50 text-gray-400 group-hover:bg-gray-100'}`}>
-            <ChevronDown 
-              className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
-            />
-          </div>
         </div>
-      </div>
-
-      {/* Expanded Transactions Section */}
-      <div 
-        className={`transition-all duration-500 ease-in-out origin-top ${
-          isExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
-        }`}
-      >
-        <div className="px-5 pb-5 pt-3 border-t border-gray-100 bg-slate-50/50">
-          <div className="flex justify-between items-center mb-4 mt-1">
-            <h3 className="text-sm font-bold text-gray-700">Recent Transactions</h3>
-            <span className="bg-white border border-gray-200 shadow-sm px-4 py-1.5 rounded-lg text-xs font-bold text-gray-600">
-              Total Paid: <span className="text-green-600 ml-1 text-sm">₹{data.totalPaid}</span>
-            </span>
-          </div>
-
-          <div className="space-y-2.5">
-            {data.transactions && data.transactions.length > 0 ? (
-              data.transactions.map((txn) => (
-                <div key={txn.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-3.5 flex justify-between items-center hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-2 rounded-lg ${txn.amount < 0 ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-500'}`}>
-                      {txn.amount < 0 ? <ArrowDownRight className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-gray-800">{txn.type}</div>
-                      <div className="text-xs font-medium text-gray-500">{txn.date}, {txn.time}</div>
-                    </div>
-                  </div>
-                  <div className={`font-bold text-base ${txn.amount < 0 ? 'text-green-600' : 'text-gray-800'}`}>
-                    {txn.amount < 0 ? `-${'₹' + Math.abs(txn.amount)}` : `+₹${txn.amount}`}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center bg-white rounded-xl border border-gray-100 py-8 text-gray-400 text-sm font-medium">
-                No recent transactions found. (History coming soon)
-              </div>
-            )}
-          </div>
-        </div>
+        
       </div>
     </div>
   );
@@ -123,7 +71,6 @@ export default function ViewDebts() {
   useEffect(() => {
     const fetchMyDebts = async () => {
       try {
-        // 🚨 THE FIX: Check both storages just in case!
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         
         if (!token) {
@@ -137,14 +84,12 @@ export default function ViewDebts() {
         });
 
         if (res.data.status === 'success') {
-          console.log("MY DEBTS:", res.data.data); // Let's see what we get!
+          console.log("MY DEBTS:", res.data.data); 
           const mappedData = res.data.data.map(d => ({
             id: d._id,
             name: d.canteen?.name || "Unknown Canteen",
             currentDebt: d.amountOwed,
-            limit: 3000, 
-            totalPaid: 0, 
-            transactions: [] 
+            limit: 3000, // Hardcoded for now, can be pulled from user limit later
           }));
           setDebts(mappedData);
         }
@@ -169,7 +114,7 @@ export default function ViewDebts() {
         });
 
         socket.on('debt-updated', () => {
-          fetchMyDebts();
+          fetchMyDebts(); // Refresh automatically if owner accepts a payment
         });
 
         return () => {
@@ -217,12 +162,12 @@ export default function ViewDebts() {
     <main className="p-6 md:p-10 w-full min-h-screen bg-[#f8f9fa] relative">
         
       {/* ========================================================
-          TOP ACTION BAR - EXACTLY MATCHING SIZE & SHAPE
+          TOP ACTION BAR 
           ========================================================
       */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-5 relative z-20">
         
-        {/* Search Bar: White, pill shape, exactly h-11 */}
+        {/* Search Bar */}
         <div className="flex items-center bg-white border border-gray-200 rounded-full px-5 h-11 w-full max-w-[450px] shadow-sm focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition-all duration-300">
           <Search className="w-4 h-4 text-gray-400 mr-3" />
           <input 
@@ -234,7 +179,7 @@ export default function ViewDebts() {
           />
         </div>
 
-        {/* Orange Filter & Sort Buttons: Exactly h-11 */}
+        {/* Orange Filter & Sort Buttons */}
         <div className="flex gap-4">
           
           {/* Filter Dropdown */}
