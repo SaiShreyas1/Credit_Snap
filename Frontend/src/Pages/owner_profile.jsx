@@ -12,6 +12,7 @@ export default function OwnerProfile() {
     email: "Loading...",
     phone: "Loading...",
     timings: "Loading...",
+    profilePhoto: null
   });
 
   // 2. Edit Mode State
@@ -40,6 +41,7 @@ export default function OwnerProfile() {
             email: user.email || "Not Set",
             phone: user.phoneNo || "Not Set",
             timings: canteen?.timings || "4:00 PM - 4:00 AM",
+            profilePhoto: user.profilePhoto || null
           };
           
           setOwnerInfo(newInfo);
@@ -91,16 +93,41 @@ export default function OwnerProfile() {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
 
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024) {
+      alert("Image is too large! Please upload a profile picture smaller than 500KB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditForm({ ...editForm, profilePhoto: reader.result });
+      setIsEditing(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="flex-1 h-full min-h-screen flex items-start justify-center pt-24 bg-white">
       
       {/* The Gray Card */}
       <div className="relative bg-[#e5e5e5] rounded-[32px] border border-gray-400 shadow-sm w-full max-w-2xl px-12 pt-20 pb-12">
         
-        {/* The Overlapping Avatar Cutout */}
         <div className="absolute -top-16 left-1/2 transform -translate-x-1/2">
-          <div className="bg-[#0f172a] rounded-full flex items-center justify-center w-32 h-32 border-[8px] border-white">
-            <User className="w-16 h-16 text-white" strokeWidth={2} />
+          <div className="relative bg-[#0f172a] rounded-full flex items-center justify-center w-32 h-32 border-[8px] border-white overflow-hidden group transition-all">
+            {editForm.profilePhoto || ownerInfo.profilePhoto ? (
+              <img src={isEditing ? editForm.profilePhoto : ownerInfo.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-16 h-16 text-white" strokeWidth={2} />
+            )}
+            
+            <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+              <span className="text-white text-[11px] font-semibold tracking-wider uppercase mt-2">Change</span>
+              <input type="file" accept="image/jpeg, image/png, image/webp" className="hidden" onChange={handlePhotoUpload} />
+            </label>
           </div>
         </div>
 
@@ -154,7 +181,7 @@ export default function OwnerProfile() {
           // VIEW MODE
           <>
             <div className="mt-14 flex justify-between gap-4 px-6">
-              <button onClick={() => navigate('/owner/change-password')} className="cursor-pointer bg-[#262626] text-white px-8 py-3 rounded-full font-medium hover:bg-black transition shadow-sm w-1/2">
+              <button onClick={() => navigate('/owner/change-password')} className="cursor-pointer bg-[#0f172a] text-white px-8 py-3 rounded-full font-medium hover:bg-slate-900 transition shadow-sm w-1/2">
                 Change Password
               </button>
               <button onClick={handleEditClick} className="cursor-pointer bg-[#0f172a] text-white px-8 py-3 rounded-full font-medium hover:bg-slate-900 transition shadow-sm w-1/2">
@@ -173,7 +200,7 @@ export default function OwnerProfile() {
             <button onClick={handleCancelClick} className="cursor-pointer bg-gray-500 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-600 transition shadow-sm w-1/2">
               Cancel
             </button>
-            <button onClick={handleSaveClick} className="cursor-pointer bg-[#16a34a] text-white px-8 py-3 rounded-full font-medium hover:bg-green-700 transition shadow-sm w-1/2">
+            <button onClick={handleSaveClick} className="cursor-pointer bg-[#0f172a] text-white px-8 py-3 rounded-full font-medium hover:bg-slate-900 transition shadow-sm w-1/2">
               Save Changes
             </button>
           </div>

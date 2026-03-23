@@ -308,6 +308,7 @@ exports.updateMyProfile = async (req, res) => {
     if (req.body.phone) user.phoneNo = req.body.phone;
     if (req.body.hallNo) user.hallNo = req.body.hallNo;
     if (req.body.roomNo) user.roomNo = req.body.roomNo;
+    if (req.body.profilePhoto !== undefined) user.profilePhoto = req.body.profilePhoto;
     
     // Save to trigger validation checks
     await user.save({ validateBeforeSave: false });

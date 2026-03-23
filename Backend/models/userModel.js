@@ -39,6 +39,7 @@ const userSchema = new mongoose.Schema({
   emailVerificationToken: String,
   passwordResetToken: String,
   passwordResetExpires: Date,
+  profilePhoto: { type: String, default: "" },
   // --- Student Only Fields ---
   rollNo: {
     type: String,
