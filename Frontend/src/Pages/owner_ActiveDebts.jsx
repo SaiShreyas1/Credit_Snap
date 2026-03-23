@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Search, ChevronDown, CheckCircle, BellRing, AlertTriangle, X, IndianRupee } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 export default function ActiveDebtsContent() {
   const [search, setSearch] = useState("");
@@ -45,6 +46,23 @@ export default function ActiveDebtsContent() {
 
   useEffect(() => {
     fetchDebts();
+
+    const canteenIdStr = sessionStorage.getItem('canteenId');
+    if (!canteenIdStr) return;
+
+    const socket = io('http://localhost:5000');
+
+    socket.on('connect', () => {
+      socket.emit('join-canteen', canteenIdStr);
+    });
+
+    socket.on('debt-updated', () => {
+      fetchDebts();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const showToast = (msg, type = 'success') => { 

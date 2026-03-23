@@ -20,7 +20,7 @@ import ChangePassword from './Pages/ChangePassword';
 
 // Added New Student Pages
 import StudViewDebts from './Pages/stud_ViewDebts';
-import StudAboutUs from './Pages/stud_Aboutus';
+import StudAboutUs from './Pages/stud_AboutUs';
 import StudentHelp from './Pages/stud_help';
 
 // --- Owner Pages ---
@@ -29,7 +29,7 @@ import OwnerEditMenu from './Pages/owner_editmenu';
 import OwnerProfile from './Pages/owner_profile';
 import OwnerActiveDebts from './Pages/owner_ActiveDebts';
 import Ownerhistory from './Pages/owner_history';
-import Owneranalytics from './Pages/owner_analysis';
+import Owneranalytics from './Pages/Owner_analysis';
 import Ownerhelp from './Pages/owner_help';
 
 // 🚨 Temporarily disabled to fix the white screen crash!

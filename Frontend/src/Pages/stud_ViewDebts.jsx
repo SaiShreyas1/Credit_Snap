@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { Search, ChevronDown, Filter, ArrowDownUp, AlertTriangle, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 // Sub-component for individual Canteen Debt Cards
 const DebtCard = ({ data }) => {
@@ -155,6 +156,29 @@ export default function ViewDebts() {
     };
 
     fetchMyDebts();
+
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        const socket = io('http://localhost:5000');
+
+        socket.on('connect', () => {
+          socket.emit('join-student', user._id);
+        });
+
+        socket.on('debt-updated', () => {
+          fetchMyDebts();
+        });
+
+        return () => {
+          socket.disconnect();
+        };
+      } catch (e) {
+        console.error("Socket err", e);
+      }
+    }
   }, []);
 
   // --- LOGIC: Filter and Sort ---

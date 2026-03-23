@@ -62,25 +62,19 @@ export default function OwnerDashboard() {
   useEffect(() => {
     if (!canteen || !canteen._id) return;
 
-    // Connect to the Socket.io server
     const socket = io('http://localhost:5000');
+    const canteenIdStr = canteen._id;
 
     socket.on('connect', () => {
-      console.log('🟢 Connected to real-time server');
-      // Request to join the specific room for this canteen
-      socket.emit('joinRoom', canteen._id);
+      socket.emit('join-canteen', canteenIdStr);
     });
 
-    // Listen for the "newOrder" event emitted by the backend
     socket.on('newOrder', (newOrder) => {
       console.log('🔔 New real-time order received!', newOrder);
-      // Add the new order to the top of the list instantly!
       setOrders(prevOrders => [newOrder, ...prevOrders]);
     });
 
-    // Cleanup on unmount
     return () => {
-      console.log('🔴 Disconnecting from real-time server');
       socket.disconnect();
     };
   }, [canteen]);

@@ -11,7 +11,7 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: ['http://localhost:5173', 'http://localhost:5174'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   },
 });
@@ -19,20 +19,31 @@ const io = new Server(httpServer, {
 app.set('io', io);
 
 io.on('connection', (socket) => {
-  console.log('Socket connected:', socket.id);
+  console.log('🔗 [SOCKET.IO] New connection:', socket.id);
 
   socket.on('join-canteen', (canteenId) => {
     socket.join(`canteen:${canteenId}`);
-    console.log(`Socket ${socket.id} joined canteen:${canteenId}`);
+    console.log(`📡 [SOCKET.IO] Socket ${socket.id} joined room -> canteen:${canteenId}`);
+    console.log(`Current rooms for ${socket.id}:`, Array.from(socket.rooms));
   });
 
   socket.on('leave-canteen', (canteenId) => {
     socket.leave(`canteen:${canteenId}`);
-    console.log(`Socket ${socket.id} left canteen:${canteenId}`);
+    console.log(`🚪 [SOCKET.IO] Socket ${socket.id} left room -> canteen:${canteenId}`);
+  });
+
+  socket.on('join-student', (studentId) => {
+    socket.join(`student:${studentId}`);
+    console.log(`📡 [SOCKET.IO] Socket ${socket.id} joined room -> student:${studentId}`);
+  });
+
+  socket.on('leave-student', (studentId) => {
+    socket.leave(`student:${studentId}`);
+    console.log(`🚪 [SOCKET.IO] Socket ${socket.id} left room -> student:${studentId}`);
   });
 
   socket.on('disconnect', () => {
-    console.log('Socket disconnected:', socket.id);
+    console.log('❌ [SOCKET.IO] Disconnected:', socket.id);
   });
 });
 

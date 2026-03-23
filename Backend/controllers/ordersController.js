@@ -22,8 +22,8 @@ exports.createOrder = async (req, res) => {
     // 📡 EMIT TO SOCKET.IO ROOM
     const io = req.app.get('io');
     if (io && canteenId) {
-      console.log(`📢 Emitting newOrder to room: ${canteenId}`);
-      io.to(canteenId.toString()).emit('newOrder', newOrder);
+      console.log(`📢 Emitting newOrder to room: canteen:${canteenId}`);
+      io.to(`canteen:${canteenId}`).emit('newOrder', newOrder);
     }
 
     res.status(201).json({
@@ -109,8 +109,14 @@ exports.updateOrderStatus = async (req, res) => {
     // 📡 EMIT TO STUDENT'S SOCKET.IO ROOM
     const io = req.app.get('io');
     if (io && order.student) {
-      console.log(`📢 Emitting orderStatusUpdated to student room: ${order.student}`);
-      io.to(order.student.toString()).emit('orderStatusUpdated', order);
+      console.log(`📢 Emitting orderStatusUpdated to student room: ${order.student._id || order.student}`);
+      io.to(`student:${order.student._id || order.student}`).emit('orderStatusUpdated', order);
+      
+      // If accepted for the first time, debt was added, so emit debt-updated
+      if (status === 'accepted') {
+         io.to(`student:${order.student._id || order.student}`).emit('debt-updated');
+         io.to(`canteen:${order.canteen._id || order.canteen}`).emit('debt-updated');
+      }
     }
 
     res.status(200).json({

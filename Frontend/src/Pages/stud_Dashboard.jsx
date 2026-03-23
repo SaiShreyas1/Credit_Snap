@@ -19,9 +19,9 @@ export default function StudDashboard() {
   // Calculate the sum of all current debts from the mock data
   const initialTotalDebt = canteenDebtsData.reduce((total, canteen) => total + canteen.currentDebt, 0);
 
-  const [totalDebt, setTotalDebt] = useState(initialTotalDebt); 
-  const [alerts, setAlerts] = useState([]); 
-  const [currentOrders, setCurrentOrders] = useState([]); 
+  const [totalDebt, setTotalDebt] = useState(initialTotalDebt);
+  const [alerts, setAlerts] = useState([]);
+  const [currentOrders, setCurrentOrders] = useState([]);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -42,28 +42,24 @@ export default function StudDashboard() {
     fetchOrders();
   }, []);
 
-  // REAL-TIME SOCKET.IO FOR ORDER STATUS UPDATES
   useEffect(() => {
     const userStr = sessionStorage.getItem('user');
     if (!userStr) return;
-    
-    // Parse the user to get their user ID
+
     const user = JSON.parse(userStr);
+    const userIdStr = user._id;
 
     const socket = io('http://localhost:5000');
-    
+
     socket.on('connect', () => {
-      console.log('🟢 Student connected to real-time server');
-      // Request to join the specific room for this student
-      socket.emit('joinRoom', user._id);
+      socket.emit('join-student', userIdStr);
     });
 
     socket.on('orderStatusUpdated', (updatedOrder) => {
       console.log('🔔 Order Status Updated!', updatedOrder);
       
-      // Update the order in the current list
-      setCurrentOrders((prevOrders) => 
-        prevOrders.map((order) => 
+      setCurrentOrders((prevOrders) =>
+        prevOrders.map((order) =>
           order._id === updatedOrder._id ? updatedOrder : order
         )
       );
@@ -114,7 +110,7 @@ export default function StudDashboard() {
         <div className="space-y-4">
           {currentOrders.length === 0 ? (
             <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
-                <p className="text-gray-500">You have no active orders. Go to Canteens to order some food!</p>
+              <p className="text-gray-500">You have no active orders. Go to Canteens to order some food!</p>
             </div>
           ) : (
             currentOrders.map((order, index) => (
@@ -128,11 +124,10 @@ export default function StudDashboard() {
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
-                    order.status === 'pending' ? 'bg-orange-100 text-orange-700' :
-                    order.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${order.status === 'pending' ? 'bg-orange-100 text-orange-700' :
+                      order.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                        'bg-red-100 text-red-700'
+                    }`}>
                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                   </span>
                   <span className="font-semibold text-blue-900">Price: <span className="text-blue-600">₹{order.totalAmount}</span></span>
