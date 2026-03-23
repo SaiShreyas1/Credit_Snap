@@ -27,7 +27,8 @@ export default function OwnerLayout() {
           
           setUserProfile({
             name: canteen?.name || user.name || "Admin",
-            role: "Canteen Owner"
+            role: "Canteen Owner",
+            profilePhoto: user.profilePhoto || null
           });
         }
       } catch (error) {
@@ -164,7 +165,11 @@ export default function OwnerLayout() {
             </div>
 
             <div className="relative" ref={profileRef}>
-              <UserCircle onClick={toggleProfile} className="w-8 h-8 text-gray-900 cursor-pointer hover:text-[#eab308] transition" />
+              {userProfile && userProfile.profilePhoto ? (
+                <img onClick={toggleProfile} src={userProfile.profilePhoto} alt="Profile" className="w-8 h-8 rounded-full object-cover cursor-pointer border border-gray-300 hover:border-[#eab308] transition" />
+              ) : (
+                <UserCircle onClick={toggleProfile} className="w-8 h-8 text-gray-900 cursor-pointer hover:text-[#eab308] transition" />
+              )}
               {isProfileOpen && (
                 <div className="absolute right-0 mt-4 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
                   <div className="bg-gray-50 p-4 border-b border-gray-100">
