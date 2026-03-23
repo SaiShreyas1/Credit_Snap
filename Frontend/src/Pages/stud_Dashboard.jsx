@@ -4,6 +4,27 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
 
+const formatOrderDate = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+
+  const isToday = date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear();
+
+  const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (isToday) return `Today, ${timeString}`;
+  if (isYesterday) return `Yesterday, ${timeString}`;
+  return `${date.toLocaleDateString()}, ${timeString}`;
+};
+
 export default function StudDashboard() {
   const navigate = useNavigate();
 
@@ -48,10 +69,19 @@ export default function StudDashboard() {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data.status === 'success') {
-          const actualOrders = res.data.data.filter(
-            order => !(order.items && order.items.length > 0 && order.items[0].name === 'Offline Debt Payment')
-          );
-          setCurrentOrders(actualOrders);
+          const now = new Date();
+          const fortyEightHoursMs = 48 * 60 * 60 * 1000;
+
+          const recentActualOrders = res.data.data.filter(order => {
+            const isOfflinePayment = order.items && order.items.length > 0 && order.items[0].name === 'Offline Debt Payment';
+            if (isOfflinePayment) return false;
+
+            const orderDate = new Date(order.createdAt);
+            const isRecent = (now - orderDate) <= fortyEightHoursMs;
+            return isRecent;
+          });
+
+          setCurrentOrders(recentActualOrders);
         }
       } catch (err) {
         console.error('Failed to fetch orders:', err);
@@ -77,7 +107,7 @@ export default function StudDashboard() {
 
     socket.on('orderStatusUpdated', (updatedOrder) => {
       console.log('🔔 Order Status Updated!', updatedOrder);
-      
+
       setCurrentOrders((prevOrders) =>
         prevOrders.map((order) =>
           order._id === updatedOrder._id ? updatedOrder : order
@@ -145,13 +175,13 @@ export default function StudDashboard() {
                     {order.items?.map(i => `${i.quantity}x ${i.name}`).join(', ')}
                   </h3>
                   <p className="text-gray-600 text-sm">
-                    {order.canteen?.name || 'Unknown Canteen'}, <span className="text-gray-500">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    {order.canteen?.name || 'Unknown Canteen'}, <span className="text-gray-500">{formatOrderDate(order.createdAt)}</span>
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${order.status === 'pending' ? 'bg-orange-100 text-orange-700' :
-                      order.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                        'bg-red-100 text-red-700'
+                    order.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                      'bg-red-100 text-red-700'
                     }`}>
                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                   </span>

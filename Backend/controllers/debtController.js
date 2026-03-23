@@ -18,7 +18,7 @@ exports.getActiveDebts = async (req, res) => {
         { canteen: myCanteen ? myCanteen._id : null }
       ],
       amountOwed: { $gt: 0 } 
-    }).populate('student', 'name rollNo phone email limit'); 
+    }).populate('student', 'name rollNo phoneNo email limit'); 
 
     res.status(200).json({
       status: 'success',

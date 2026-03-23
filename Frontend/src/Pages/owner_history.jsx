@@ -56,7 +56,7 @@ export default function OwnerHistory() {
             return {
               id: order._id,
               name: order.student?.name || "Unknown Student",
-              phone: order.student?.phone || "+91 XXXXXXXXXX",
+              phone: order.student?.phoneNo || "+91 XXXXXXXXXX",
               amount: order.totalAmount,
               date: `${day}-${month}-${year}`, // Matches your parseDateTime logic!
               time: timeStr

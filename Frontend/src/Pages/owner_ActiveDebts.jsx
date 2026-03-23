@@ -15,6 +15,7 @@ export default function ActiveDebtsContent() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [payModal, setPayModal] = useState({ isOpen: false, student: null, amount: '' });
+  const [notifyingIds, setNotifyingIds] = useState(new Set());
 
   // 2. FETCH REAL DEBTS FROM BACKEND
   const fetchDebts = async () => {
@@ -29,7 +30,7 @@ export default function ActiveDebtsContent() {
         const mappedDebts = res.data.data.map(d => ({
           id: d._id,
           name: d.student?.name || "Unknown Student",
-          phone: d.student?.phone || "+91 XXXXXXXXXX",
+          phone: d.student?.phoneNo || "+91 XXXXXXXXXX",
           hall: d.student?.hall || "N/A",
           email: d.student?.email || "N/A",
           debt: d.amountOwed,
@@ -72,15 +73,25 @@ export default function ActiveDebtsContent() {
 
   // 3. WIRE UP THE NOTIFY BUTTON
   const handleNotify = async (id) => {
+    if (notifyingIds.has(id)) return; // Prevent double-clicks
+    
+    setNotifyingIds(prev => new Set(prev).add(id));
+    
     try {
       const token = sessionStorage.getItem("token");
       await axios.post(`http://localhost:5000/api/debts/${id}/notify`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const s = students.find(s => s.id === id);
-      showToast(`Notification email sent to ${s.name}`, 'info');
+      showToast(`Notification email sent to ${s.name}`, 'success');
     } catch (err) {
       alert("Failed to send notification.");
+    } finally {
+      setNotifyingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -288,15 +299,21 @@ export default function ActiveDebtsContent() {
                     {/* Opens the specific payment modal for this student */}
                     <button 
                       onClick={() => openPayModal(s)} 
-                      className="cursor-pointer font-semibold px-5 py-2 rounded-full transition text-sm flex items-center gap-1.5 bg-[#eab308] hover:bg-yellow-500 text-[#1e293b]"
+                      className="cursor-pointer font-semibold px-5 py-2 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md text-sm flex items-center gap-1.5 bg-[#eab308] hover:bg-yellow-500 text-[#1e293b]"
                     >
                       <IndianRupee className="w-4 h-4" /> Paid Offline
                     </button>
                     <button 
                       onClick={() => handleNotify(s.id)} 
-                      className="cursor-pointer font-semibold px-5 py-2 rounded-full transition text-sm flex items-center gap-1.5 bg-[#1e293b] hover:bg-slate-800 text-white"
+                      disabled={notifyingIds.has(s.id)}
+                      className={`font-semibold px-5 py-2 rounded-full transition-all duration-200 text-sm flex items-center gap-1.5 shadow-sm ${
+                        notifyingIds.has(s.id) 
+                          ? 'bg-slate-500 text-white cursor-wait opacity-80' 
+                          : 'cursor-pointer hover:scale-105 active:scale-95 bg-[#1e293b] hover:bg-slate-800 text-white hover:shadow-md'
+                      }`}
                     >
-                      <BellRing className="w-4 h-4" /> Notify Now
+                      <BellRing className={`w-4 h-4 ${notifyingIds.has(s.id) ? 'animate-pulse' : ''}`} /> 
+                      {notifyingIds.has(s.id) ? 'Sending...' : 'Notify Now'}
                     </button>
                   </div>
                 </div>

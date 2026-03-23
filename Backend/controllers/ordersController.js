@@ -33,7 +33,7 @@ exports.createOrder = async (req, res) => {
     });
 
     // Populate student data so the frontend can display the student name immediately
-    newOrder = await newOrder.populate('student', 'name rollNo phone');
+    newOrder = await newOrder.populate('student', 'name rollNo phoneNo');
 
     // 📡 EMIT TO SOCKET.IO ROOM
     const io = req.app.get('io');
@@ -69,7 +69,7 @@ exports.getOwnerOrders = async (req, res) => {
 
     // 2️⃣ We search for orders where 'canteen' matches the Owner's Canteen ID (NOT their User ID!)
     const orders = await Order.find({ canteen: myCanteen._id })
-      .populate('student', 'name rollNo phone') // Fetches student details from User collection
+      .populate('student', 'name rollNo phoneNo') // Fetches student details from User collection
       .sort('-createdAt'); // Newest orders at the top
 
     res.status(200).json({
