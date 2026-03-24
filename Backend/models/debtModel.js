@@ -18,6 +18,11 @@ const debtSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: [0, 'Debt cannot be negative']
+  },
+  // 💰 The maximum limit an owner sets for this student at their canteen
+  limit: {
+    type: Number,
+    default: 3000
   }
 }, { timestamps: true });
 

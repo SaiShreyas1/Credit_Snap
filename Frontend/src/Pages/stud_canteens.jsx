@@ -303,14 +303,14 @@ const StudentCanteens = () => {
       {/* Top Search & Filter Bar */}
       {step !== 'checkout' && (
         <div className="flex justify-between items-center mb-10 gap-6">
-          <div className="bg-white rounded-full flex items-center px-6 py-3.5 w-[450px] shadow-sm border border-gray-100 focus-within:ring-2 focus-within:ring-[#f97316] focus-within:border-[#f97316] transition">
-            <Search className="w-5 h-5 text-gray-400 mr-3" />
+          <div className="bg-white rounded-full flex items-center px-5 h-11 w-[450px] shadow-sm border border-gray-100 focus-within:ring-2 focus-within:ring-[#f97316] focus-within:border-[#f97316] transition">
+            <Search className="w-4 h-4 text-gray-400 mr-3" />
             <input
               type="text"
               placeholder={step === 'list' ? "Search for Canteen" : "Search for Item"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full outline-none text-gray-700 bg-transparent text-lg"
+              className="w-full outline-none text-gray-700 bg-transparent text-sm"
             />
           </div>
 
@@ -319,7 +319,7 @@ const StudentCanteens = () => {
               <div className="relative" ref={filterRef}>
                 <button
                   onClick={() => { setIsFilterDropdownOpen(!isFilterDropdownOpen); setIsSortDropdownOpen(false); }}
-                  className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-6 py-3.5 rounded-xl shadow-md flex items-center gap-2 transition min-w-[150px] justify-between text-lg"
+                  className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-5 h-11 rounded-xl shadow-sm flex items-center gap-2 transition min-w-[140px] justify-between text-sm"
                 >
                   <div className="flex items-center gap-2"><Filter className="w-5 h-5" />{getFilterText()}</div>
                   <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
@@ -336,7 +336,7 @@ const StudentCanteens = () => {
             <div className="relative" ref={sortRef}>
               <button
                 onClick={() => { setIsSortDropdownOpen(!isSortDropdownOpen); setIsFilterDropdownOpen(false); }}
-                className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-6 py-3.5 rounded-xl shadow-md flex items-center gap-2 transition min-w-[170px] justify-between text-lg"
+                className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-5 h-11 rounded-xl shadow-sm flex items-center gap-2 transition min-w-[140px] justify-between text-sm"
               >
                 <div className="flex items-center gap-2"><ArrowDownUp className="w-5 h-5" />{getSortText()}</div>
                 <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />

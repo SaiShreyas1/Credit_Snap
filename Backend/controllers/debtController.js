@@ -171,3 +171,50 @@ exports.getMyDebts = async (req, res) => {
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
+
+// 🔧 4. UPDATE CUSTOM DEBT LIMIT LOGIC
+exports.updateDebtLimit = async (req, res) => {
+  try {
+    const newLimit = Number(req.body.limit);
+
+    if (isNaN(newLimit) || newLimit < 0) {
+      return res.status(400).json({ status: 'fail', message: 'Please provide a valid numeric limit (e.g., 3000).' });
+    }
+
+    const debt = await Debt.findById(req.params.id);
+    
+    if (!debt) {
+      return res.status(404).json({ status: 'fail', message: 'Debt record not found!' });
+    }
+
+    // Ensure the owner requesting this actually runs the canteen this debt belongs to
+    const myCanteen = await Canteen.findOne({ ownerId: req.user.id });
+    
+    // Allow if debt.canteen matches the real canteen ID OR the owner's own user ID (legacy records)
+    const debtCanteenStr = debt.canteen.toString();
+    const ownerMatches = debtCanteenStr === req.user.id ||
+      (myCanteen && debtCanteenStr === myCanteen._id.toString());
+
+    if (!ownerMatches) {
+       return res.status(403).json({ status: 'fail', message: 'You can only change debt limits for students at your own canteen.' });
+    }
+
+    debt.limit = newLimit;
+    await debt.save();
+
+    // 📡 Emit so dashboards live-refresh!
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`student:${debt.student}`).emit('debt-updated');
+      io.to(`canteen:${debt.canteen}`).emit('debt-updated');
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: `Custom debt limit successfully updated to ₹${newLimit}`,
+      data: debt
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};

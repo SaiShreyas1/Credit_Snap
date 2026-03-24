@@ -17,11 +17,12 @@ exports.createOrder = async (req, res) => {
 
     const existingDebt = await Debt.findOne({ student: req.user.id, canteen: canteenId });
     const currentCanteenDebt = existingDebt ? existingDebt.amountOwed : 0;
+    const canteenLimit = existingDebt ? existingDebt.limit : 3000;
     
-    if (currentCanteenDebt + numTotalAmount > 3000) {
+    if (currentCanteenDebt + numTotalAmount > canteenLimit) {
       return res.status(400).json({
         status: 'fail',
-        message: `Request failed! You will exceed the ₹3000 debt limit at this canteen (Current debt: ₹${currentCanteenDebt}).`
+        message: `Request failed! You will exceed your ₹${canteenLimit} debt limit at this canteen (Current debt: ₹${currentCanteenDebt}).`
       });
     }
 
@@ -94,14 +95,15 @@ exports.updateOrderStatus = async (req, res) => {
     if (status === 'accepted' && order.status === 'pending') {
       const student = await User.findById(order.student);
 
-      // 1. Check if student is over the PER-CANTEEN credit limit (₹3000)
+      // 1. Check if student is over their custom PER-CANTEEN credit limit
       const existingDebt = await Debt.findOne({ student: order.student, canteen: order.canteen });
       const currentCanteenDebt = existingDebt ? existingDebt.amountOwed : 0;
+      const canteenLimit = existingDebt ? existingDebt.limit : 3000;
       
-      if (currentCanteenDebt + order.totalAmount > 3000) {
+      if (currentCanteenDebt + order.totalAmount > canteenLimit) {
         return res.status(400).json({
           status: 'fail',
-          message: `Per-canteen debt limit of ₹3000 exceeded! Current debt is ₹${currentCanteenDebt}.`
+          message: `Per-canteen debt limit of ₹${canteenLimit} exceeded! Current debt is ₹${currentCanteenDebt}.`
         });
       }
 

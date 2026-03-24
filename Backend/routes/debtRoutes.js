@@ -16,4 +16,7 @@ router.post('/:id/pay', debtController.payOffline);
 // When React sends a POST request to /api/debts/:id/notify, trigger notifyStudent
 router.post('/:id/notify', debtController.notifyStudent);
 
+// When an owner changes the custom limit (role check is done inside the controller)
+router.patch('/:id/limit', debtController.updateDebtLimit);
+
 module.exports = router;

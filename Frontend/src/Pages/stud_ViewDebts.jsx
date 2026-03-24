@@ -3,40 +3,36 @@ import axios from 'axios';
 import { Search, ChevronDown, Filter, ArrowDownUp, AlertTriangle, Loader2 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
-// Sub-component for individual Canteen Debt Cards (SIMPLIFIED)
+// Sub-component for individual Canteen Debt Cards (MATCHING STUD CANTEENS UI)
 const DebtCard = ({ data }) => {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 transition-all duration-300 overflow-hidden hover:shadow-md hover:border-gray-200">
-      <div className="p-5 flex justify-between items-center select-none">
-        
-        <h2 className="text-lg font-bold text-gray-800">
-          {data.name}
-        </h2>
-
-        <div className="flex items-center gap-6">
-          <div className="flex flex-col items-end gap-1.5">
-            <p className="text-xs font-bold text-gray-500 tracking-wide uppercase">
-              Debt: <span className="text-gray-800 text-sm ml-1">₹{data.currentDebt} <span className="text-gray-400 font-medium normal-case text-xs">/ ₹{data.limit}</span></span>
-            </p>
-            {data.currentDebt > 0 ? (
-              <button 
-                className="bg-[#6366f1] hover:bg-[#4f46e5] hover:shadow-lg hover:shadow-indigo-500/20 text-white px-5 py-2 rounded-xl text-xs font-bold tracking-wide transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  alert(`Clearing debt for ${data.name} will be integrated later!`);
-                }}
-              >
-                Clear Debt
-              </button>
-            ) : (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-5 py-2 rounded-xl text-xs font-bold tracking-wide">
-                Settled
-              </div>
-            )}
-          </div>
-        </div>
-        
+    <div className="bg-white rounded-xl mb-4 p-6 flex justify-between items-center shadow-sm border border-gray-100 transition-all overflow-hidden hover:shadow-md">
+      
+      <div>
+        <h2 className="text-2xl font-medium text-black mb-1">{data.name}</h2>
       </div>
+
+      <div className="flex flex-col items-end gap-2">
+        <p className="font-bold text-gray-500 tracking-wide uppercase text-sm">
+          Debt: <span className="text-black text-lg ml-1">₹{data.currentDebt} <span className="text-gray-400 font-medium normal-case text-base">/ ₹{data.limit}</span></span>
+        </p>
+        {data.currentDebt > 0 ? (
+          <button 
+            className="bg-[#6366f1] hover:bg-[#4f46e5] text-white px-6 py-2 rounded-xl text-sm font-medium transition cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              alert(`Clearing debt for ${data.name} will be integrated later!`);
+            }}
+          >
+            Clear Debt
+          </button>
+        ) : (
+          <div className="bg-[#D1FAE5] text-[#065F46] px-6 py-2 rounded-full font-medium text-sm">
+            Settled
+          </div>
+        )}
+      </div>
+        
     </div>
   );
 };
@@ -217,7 +213,7 @@ export default function ViewDebts() {
           BOTTOM SECTION - POLISHED DEBT CARDS
           ========================================================
       */}
-      <div className="flex flex-col relative z-0 max-w-5xl mx-auto">
+      <div className="flex flex-col">
         {processedDebts.length > 0 ? (
           processedDebts.map((canteen) => (
             <DebtCard key={canteen.id} data={canteen} />

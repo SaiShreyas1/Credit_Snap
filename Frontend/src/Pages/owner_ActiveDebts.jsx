@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Search, ChevronDown, CheckCircle, BellRing, AlertTriangle, X, IndianRupee } from 'lucide-react';
+import { Search, ChevronDown, CheckCircle, BellRing, AlertTriangle, X, IndianRupee, Edit3 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 export default function ActiveDebtsContent() {
@@ -15,6 +15,7 @@ export default function ActiveDebtsContent() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [payModal, setPayModal] = useState({ isOpen: false, student: null, amount: '' });
+  const [limitModal, setLimitModal] = useState({ isOpen: false, student: null, newLimit: '' });
   const [notifyingIds, setNotifyingIds] = useState(new Set());
 
   // 2. FETCH REAL DEBTS FROM BACKEND
@@ -34,7 +35,7 @@ export default function ActiveDebtsContent() {
           hall: d.student?.hall || "N/A",
           email: d.student?.email || "N/A",
           debt: d.amountOwed,
-          limit: d.student?.limit || 3000 // Ensure fallback matches strict 3000 per-canteen limit
+          limit: d.limit || 3000 // 🔧 THE FIX: Pull custom limit directly from Debt record
         }));
         setStudents(mappedDebts);
       }
@@ -125,12 +126,45 @@ export default function ActiveDebtsContent() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Success! Refetch debts and show toast
       showToast(`₹${paymentAmount} paid offline for ${targetStudent.name}.`, 'success');
       fetchDebts(); 
       closePayModal();
     } catch (err) {
       alert(err.response?.data?.message || "Payment failed");
+    }
+  };
+
+  // 5. WIRE UP CUSTOM DEBT LIMIT MODAL
+  const openLimitModal = (student) => {
+    setLimitModal({ isOpen: true, student: student, newLimit: student.limit });
+  };
+
+  const closeLimitModal = () => {
+    setLimitModal({ isOpen: false, student: null, newLimit: '' });
+  };
+
+  const confirmLimitUpdate = async () => {
+    const newLimitNum = parseFloat(limitModal.newLimit);
+    const targetStudent = limitModal.student;
+
+    if (isNaN(newLimitNum) || newLimitNum < 0) {
+      alert("Please enter a valid positive number.");
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("token");
+      await axios.patch(
+        `http://localhost:5000/api/debts/${targetStudent.id}/limit`, 
+        { limit: newLimitNum },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      showToast(`Custom limit set to ₹${newLimitNum} for ${targetStudent.name}.`, 'success');
+      fetchDebts(); 
+      closeLimitModal();
+    } catch (err) {
+      alert(err.response?.data?.message || "Updating limit failed.");
     }
   };
 
@@ -205,6 +239,41 @@ export default function ActiveDebtsContent() {
               <button onClick={confirmPayment} className="cursor-pointer bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg transition shadow-sm flex items-center gap-2">
                 <CheckCircle className="w-5 h-5" /> Confirm Payment
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* CUSTOM LIMIT MODAL */}
+      {/* ========================================================= */}
+      {limitModal.isOpen && (
+        <div className="fixed inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[450px] p-8 relative border border-gray-100">
+            <X onClick={closeLimitModal} className="absolute top-5 right-5 w-5 h-5 text-gray-400 cursor-pointer hover:text-red-500 transition" />
+            
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Set Custom Debt Limit</h2>
+            <p className="text-sm text-gray-500 mb-6">Changing credit limit for <strong className="text-gray-800">{limitModal.student?.name}</strong>.</p>
+            
+            <div className="mb-8">
+              <label className="block text-sm font-medium text-gray-700 mb-2">New Maximum Limit</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <IndianRupee className="h-5 w-5 text-gray-400" />
+                </div>
+                <input 
+                  type="number" 
+                  value={limitModal.newLimit} 
+                  onChange={(e) => setLimitModal({ ...limitModal, newLimit: e.target.value })} 
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#eab308] focus:border-[#eab308] outline-none text-lg transition-colors" 
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button onClick={closeLimitModal} className="cursor-pointer px-5 py-2.5 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition"> Cancel </button>
+              <button onClick={confirmLimitUpdate} className="cursor-pointer bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg transition shadow-sm flex items-center gap-2"> Save Limit </button>
             </div>
           </div>
         </div>
@@ -291,8 +360,11 @@ export default function ActiveDebtsContent() {
                 </div>
 
                 <div className="flex flex-col items-end gap-3 w-full md:w-auto">
-                  <div className="text-[15px] font-medium text-gray-700">
+                  <div className="text-[15px] font-medium text-gray-700 flex items-center gap-2">
                     Total Debt: <span className={`font-bold ${isCritical ? 'text-red-600' : 'text-[#1e293b]'}`}>₹{s.debt.toLocaleString()}/{s.limit.toLocaleString()}</span>
+                    <button onClick={() => openLimitModal(s)} className="p-1 hover:bg-gray-100 rounded-md transition text-gray-400 hover:text-yellow-600 cursor-pointer" title="Edit limit">
+                      <Edit3 className="w-4 h-4" />
+                    </button>
                   </div>
                   
                   <div className="flex gap-3">

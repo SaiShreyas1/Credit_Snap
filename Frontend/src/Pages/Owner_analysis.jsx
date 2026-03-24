@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -15,28 +16,43 @@ export default function Owneranalytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // ⭐ NEW: Catches errors to prevent white screens!
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        const token = sessionStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/analytics/owner', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        if (response.data.status === 'success') {
-          setAnalytics(response.data.data);
-        } else {
-          setError(response.data.message); // Catch custom backend messages
-        }
-      } catch (err) {
-        console.error("Failed to load analytics:", err);
-        setError(err.response?.data?.message || err.message); // Catch network crashes
-      } finally {
-        setLoading(false);
+  const fetchAnalytics = async () => {
+    try {
+      const token = sessionStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/analytics/owner', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.status === 'success') {
+        setAnalytics(response.data.data);
+      } else {
+        setError(response.data.message);
       }
-    };
+    } catch (err) {
+      console.error("Failed to load analytics:", err);
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Initial fetch
+  useEffect(() => {
     fetchAnalytics();
+
+    // 🔌 SOCKET.IO: Live-refresh charts when new orders or payments arrive
+    const canteenId = sessionStorage.getItem('canteenId');
+    if (!canteenId) return;
+
+    const socket = io('http://localhost:5000');
+    socket.on('connect', () => socket.emit('join-canteen', canteenId));
+
+    // Whenever a new order lands OR a debt is paid, re-fetch the analytics
+    socket.on('newOrder', () => fetchAnalytics());
+    socket.on('debt-updated', () => fetchAnalytics());
+    socket.on('orderStatusUpdated', () => fetchAnalytics());
+
+    return () => socket.disconnect();
   }, []);
 
   if (loading) {
