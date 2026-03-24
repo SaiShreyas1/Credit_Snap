@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { socket } from '../socket'; // Ensure this matches your actual import path
 import {
   Search,
@@ -17,6 +17,7 @@ import {
 
 const StudentCanteens = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [step, setStep] = useState('list');
   const [canteensData, setCanteensData] = useState([]);
@@ -45,7 +46,7 @@ const StudentCanteens = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 🌟 THE FIX: Bulletproof Initialization & Direct to Checkout
+  // 🌟 THE FIX: Bulletproof Initialization using React Router State
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -57,28 +58,30 @@ const StudentCanteens = () => {
           setCanteensData(canteens);
         }
 
-        // 2. Check if we arrived here from "Change Order"
-        const autoCanteenId = localStorage.getItem('changeOrderCanteenId');
+        // 2. Check if we arrived here from "Change Order" via Router State
+        const navState = location.state;
         
-        if (autoCanteenId && canteens.length > 0) {
+        if (navState && navState.isChangingOrder && canteens.length > 0) {
+          const autoCanteenId = navState.canteenId;
           const canteenToOpen = canteens.find(c => c._id === autoCanteenId);
           
-          if (canteenToOpen && canteenToOpen.status !== "Closed") {
-            // 3. Instantly fetch that specific menu
-            const menuRes = await axios.get(`http://localhost:5000/api/canteens/${autoCanteenId}/menu`);
-            
-            if (menuRes.data.status === 'success') {
-              const availableMenu = menuRes.data.data.menu.filter(item => item.isAvailable);
-              setMenuData(availableMenu);
+          if (canteenToOpen) {
+            if (canteenToOpen.status === "Closed") {
+              alert("This canteen is currently closed. You cannot modify your order right now.");
+            } else {
+              // 3. Instantly fetch that specific menu
+              const menuRes = await axios.get(`http://localhost:5000/api/canteens/${autoCanteenId}/menu`);
               
-              // 4. Recover the cart items
-              const savedCart = localStorage.getItem('changeOrderCart');
-              if (savedCart) {
+              if (menuRes.data.status === 'success') {
+                const availableMenu = menuRes.data.data.menu.filter(item => item.isAvailable);
+                setMenuData(availableMenu);
+                
+                // 4. Recover the cart items from router state
                 try {
-                  const parsedItems = JSON.parse(savedCart);
+                  const savedItems = navState.cartItems || [];
                   const newCartState = {};
                   
-                  parsedItems.forEach(savedItem => {
+                  savedItems.forEach(savedItem => {
                     const menuItem = availableMenu.find(m => m.name === savedItem.name);
                     if (menuItem) {
                       newCartState[menuItem._id] = savedItem.quantity; 
@@ -88,17 +91,16 @@ const StudentCanteens = () => {
                 } catch (e) {
                   console.error("Cart Recovery Failed:", e);
                 }
+
+                // 5. 🚀 Instantly snap the UI directly to the CHECKOUT step!
+                setSelectedCanteen(canteenToOpen);
+                setStep('checkout');
               }
             }
-            
-            // 5. 🚀 Instantly snap the UI directly to the CHECKOUT step!
-            setSelectedCanteen(canteenToOpen);
-            setStep('checkout');
-            
-            // 6. Clean up memory
-            localStorage.removeItem('changeOrderCanteenId');
-            localStorage.removeItem('changeOrderCart');
           }
+          
+          // 6. Clear router state so refreshing the page doesn't re-trigger the change order flow
+          navigate(location.pathname, { replace: true, state: null });
         }
       } catch (err) {
         console.error("Initialization error:", err);
@@ -108,7 +110,7 @@ const StudentCanteens = () => {
     };
 
     fetchInitialData();
-  }, []); 
+  }, [location.state, location.pathname, navigate]); 
 
   // Normal Menu Fetching
   const fetchMenu = async (canteenId) => {

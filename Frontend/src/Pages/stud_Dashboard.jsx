@@ -180,7 +180,7 @@ export default function StudDashboard() {
     }
   };
 
-  // 🌟 FIX: Updated Change Order Logic
+  // 🌟 FIX: Updated Change Order Logic using Router State
   const handleChangeOrder = async (order) => {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
@@ -190,14 +190,17 @@ export default function StudDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // 2. Save BOTH items and Canteen ID to localStorage
+      // 2. Extract Canteen ID
       const canteenId = typeof order.canteen === 'object' ? order.canteen._id : order.canteen;
-      localStorage.setItem('changeOrderCanteenId', canteenId);
-      localStorage.setItem('changeOrderCart', JSON.stringify(order.items));
 
-      // 3. Navigate to the Canteens page
-      // ⚠️ IMPORTANT: Change this URL if your canteens route is different (e.g., '/canteens')
-      navigate('/student/canteens'); 
+      // 3. Navigate to the Canteens page with router state
+      navigate('/student/canteens', {
+        state: {
+          isChangingOrder: true,
+          canteenId: canteenId,
+          cartItems: order.items
+        }
+      });
       
     } catch (err) {
       alert("Failed to change order. Please try again.");
