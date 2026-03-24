@@ -249,20 +249,20 @@ exports.cancelOrder = async (req, res) => {
       return res.status(400).json({ status: 'fail', message: 'You can only cancel orders that are still pending.' });
     }
 
-    // 🔥 THE FIX: Change status to 'rejected' instead of deleting it
-    order.status = 'rejected';
+    // 🔥 THE FIX: Change status to 'cancelled' instead of deleting it
+    order.status = 'cancelled';
     await order.save();
 
     // 📡 EMIT TO SOCKET.IO: Tell the Canteen Owner dashboard to update!
     const io = req.app.get('io');
     if (io && order.canteen) {
-      // This tells the owner's screen to update this specific order to 'rejected'
+      // This tells the owner's screen to update this specific order to 'cancelled'
       io.to(`canteen:${order.canteen}`).emit('orderStatusUpdated', order);
     }
 
     res.status(200).json({
       status: 'success',
-      message: 'Order successfully rejected.',
+      message: 'Order successfully cancelled.',
       data: order
     });
   } catch (error) {

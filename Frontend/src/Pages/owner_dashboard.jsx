@@ -408,7 +408,7 @@ export default function OwnerDashboard() {
                   </div>
                 ) : (
                   <span className="debt-badge">
-                    {order.status === 'accepted' ? 'Added to debt' : 'Rejected'}
+                    {order.status === 'accepted' ? 'Added to debt' : order.status === 'cancelled' ? 'Cancelled' : 'Rejected'}
                   </span>
                 )}
               </div>

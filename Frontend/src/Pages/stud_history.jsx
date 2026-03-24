@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { History, Search, ChevronDown, Filter, ArrowUpDown } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 const parseDateTime = (dateStr, timeStr) => {
   if (!dateStr) return new Date();
@@ -40,8 +41,6 @@ export default function StudHistory() {
   const sortRef = useRef(null);
   const filterRef = useRef(null);
 
-  // FETCH DATA FROM BACKEND
-  useEffect(() => {
     const fetchHistory = async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
@@ -65,7 +64,30 @@ export default function StudHistory() {
       }
     };
 
+  // FETCH DATA FROM BACKEND
+  useEffect(() => {
     fetchHistory();
+    
+    // 🔌 SOCKET.IO INTEGRATION FOR LIVE UPDATES
+    const userStr = sessionStorage.getItem('user') || localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        const socket = io('http://localhost:5000');
+
+        socket.on('connect', () => {
+          socket.emit('join-student', user._id);
+        });
+
+        // Whenever the owner accepts a payment OR updates an order status to accepted/rejected
+        socket.on('debt-updated', () => fetchHistory());
+        socket.on('orderStatusUpdated', () => fetchHistory());
+
+        return () => socket.disconnect();
+      } catch (e) {
+        console.error("Socket err", e);
+      }
+    }
   }, []);
 
   // Handle outside clicks for dropdowns
@@ -257,7 +279,7 @@ export default function StudHistory() {
                   <span className={`px-3 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border ${
                     record.status === 'Accepted' || record.status === 'Completed'
                       ? 'bg-green-50 text-green-600 border-green-200' 
-                      : record.status === 'Rejected'
+                      : record.status === 'Rejected' || record.status === 'Cancelled'
                       ? 'bg-red-50 text-red-600 border-red-200'
                       : 'bg-orange-50 text-orange-600 border-orange-200'
                   }`}>
