@@ -79,7 +79,17 @@ export default function OwnerHistory() {
           };
 
           if (isDebtPayment) {
-            formattedDebts.push({ ...baseData, remainingDebt: debtMap[studentId] || 0 });
+            formattedDebts.push({
+              ...baseData,
+              remainingDebt: debtMap[studentId] || 0,
+              paymentType: 'Offline' // item name 'Offline Debt Payment' identifies this
+            });
+          } else if (order.items && order.items.length > 0 && order.items[0].name === 'Online Debt Payment') {
+            formattedDebts.push({
+              ...baseData,
+              remainingDebt: debtMap[studentId] || 0,
+              paymentType: 'Online'
+            });
           } else {
             const itemsStr = order.items && order.items.length > 0 
               ? order.items.map(i => `${i.name} x${i.quantity}`).join(', ') 
@@ -282,9 +292,21 @@ export default function OwnerHistory() {
                 <div className="flex items-center gap-3 mb-1">
                   <h3 className="text-xl font-medium text-gray-900">{record.name}</h3>
                   {activeTab === 'debt' && (
-                    <span className="px-2.5 py-0.5 bg-green-50 text-green-700 text-[11px] font-bold rounded-md uppercase tracking-wider border border-green-200">
-                      Payment Received
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 bg-green-50 text-green-700 text-[11px] font-bold rounded-md uppercase tracking-wider border border-green-200">
+                        Payment Received
+                      </span>
+                      {record.paymentType === 'Offline' && (
+                        <span className="px-2.5 py-0.5 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-md uppercase tracking-wider border border-slate-200">
+                          Offline
+                        </span>
+                      )}
+                      {record.paymentType === 'Online' && (
+                        <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-bold rounded-md uppercase tracking-wider border border-blue-200">
+                          Online
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
                 <p className="text-sm text-gray-500">
