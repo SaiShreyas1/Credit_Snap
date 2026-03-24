@@ -160,3 +160,112 @@ exports.getStudentOrders = async (req, res) => {
     res.status(404).json({ status: 'fail', message: error.message });
   }
 };
+
+// 5. STUDENT: View complete history (Orders & Payments)
+exports.getStudentHistory = async (req, res) => {
+  try {
+    // 🏆 FIX 1: Use req.user._id (ObjectId) instead of req.user.id (String)
+    const allRecords = await Order.find({ student: req.user._id })
+      .populate('canteen', 'name')
+      .sort({ createdAt: -1 });
+
+    const orderHistory = [];
+    const paymentHistory = [];
+    const combinedHistory = []; // 🏆 FIX 2: Create a unified array for easier frontend mapping
+
+    allRecords.forEach(record => {
+      // Safe check for payment type
+      const isPayment = record.items && record.items.length > 0 && record.items[0].name === 'Offline Debt Payment';
+
+      // Safe Date parsing
+      const dateObj = record.createdAt ? new Date(record.createdAt) : new Date();
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const year = dateObj.getFullYear();
+      
+      // Safe status check
+      const safeStatus = record.status 
+        ? record.status.charAt(0).toUpperCase() + record.status.slice(1) 
+        : 'Pending';
+
+      const formattedRecord = {
+        id: record._id,
+        canteen: record.canteen ? record.canteen.name : 'Unknown Canteen',
+        status: safeStatus,
+        amount: record.totalAmount || 0,
+        date: `${day}-${month}-${year}`,
+        time: dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+        type: isPayment ? 'payment' : 'order' // Helper flag for the frontend UI
+      };
+
+      if (isPayment) {
+        const paymentRecord = { ...formattedRecord, items: 'Debt Clearance' };
+        paymentHistory.push(paymentRecord);
+        combinedHistory.push(paymentRecord); // Add to unified list
+      } else {
+        const orderRecord = {
+          ...formattedRecord,
+          items: Array.isArray(record.items) && record.items.length > 0
+            ? record.items.map(i => `${i.quantity}x ${i.name}`).join(', ') 
+            : 'Unknown Items'
+        };
+        orderHistory.push(orderRecord);
+        combinedHistory.push(orderRecord); // Add to unified list
+      }
+    });
+
+    // 🏆 FIX 3: Send back the separated arrays AND the combined history
+    res.status(200).json({ 
+      status: 'success', 
+      data: { 
+        orders: orderHistory, 
+        payments: paymentHistory,
+        allHistory: combinedHistory // React can just map over res.data.data.allHistory!
+      } 
+    });
+  } catch (error) {
+    console.error("❌ ERROR IN GET STUDENT HISTORY:", error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+// 6. STUDENT: Cancel/Reject a pending order
+exports.cancelOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ status: 'fail', message: 'Order not found' });
+    }
+
+    // Security check: Make sure this student actually owns this order
+    const studentId = req.user._id ? req.user._id.toString() : req.user.id;
+    if (order.student.toString() !== studentId) {
+      return res.status(403).json({ status: 'fail', message: 'You cannot cancel someone else\'s order.' });
+    }
+
+    // Rule check: Only pending orders can be cancelled by the student
+    if (order.status !== 'pending') {
+      return res.status(400).json({ status: 'fail', message: 'You can only cancel orders that are still pending.' });
+    }
+
+    // 🔥 THE FIX: Change status to 'rejected' instead of deleting it
+    order.status = 'rejected';
+    await order.save();
+
+    // 📡 EMIT TO SOCKET.IO: Tell the Canteen Owner dashboard to update!
+    const io = req.app.get('io');
+    if (io && order.canteen) {
+      // This tells the owner's screen to update this specific order to 'rejected'
+      io.to(`canteen:${order.canteen}`).emit('orderStatusUpdated', order);
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Order successfully rejected.',
+      data: order
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};

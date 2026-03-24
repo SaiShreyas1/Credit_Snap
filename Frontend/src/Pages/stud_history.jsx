@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import { History, Search, ChevronDown, Filter, ArrowUpDown } from 'lucide-react';
 
 const parseDateTime = (dateStr, timeStr) => {
+  if (!dateStr) return new Date();
   if (dateStr.toLowerCase().includes('today')) return new Date();
   if (dateStr.toLowerCase().includes('yesterday')) {
     const d = new Date();
@@ -12,7 +14,7 @@ const parseDateTime = (dateStr, timeStr) => {
   const parts = dateStr.split('-');
   if (parts.length === 3) {
     const [day, month, year] = parts;
-    return new Date(`${year}-${month}-${day} ${timeStr}`);
+    return new Date(`${year}-${month}-${day} ${timeStr || ''}`);
   }
   return new Date(); 
 };
@@ -21,6 +23,11 @@ export default function StudHistory() {
   const [activeTab, setActiveTab] = useState('order'); 
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Data States
+  const [orderData, setOrderData] = useState([]);
+  const [paymentData, setPaymentData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   // Dropdowns
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -33,6 +40,35 @@ export default function StudHistory() {
   const sortRef = useRef(null);
   const filterRef = useRef(null);
 
+  // FETCH DATA FROM BACKEND
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const res = await axios.get('http://localhost:5000/api/orders/my-history', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.data.status === 'success') {
+          // 🛡️ THE FIX: Filter out "Pending" orders immediately so they never hit the state
+          const finalizedOrders = (res.data.data.orders || []).filter(
+            order => order.status && order.status.toLowerCase() !== 'pending'
+          );
+          
+          setOrderData(finalizedOrders);
+          setPaymentData(res.data.data.payments || []);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch history:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, []);
+
+  // Handle outside clicks for dropdowns
   useEffect(() => {
     function handleClickOutside(event) {
       if (sortRef.current && !sortRef.current.contains(event.target)) setIsSortOpen(false);
@@ -42,33 +78,27 @@ export default function StudHistory() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const [orderHistoryData] = useState([
-    { id: 1, items: 'Samosa x2, Chai x1', canteen: 'Hall 3 Canteen', amount: 26, date: 'Today', time: '4:35pm', status: 'Accepted' },
-    { id: 2, items: 'Chicken Biryani x2, Masala Dosa x4', canteen: 'Hall 10 Canteen', amount: 400, date: 'Yesterday', time: '11:50pm', status: 'Rejected' },
-    { id: 3, items: 'Chicken Macroni x2, Coke x2', canteen: 'Hall 10 Canteen', amount: 160, date: 'Yesterday', time: '8:20pm', status: 'Accepted' },
-    { id: 4, items: 'Matar Mushroom x1, Butter Roti x4, Sprite x1', canteen: 'Hall 7 Canteen', amount: 100, date: '20-03-2026', time: '10:30pm', status: 'Accepted' },
-  ]);
-
-  const [debtHistoryData] = useState([
-    { id: 5, canteen: 'Hall 1 Canteen', amount: 1500, date: '22-03-2026', time: '10:15am' },
-    { id: 6, canteen: 'Hall 3 Canteen', amount: 850, date: '18-03-2026', time: '2:30pm' },
-    { id: 7, canteen: 'Hall 10 Canteen', amount: 400, date: '15-03-2026', time: '6:45pm' },
-  ]);
-
-  const activeData = activeTab === 'order' ? orderHistoryData : debtHistoryData;
+  const activeData = activeTab === 'order' ? orderData : paymentData;
   const uniqueCanteens = [...new Set(activeData.map(item => item.canteen))];
 
+  // Defensive Filtering Logic
   let processedData = activeData.filter(record => {
-    const matchesSearch = 
-      record.canteen.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (record.items && record.items.toLowerCase().includes(searchTerm.toLowerCase()));
+    const safeSearch = searchTerm.toLowerCase();
     
-    const matchesStatus = (filterStatus === '' || activeTab === 'debt') ? true : record.status === filterStatus;
+    const matchesSearch = searchTerm === '' || 
+      (record.canteen && String(record.canteen).toLowerCase().includes(safeSearch)) || 
+      (record.items && String(record.items).toLowerCase().includes(safeSearch));
+    
+    const matchesStatus = (filterStatus === '' || activeTab === 'debt') 
+      ? true 
+      : (record.status && record.status.toLowerCase() === filterStatus.toLowerCase());
+      
     const matchesCanteen = filterCanteen === '' ? true : record.canteen === filterCanteen;
     
     return matchesSearch && matchesStatus && matchesCanteen;
   });
 
+  // Process sorting
   if (sortConfig) {
     processedData.sort((a, b) => {
       if (sortConfig.includes('date')) {
@@ -76,7 +106,9 @@ export default function StudHistory() {
         const dateB = parseDateTime(b.date, b.time);
         return sortConfig === 'date_desc' ? dateB - dateA : dateA - dateB;
       } else if (sortConfig.includes('price')) {
-        return sortConfig === 'price_desc' ? b.amount - a.amount : a.amount - b.amount;
+        const priceA = Number(a.amount) || 0;
+        const priceB = Number(b.amount) || 0;
+        return sortConfig === 'price_desc' ? priceB - priceA : priceA - priceB;
       }
       return 0;
     });
@@ -85,13 +117,9 @@ export default function StudHistory() {
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto bg-[#f8f9fa] min-h-screen">
       
-      {/* ========================================================
-        TOP ACTION BAR - EXACTLY MATCHING YOUR REFERENCE IMAGE
-        ========================================================
-      */}
+      {/* Top Action Bar */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-5 relative z-20">
         
-        {/* Search Bar: White, pill shape, exact height, subtle shadow */}
         <div className="flex items-center bg-white border border-gray-200 rounded-full px-5 h-11 w-full max-w-[450px] shadow-sm">
           <Search className="w-4 h-4 text-gray-400 mr-3" />
           <input 
@@ -105,11 +133,11 @@ export default function StudHistory() {
         
         <div className="flex gap-4 relative">
           
-          {/* Filter Dropdown: Orange, rounded-xl, exact height, funnel icon */}
+          {/* Filter Dropdown */}
           <div ref={filterRef}>
             <button 
               onClick={() => {setIsFilterOpen(!isFilterOpen); setIsSortOpen(false);}} 
-              className="bg-[#f97316] text-white px-5 h-11 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-[#ea580c] transition-colors"
+              className="bg-[#f97316] text-white px-5 h-11 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-[#ea580c] transition-colors cursor-pointer"
             >
                <Filter className="w-4 h-4" /> Filter by <ChevronDown className="w-4 h-4 ml-1" />
             </button>
@@ -124,6 +152,7 @@ export default function StudHistory() {
                             value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                       <option value="">All Statuses</option>
                       <option value="Accepted">Accepted</option>
+                      {/* 🛡️ THE FIX: Removed "Pending" from the dropdown list */}
                       <option value="Rejected">Rejected</option>
                     </select>
                   </div>
@@ -140,27 +169,27 @@ export default function StudHistory() {
                   </select>
                 </div>
                 
-                <button onClick={() => {setFilterStatus(''); setFilterCanteen('');}} className="text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline w-full text-center">Clear Filters</button>
+                <button onClick={() => {setFilterStatus(''); setFilterCanteen('');}} className="text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline w-full text-center cursor-pointer">Clear Filters</button>
               </div>
             )}
           </div>
 
-          {/* Sort Dropdown: Orange, rounded-xl, exact height, arrow icon */}
+          {/* Sort Dropdown */}
           <div ref={sortRef}>
             <button 
               onClick={() => {setIsSortOpen(!isSortOpen); setIsFilterOpen(false);}} 
-              className="bg-[#f97316] text-white px-5 h-11 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-[#ea580c] transition-colors"
+              className="bg-[#f97316] text-white px-5 h-11 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-[#ea580c] transition-colors cursor-pointer"
             >
               <ArrowUpDown className="w-4 h-4" /> Sort by <ChevronDown className="w-4 h-4 ml-1" />
             </button>
             {isSortOpen && (
               <div className="absolute top-14 right-0 w-52 bg-white border border-gray-100 shadow-xl rounded-2xl p-2 z-50 flex flex-col">
-                <button onClick={() => setSortConfig('date_desc')} className={`text-left px-4 py-2.5 text-sm rounded-xl transition-colors ${sortConfig === 'date_desc' ? 'bg-orange-50 font-bold text-orange-600' : 'text-gray-700 hover:bg-gray-50'}`}>Recent (Newest)</button>
-                <button onClick={() => setSortConfig('date_asc')} className={`text-left px-4 py-2.5 text-sm rounded-xl transition-colors ${sortConfig === 'date_asc' ? 'bg-orange-50 font-bold text-orange-600' : 'text-gray-700 hover:bg-gray-50'}`}>Recent (Oldest)</button>
+                <button onClick={() => setSortConfig('date_desc')} className={`text-left px-4 py-2.5 text-sm rounded-xl transition-colors cursor-pointer ${sortConfig === 'date_desc' ? 'bg-orange-50 font-bold text-orange-600' : 'text-gray-700 hover:bg-gray-50'}`}>Recent (Newest)</button>
+                <button onClick={() => setSortConfig('date_asc')} className={`text-left px-4 py-2.5 text-sm rounded-xl transition-colors cursor-pointer ${sortConfig === 'date_asc' ? 'bg-orange-50 font-bold text-orange-600' : 'text-gray-700 hover:bg-gray-50'}`}>Recent (Oldest)</button>
                 <div className="border-t my-1 border-gray-100"></div>
-                <button onClick={() => setSortConfig('price_desc')} className={`text-left px-4 py-2.5 text-sm rounded-xl transition-colors ${sortConfig === 'price_desc' ? 'bg-orange-50 font-bold text-orange-600' : 'text-gray-700 hover:bg-gray-50'}`}>Price (High to Low)</button>
-                <button onClick={() => setSortConfig('price_asc')} className={`text-left px-4 py-2.5 text-sm rounded-xl transition-colors ${sortConfig === 'price_asc' ? 'bg-orange-50 font-bold text-orange-600' : 'text-gray-700 hover:bg-gray-50'}`}>Price (Low to High)</button>
-                <button onClick={() => setSortConfig('')} className="text-left px-4 py-2 text-xs font-semibold text-gray-400 hover:text-gray-600 mt-1">Clear Sort</button>
+                <button onClick={() => setSortConfig('price_desc')} className={`text-left px-4 py-2.5 text-sm rounded-xl transition-colors cursor-pointer ${sortConfig === 'price_desc' ? 'bg-orange-50 font-bold text-orange-600' : 'text-gray-700 hover:bg-gray-50'}`}>Price (High to Low)</button>
+                <button onClick={() => setSortConfig('price_asc')} className={`text-left px-4 py-2.5 text-sm rounded-xl transition-colors cursor-pointer ${sortConfig === 'price_asc' ? 'bg-orange-50 font-bold text-orange-600' : 'text-gray-700 hover:bg-gray-50'}`}>Price (Low to High)</button>
+                <button onClick={() => setSortConfig('')} className="text-left px-4 py-2 text-xs font-semibold text-gray-400 hover:text-gray-600 mt-1 cursor-pointer">Clear Sort</button>
               </div>
             )}
           </div>
@@ -168,16 +197,11 @@ export default function StudHistory() {
         </div>
       </div>
 
-      {/* ========================================================
-        BOTTOM SECTION - POLISHED UI
-        ========================================================
-      */}
-
       {/* Tab Toggle */}
       <div className="flex bg-gray-200/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-1.5 mb-8 shadow-inner relative z-10">
         <button
           onClick={() => { setActiveTab('order'); setFilterStatus(''); }}
-          className={`cursor-pointer flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
+          className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 cursor-pointer ${
             activeTab === 'order' 
               ? 'bg-[#ea580c] text-white shadow-md transform scale-[1.01]' 
               : 'text-gray-500 hover:text-gray-800 hover:bg-white/60'
@@ -187,7 +211,7 @@ export default function StudHistory() {
         </button>
         <button
           onClick={() => { setActiveTab('debt'); setFilterStatus(''); }}
-          className={`cursor-pointer flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
+          className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 cursor-pointer ${
             activeTab === 'debt' 
               ? 'bg-[#ea580c] text-white shadow-md transform scale-[1.01]' 
               : 'text-gray-500 hover:text-gray-800 hover:bg-white/60'
@@ -199,7 +223,11 @@ export default function StudHistory() {
 
       {/* History List */}
       <div className="space-y-4 relative z-0">
-        {processedData.length === 0 ? (
+        {loading ? (
+           <div className="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center justify-center min-h-[350px]">
+             <p className="text-gray-500 font-medium animate-pulse">Loading your history...</p>
+           </div>
+        ) : processedData.length === 0 ? (
            <div className="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center justify-center min-h-[350px]">
              <div className="bg-gray-50 p-4 rounded-full mb-4">
                <History className="w-10 h-10 text-gray-400" />
@@ -227,9 +255,11 @@ export default function StudHistory() {
                 
                 {record.status && (
                   <span className={`px-3 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border ${
-                    record.status === 'Accepted' 
+                    record.status === 'Accepted' || record.status === 'Completed'
                       ? 'bg-green-50 text-green-600 border-green-200' 
-                      : 'bg-red-50 text-red-600 border-red-200'
+                      : record.status === 'Rejected'
+                      ? 'bg-red-50 text-red-600 border-red-200'
+                      : 'bg-orange-50 text-orange-600 border-orange-200'
                   }`}>
                     {record.status}
                   </span>

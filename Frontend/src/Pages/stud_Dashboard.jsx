@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
@@ -25,9 +25,66 @@ const formatOrderDate = (dateString) => {
   return `${date.toLocaleDateString()}, ${timeString}`;
 };
 
+const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const canteenName = order.canteen?.name || 'Unknown Canteen';
+  const orderItems = order.items?.map(i => `${i.quantity}x ${i.name}`).join(', ') || 'Unknown Items';
+
+  return (
+    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col mb-4 transition-all duration-200 hover:shadow-md">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-1">{orderItems}</h3>
+          <p className="text-gray-600 text-sm">
+            {canteenName}, <span className="text-gray-500">{formatOrderDate(order.createdAt)}</span>
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2">
+            <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
+              order.status === 'pending' ? 'bg-orange-100 text-orange-700' :
+              order.status === 'accepted' ? 'bg-green-100 text-green-700' :
+              'bg-red-100 text-red-700'
+            }`}>
+              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+            </span>
+            {order.status === 'pending' && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer text-gray-400"
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+              </button>
+            )}
+          </div>
+          <span className="font-semibold text-blue-900">
+            Price: <span className="text-blue-600">₹{order.totalAmount}</span>
+          </span>
+        </div>
+      </div>
+      {isExpanded && order.status === 'pending' && (
+        <div className="mt-4 pt-4 border-t border-gray-100 flex gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          <button
+            onClick={() => onChangeOrder(order)}
+            className="px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-semibold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            ✏️ Change Order
+          </button>
+          <button
+            onClick={() => onCancelOrder(order._id)}
+            className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-semibold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            ❌ Cancel
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function StudDashboard() {
   const navigate = useNavigate();
-
   const [totalDebt, setTotalDebt] = useState(0);
   const [alerts, setAlerts] = useState([]);
   const [currentOrders, setCurrentOrders] = useState([]);
@@ -42,8 +99,6 @@ export default function StudDashboard() {
       if (res.data.status === 'success') {
         const sum = res.data.data.reduce((total, d) => total + d.amountOwed, 0);
         setTotalDebt(sum);
-
-        // Generate Alerts for any canteen debt that is 80% or more of the 3000 limit (>= ₹2400)
         const generatedAlerts = [];
         res.data.data.forEach(d => {
           if (d.amountOwed >= 2400) {
@@ -71,23 +126,19 @@ export default function StudDashboard() {
         if (res.data.status === 'success') {
           const now = new Date();
           const fortyEightHoursMs = 48 * 60 * 60 * 1000;
-
           const recentActualOrders = res.data.data.filter(order => {
             const isOfflinePayment = order.items && order.items.length > 0 && order.items[0].name === 'Offline Debt Payment';
             if (isOfflinePayment) return false;
-
             const orderDate = new Date(order.createdAt);
             const isRecent = (now - orderDate) <= fortyEightHoursMs;
             return isRecent;
           });
-
           setCurrentOrders(recentActualOrders);
         }
       } catch (err) {
         console.error('Failed to fetch orders:', err);
       }
     };
-
     fetchOrders();
     fetchTotalDebt();
   }, []);
@@ -95,35 +146,66 @@ export default function StudDashboard() {
   useEffect(() => {
     const userStr = sessionStorage.getItem('user');
     if (!userStr) return;
-
     const user = JSON.parse(userStr);
     const userIdStr = user._id;
-
     const socket = io('http://localhost:5000');
-
     socket.on('connect', () => {
       socket.emit('join-student', userIdStr);
     });
-
     socket.on('orderStatusUpdated', (updatedOrder) => {
-      console.log('🔔 Order Status Updated!', updatedOrder);
-
       setCurrentOrders((prevOrders) =>
         prevOrders.map((order) =>
           order._id === updatedOrder._id ? updatedOrder : order
         )
       );
     });
-
     socket.on('debt-updated', () => {
-      console.log('💸 Debt Updated Live!');
       fetchTotalDebt();
     });
-
     return () => {
       socket.disconnect();
     };
   }, []);
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm("Are you sure you want to cancel this order?")) return;
+    try {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      await axios.patch(`http://localhost:5000/api/orders/${orderId}/cancel`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCurrentOrders(prev => prev.filter(o => o._id !== orderId));
+    } catch (err) {
+      alert(err.response?.data?.message || "Error cancelling order");
+    }
+  };
+
+  // 🌟 FIX: Updated Change Order Logic using Router State
+  const handleChangeOrder = async (order) => {
+    try {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      
+      // 1. Cancel it on the backend
+      await axios.patch(`http://localhost:5000/api/orders/${order._id}/cancel`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // 2. Extract Canteen ID
+      const canteenId = typeof order.canteen === 'object' ? order.canteen._id : order.canteen;
+
+      // 3. Navigate to the Canteens page with router state
+      navigate('/student/canteens', {
+        state: {
+          isChangingOrder: true,
+          canteenId: canteenId,
+          cartItems: order.items
+        }
+      });
+      
+    } catch (err) {
+      alert("Failed to change order. Please try again.");
+    }
+  };
 
   return (
     <main className="p-8 overflow-y-auto flex-1 bg-gray-50 min-h-screen">
@@ -135,11 +217,12 @@ export default function StudDashboard() {
           </div>
           {totalDebt > 0 && (
             <div>
-              <button onClick={() => navigate('/student/debts')} className="bg-[#f97316] hover:bg-orange-600 text-white px-6 py-1.5 rounded-full font-semibold shadow-md transition cursor-pointer">Pay Now</button>
+              <button onClick={() => navigate('/student/debts')} className="bg-[#f97316] hover:bg-orange-600 text-white px-6 py-1.5 rounded-full font-semibold shadow-md transition cursor-pointer">
+                Pay Now
+              </button>
             </div>
           )}
         </div>
-
         <div className="bg-white rounded-2xl p-4 flex-1 shadow-sm border border-gray-100 max-w-md flex flex-col h-40">
           <div className="flex items-center gap-2 mb-3 shrink-0">
             <AlertTriangle className="w-5 h-5 text-orange-500" />
@@ -159,7 +242,6 @@ export default function StudDashboard() {
           </div>
         </div>
       </div>
-
       <div>
         <h2 className="text-2xl font-semibold text-gray-800 mb-4">Current Orders:</h2>
         <div className="space-y-4">
@@ -168,26 +250,13 @@ export default function StudDashboard() {
               <p className="text-gray-500">You have no active orders. Go to Canteens to order some food!</p>
             </div>
           ) : (
-            currentOrders.map((order, index) => (
-              <div key={index} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-1">
-                    {order.items?.map(i => `${i.quantity}x ${i.name}`).join(', ')}
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    {order.canteen?.name || 'Unknown Canteen'}, <span className="text-gray-500">{formatOrderDate(order.createdAt)}</span>
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${order.status === 'pending' ? 'bg-orange-100 text-orange-700' :
-                    order.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                  </span>
-                  <span className="font-semibold text-blue-900">Price: <span className="text-blue-600">₹{order.totalAmount}</span></span>
-                </div>
-              </div>
+            currentOrders.map((order) => (
+              <ActiveOrderCard 
+                key={order._id} 
+                order={order} 
+                onCancelOrder={handleCancelOrder} 
+                onChangeOrder={handleChangeOrder} 
+              />
             ))
           )}
         </div>
