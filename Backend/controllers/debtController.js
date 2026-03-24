@@ -126,17 +126,27 @@ exports.notifyStudent = async (req, res) => {
       : "our canteen";
 
     // 5. Draft the email
-    const emailMessage = `
-      Hello ${debt.student.name},
+    // const emailMessage = `
+    //   Hello ${debt.student.name},
       
-      This is a friendly reminder from ${canteenName} regarding your Credit Snap account. 
-      Your current pending total at our shop is ₹${debt.amountOwed}.
+    //   This is a friendly reminder from ${canteenName} regarding your Credit Snap account. 
+    //   Your current pending total at our shop is ₹${debt.amountOwed}.
       
-      Please clear this amount at your earliest convenience.
+    //   Please clear this amount at your earliest convenience.
       
-      Thanks,
-      ${canteenName} & The Credit Snap Team
-    `;
+    //   Thanks,
+    //   ${canteenName} & The Credit Snap Team
+    // `;
+    // 5. Draft the email
+    const emailMessage = `Hello ${debt.student.name},
+
+This is a friendly reminder from ${canteenName} regarding your Credit Snap account. 
+Your current pending total at our shop is ₹${debt.amountOwed}.
+
+Please clear this amount at your earliest convenience.
+
+Thanks,
+${canteenName} & The Credit Snap Team`;
 
     // 6. Send the email
     await sendEmail({
