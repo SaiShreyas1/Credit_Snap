@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { History, Search, ChevronDown, CheckCircle, ArrowUpDown, ShoppingBag, Calendar, Clock } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 // Helper to convert DD-MM-YYYY HH:MM PM to a sortable JS Date object
 const parseDateTime = (dateStr, timeStr) => {
@@ -25,86 +26,91 @@ export default function OwnerHistory() {
   const [historyData, setHistoryData] = useState({ orders: [], debts: [] });
   const [loading, setLoading] = useState(true);
 
-  // 2. Fetch completed orders / offline payments and active debts
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const token = sessionStorage.getItem("token");
-        
-        const [ordersRes, debtsRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/orders/my-orders", {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get("http://localhost:5000/api/debts/active", {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-        ]);
+  const fetchHistory = async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      
+      const [ordersRes, debtsRes] = await Promise.all([
+        axios.get("http://localhost:5000/api/orders/my-orders", {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get("http://localhost:5000/api/debts/active", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
 
-        const debtMap = {};
-        if (debtsRes.data.status === "success") {
-          debtsRes.data.data.forEach(d => {
-            if (d.student && d.student._id) {
-              debtMap[d.student._id.toString()] = d.amountOwed;
-            }
-          });
-        }
-
-        if (ordersRes.data.status === "success") {
-          const completedOrders = ordersRes.data.data.filter(o => o.status === 'accepted');
-
-          const formattedOrders = [];
-          const formattedDebts = [];
-
-          completedOrders.forEach(order => {
-            const dateObj = new Date(order.createdAt);
-            
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const year = dateObj.getFullYear();
-            
-            const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-            const isDebtPayment = order.items && order.items.length > 0 && order.items[0].name === 'Offline Debt Payment';
-            const studentId = order.student?._id?.toString() || "";
-
-            const baseData = {
-              id: order._id,
-              name: order.student?.name || "Unknown Student",
-              phone: order.student?.phoneNo || "+91 XXXXXXXXXX",
-              rollNo: order.student?.rollNo || "N/A",
-              hall: order.student?.hallNo || "N/A",
-              room: order.student?.roomNo || "N/A",
-              amount: order.totalAmount,
-              date: `${day}-${month}-${year}`,
-              time: timeStr
-            };
-
-            if (isDebtPayment) {
-              formattedDebts.push({
-                ...baseData,
-                remainingDebt: debtMap[studentId] || 0
-              });
-            } else {
-              const itemsStr = order.items && order.items.length > 0 
-                ? order.items.map(i => `${i.name} x${i.quantity}`).join(', ') 
-                : "Items";
-              formattedOrders.push({
-                ...baseData,
-                itemsStr
-              });
-            }
-          });
-
-          setHistoryData({ orders: formattedOrders, debts: formattedDebts });
-        }
-      } catch (err) {
-        console.error("Failed to load history:", err);
-      } finally {
-        setLoading(false);
+      const debtMap = {};
+      if (debtsRes.data.status === "success") {
+        debtsRes.data.data.forEach(d => {
+          if (d.student && d.student._id) {
+            debtMap[d.student._id.toString()] = d.amountOwed;
+          }
+        });
       }
-    };
 
+      if (ordersRes.data.status === "success") {
+        const completedOrders = ordersRes.data.data.filter(o => o.status === 'accepted');
+
+        const formattedOrders = [];
+        const formattedDebts = [];
+
+        completedOrders.forEach(order => {
+          const dateObj = new Date(order.createdAt);
+          
+          const day = String(dateObj.getDate()).padStart(2, '0');
+          const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const year = dateObj.getFullYear();
+          
+          const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+          const isDebtPayment = order.items && order.items.length > 0 && order.items[0].name === 'Offline Debt Payment';
+          const studentId = order.student?._id?.toString() || "";
+
+          const baseData = {
+            id: order._id,
+            name: order.student?.name || "Unknown Student",
+            phone: order.student?.phoneNo || "+91 XXXXXXXXXX",
+            rollNo: order.student?.rollNo || "N/A",
+            hall: order.student?.hallNo || "N/A",
+            room: order.student?.roomNo || "N/A",
+            amount: order.totalAmount,
+            date: `${day}-${month}-${year}`,
+            time: timeStr
+          };
+
+          if (isDebtPayment) {
+            formattedDebts.push({ ...baseData, remainingDebt: debtMap[studentId] || 0 });
+          } else {
+            const itemsStr = order.items && order.items.length > 0 
+              ? order.items.map(i => `${i.name} x${i.quantity}`).join(', ') 
+              : "Items";
+            formattedOrders.push({ ...baseData, itemsStr });
+          }
+        });
+
+        setHistoryData({ orders: formattedOrders, debts: formattedDebts });
+      }
+    } catch (err) {
+      console.error("Failed to load history:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchHistory();
+
+    // 🔌 SOCKET.IO: Auto-refresh when new orders come in or debts are paid
+    const canteenId = sessionStorage.getItem('canteenId');
+    if (!canteenId) return;
+
+    const socket = io('http://localhost:5000');
+    socket.on('connect', () => socket.emit('join-canteen', canteenId));
+    socket.on('newOrder', () => fetchHistory());
+    socket.on('orderStatusUpdated', () => fetchHistory());
+    socket.on('debt-updated', () => fetchHistory());
+
+    return () => socket.disconnect();
   }, []);
 
   const activeData = activeTab === 'order' ? historyData.orders : historyData.debts;
