@@ -182,39 +182,11 @@ export default function ViewDebts() {
         {/* Orange Filter & Sort Buttons */}
         <div className="flex gap-4">
           
-          {/* Filter Dropdown */}
-          <div className="relative" ref={filterRef}>
-            <button 
-              onClick={() => { setIsFilterOpen(!isFilterOpen); setIsSortOpen(false); }} 
-              className="bg-[#f97316] text-white px-5 h-11 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-[#ea580c] transition-colors justify-between min-w-[140px]"
-            >
-              <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4" /> 
-                  {activeFilter === 'All' ? 'Filter by' : activeFilter}
-              </div>
-              <ChevronDown className="w-4 h-4 ml-1" />
-            </button>
-            
-            {isFilterOpen && (
-              <div className="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden py-2">
-                {['All', 'Unpaid', 'Paid'].map((option) => (
-                  <div 
-                    key={option}
-                    onClick={() => { setActiveFilter(option); setIsFilterOpen(false); }} 
-                    className={`px-5 py-2.5 text-sm cursor-pointer transition-colors ${activeFilter === option ? 'bg-orange-50 font-bold text-[#f97316]' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}
-                  >
-                    {option === 'All' ? 'All Canteens' : `${option} Only`}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Sort Dropdown */}
           <div className="relative" ref={sortRef}>
             <button 
-              onClick={() => { setIsSortOpen(!isSortOpen); setIsFilterOpen(false); }} 
-              className="bg-[#f97316] text-white px-5 h-11 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-[#ea580c] transition-colors justify-between min-w-[140px]"
+              onClick={() => setIsSortOpen(!isSortOpen)} 
+              className="bg-[#f97316] text-white px-5 h-11 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-[#ea580c] transition-colors justify-between min-w-[140px] cursor-pointer"
             >
               <div className="flex items-center gap-2">
                   <ArrowDownUp className="w-4 h-4" /> 
