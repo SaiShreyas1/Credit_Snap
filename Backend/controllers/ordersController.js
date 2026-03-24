@@ -14,10 +14,11 @@ exports.createOrder = async (req, res) => {
 
     // 0. CHECK LIMITS BEFORE CREATING ORDER
     const student = await User.findById(req.user.id);
+    const targetCanteen = await Canteen.findById(canteenId);
 
     const existingDebt = await Debt.findOne({ student: req.user.id, canteen: canteenId });
     const currentCanteenDebt = existingDebt ? existingDebt.amountOwed : 0;
-    const canteenLimit = existingDebt ? existingDebt.limit : 3000;
+    const canteenLimit = existingDebt ? existingDebt.limit : (targetCanteen?.defaultLimit || 3000);
     
     if (currentCanteenDebt + numTotalAmount > canteenLimit) {
       return res.status(400).json({
@@ -98,7 +99,9 @@ exports.updateOrderStatus = async (req, res) => {
       // 1. Check if student is over their custom PER-CANTEEN credit limit
       const existingDebt = await Debt.findOne({ student: order.student, canteen: order.canteen });
       const currentCanteenDebt = existingDebt ? existingDebt.amountOwed : 0;
-      const canteenLimit = existingDebt ? existingDebt.limit : 3000;
+      
+      const canteenObj = await Canteen.findById(order.canteen);
+      const canteenLimit = existingDebt ? existingDebt.limit : (canteenObj?.defaultLimit || 3000);
       
       if (currentCanteenDebt + order.totalAmount > canteenLimit) {
         return res.status(400).json({
@@ -114,7 +117,10 @@ exports.updateOrderStatus = async (req, res) => {
       // 3. THE MAGIC: Create or update the specific Canteen Debt Ticket!
       await Debt.findOneAndUpdate(
         { student: order.student, canteen: order.canteen }, // Find the exact Khata
-        { $inc: { amountOwed: order.totalAmount } },        // Add the new order amount
+        { 
+          $inc: { amountOwed: order.totalAmount },        // Add the new order amount
+          $setOnInsert: { limit: canteenObj?.defaultLimit || 3000 }
+        },
         { upsert: true, new: true }                         // If it doesn't exist, create it!
       );
     }

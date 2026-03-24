@@ -10,6 +10,7 @@ router.get('/:canteenId/menu', canteenController.getMenu);
 // Protected routes
 router.use(userController.protect);
 router.get('/my', canteenController.getMyCanteen);
+router.patch('/my/default-limit', canteenController.updateDefaultLimit);
 router.post('/', canteenController.createCanteen);
 router.put('/:canteenId/status', canteenController.updateCanteenStatus);
 router.post('/:canteenId/menu', canteenController.addMenuItem);

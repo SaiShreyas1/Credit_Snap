@@ -148,19 +148,27 @@ Please clear this amount at your earliest convenience.
 Thanks,
 ${canteenName} & The Credit Snap Team`;
 
-    // 6. Send the email
-    await sendEmail({
-      email: debt.student.email,
-      subject: `Credit Snap: Pending Debt Reminder from ${canteenName}`, 
-      message: emailMessage
-    });
-
-    res.status(200).json({
-      status: 'success',
-      message: `Notification sent to ${debt.student.name} from ${canteenName}`
-    });
+    // 6. Send the email with graceful error handling
+    try {
+      await sendEmail({
+        email: debt.student.email,
+        subject: `Credit Snap: Pending Debt Reminder from ${canteenName}`, 
+        message: emailMessage
+      });
+      res.status(200).json({
+        status: 'success',
+        message: `Notification sent to ${debt.student.name} from ${canteenName}`
+      });
+    } catch (emailErr) {
+      console.error("❌ Failed to send email:", emailErr);
+      return res.status(500).json({ 
+        status: 'error', 
+        message: `Failed to dispatch email. Cause: ${emailErr.message}` 
+      });
+    }
 
   } catch (err) {
+    console.error("❌ Unexpected error in notifyStudent:", err);
     res.status(500).json({ status: 'error', message: err.message });
   }
 };
@@ -184,16 +192,21 @@ exports.getMyDebts = async (req, res) => {
 
 // 🔧 4. UPDATE CUSTOM DEBT LIMIT LOGIC
 exports.updateDebtLimit = async (req, res) => {
+  console.log(`[ROUTE HIT] PATCH /api/debts/:id/limit called with ID: ${req.params.id}`);
+  console.log(`[REQUEST BODY] limit: ${req.body.limit}`);
   try {
     const newLimit = Number(req.body.limit);
 
     if (isNaN(newLimit) || newLimit < 0) {
+      console.log(`[REJECTED] Invalid limit: ${req.body.limit}`);
       return res.status(400).json({ status: 'fail', message: 'Please provide a valid numeric limit (e.g., 3000).' });
     }
 
+    console.log(`[DB SEARCH] Searching for Debt ID: ${req.params.id}`);
     const debt = await Debt.findById(req.params.id);
     
     if (!debt) {
+      console.log(`[404 ERROR] Debt not found for ID: ${req.params.id}`);
       return res.status(404).json({ status: 'fail', message: 'Debt record not found!' });
     }
 
@@ -209,6 +222,10 @@ exports.updateDebtLimit = async (req, res) => {
        return res.status(403).json({ status: 'fail', message: 'You can only change debt limits for students at your own canteen.' });
     }
 
+    if (newLimit < debt.amountOwed) {
+       return res.status(400).json({ status: 'fail', message: `Cannot set limit to ₹${newLimit} because this student currently owes ₹${debt.amountOwed}.` });
+    }
+
     debt.limit = newLimit;
     await debt.save();
 
@@ -219,12 +236,14 @@ exports.updateDebtLimit = async (req, res) => {
       io.to(`canteen:${debt.canteen}`).emit('debt-updated');
     }
 
+    console.log(`[SUCCESS] Updated limit to ${newLimit} for Debt ID: ${req.params.id}`);
     res.status(200).json({
       status: 'success',
       message: `Custom debt limit successfully updated to ₹${newLimit}`,
       data: debt
     });
   } catch (err) {
+    console.error(`[500 ERROR] Error updating debt limit:`, err);
     res.status(500).json({ status: 'error', message: err.message });
   }
 };

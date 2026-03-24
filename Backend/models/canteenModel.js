@@ -13,6 +13,10 @@ const canteenSchema = new mongoose.Schema({
   isOpen: {
     type: Boolean,
     default: false // Matches your React initial state logic
+  },
+  defaultLimit: {
+    type: Number,
+    default: 3000
   }
 }, { timestamps: true });
 

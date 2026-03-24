@@ -160,6 +160,55 @@ exports.getMyCanteen = async (req, res) => {
   }
 };
 
+// Update default limit for the owner's canteen and apply to all students
+exports.updateDefaultLimit = async (req, res) => {
+  try {
+    const { defaultLimit } = req.body;
+    const numLimit = Number(defaultLimit);
+
+    if (isNaN(numLimit) || numLimit < 0) {
+      return res.status(400).json({ status: 'fail', message: 'Please provide a valid numeric limit.' });
+    }
+
+    const canteen = await Canteen.findOne({ ownerId: req.user._id });
+    if (!canteen) {
+      return res.status(404).json({ status: 'fail', message: 'No canteen found for this owner' });
+    }
+
+    // NEW VALIDATION: Check if any student currently owes more than the new limit
+    const Debt = require('../models/debtModel');
+    const maxDebtDoc = await Debt.findOne({ canteen: canteen._id }).sort('-amountOwed');
+    
+    if (maxDebtDoc && maxDebtDoc.amountOwed > numLimit) {
+      return res.status(400).json({ 
+        status: 'fail', 
+        message: `Cannot set default limit to ₹${numLimit}. At least one student currently owes ₹${maxDebtDoc.amountOwed}.` 
+      });
+    }
+
+    // Update canteen's setting
+    canteen.defaultLimit = numLimit;
+    await canteen.save();
+
+    // Mass-update all existing debts for this canteen
+    await Debt.updateMany({ canteen: canteen._id }, { limit: numLimit });
+
+    // Tell UI to refresh
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`canteen:${canteen._id}`).emit('debt-updated');
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: `Default limit updated to ₹${numLimit} for all students.`,
+      data: { canteen }
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
 // Get all canteens
 exports.getAllCanteens = async (req, res) => {
   try {
