@@ -69,7 +69,7 @@ export default function ViewDebts() {
   useEffect(() => {
     const fetchMyDebts = async () => {
       try {
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token') ;
         
         if (!token) {
           console.error("NO TOKEN FOUND IN BROWSER!");
@@ -100,7 +100,7 @@ export default function ViewDebts() {
 
     fetchMyDebts();
 
-    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const userStr = sessionStorage.getItem('user') ||localStorage.getItem('user') ;
     
     if (userStr) {
       try {
