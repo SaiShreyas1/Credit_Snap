@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, ChevronDown, Plus, Edit3, AlertTriangle, X, Trash2 } from 'lucide-react';
+import { useNotifications } from '../context/NotificationContext';
 
 export default function OwnerEditMenu() {
+  const { showAlert, showConfirm } = useNotifications();
   // ==========================================
   // 1. MASTER DATA STATE & AUTH
   // ==========================================
@@ -95,7 +97,7 @@ export default function OwnerEditMenu() {
 
   const handleConfirmAdd = async () => {
   if (!newName.trim() || !newPrice.trim() || isNaN(newPrice) || parseFloat(newPrice) < 0) {
-    alert("Please enter a valid Name and Price.");
+    showAlert("Invalid Input", "Please enter a valid Name and Price.", "warning");
     return;
   }
 
@@ -103,7 +105,7 @@ export default function OwnerEditMenu() {
   const activeCanteenId = sessionStorage.getItem('canteenId');
 
   if (!activeCanteenId) {
-    alert("Canteen ID not found. Please refresh the page.");
+    showAlert("Error", "Canteen ID not found. Please refresh the page.", "error");
     return;
   }
 
@@ -123,8 +125,10 @@ export default function OwnerEditMenu() {
     setIsAddModalOpen(false);
     setNewName('');
     setNewPrice('');
+    showAlert("Success", `${newName} has been added to the menu!`, "success");
   } catch (err) {
     console.error("Error adding item:", err);
+    showAlert("Error", "Failed to add item to menu.", "error");
   }
 };
 
@@ -139,7 +143,7 @@ export default function OwnerEditMenu() {
   const handleSaveEdit = async () => {
     // 1. Validate Input First!
     if (!editName.trim() || !editPrice.trim() || isNaN(editPrice) || parseFloat(editPrice) < 0) {
-      alert("Please enter a valid Name and Price.");
+      showAlert("Invalid Input", "Please enter a valid Name and Price.", "warning");
       return;
     }
 
@@ -158,28 +162,33 @@ export default function OwnerEditMenu() {
       ));
       setIsEditModalOpen(false);
       setItemToEdit(null);
+      showAlert("Updated", "Item updated successfully.", "success");
     } catch (err) {
       console.error("Error saving edits:", err);
-      alert("Failed to save edits to database");
+      showAlert("Error", "Failed to save edits to database", "error");
     }
   };
 
   // --- DELETE ITEM LOGIC ---
-  const handleDeleteItem = async (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this item?");
-    if (confirmDelete) {
-      try {
-        await axios.delete(`http://localhost:5000/api/canteens/menu/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+  const handleDeleteItem = (id) => {
+    showConfirm(
+      "Delete Item",
+      "Are you sure you want to delete this item? This action cannot be undone.",
+      async () => {
+        try {
+          await axios.delete(`http://localhost:5000/api/canteens/menu/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
 
-        // Remove from UI after DB confirms deletion
-        setMenuItems(menuItems.filter(item => item.id !== id));
-      } catch (err) {
-        console.error("Error deleting item:", err);
-        alert("Failed to delete item from database");
+          // Remove from UI after DB confirms deletion
+          setMenuItems(prev => prev.filter(item => item.id !== id));
+          showAlert("Deleted", "The item has been removed from your menu.", "success");
+        } catch (err) {
+          console.error("Error deleting item:", err);
+          showAlert("Error", "Failed to delete item from database", "error");
+        }
       }
-    }
+    );
   };
 
   // ==========================================

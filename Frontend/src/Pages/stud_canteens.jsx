@@ -16,8 +16,10 @@ import {
   CheckCircle,
   X
 } from 'lucide-react';
+import { useNotifications } from '../context/NotificationContext';
 
 const StudentCanteens = () => {
+  const { showAlert } = useNotifications();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -78,7 +80,7 @@ const StudentCanteens = () => {
           
           if (canteenToOpen) {
             if (canteenToOpen.status === "Closed") {
-              alert("This canteen is currently closed. You cannot modify your order right now.");
+              showAlert("Canteen Closed", "This canteen is currently closed. You cannot modify your order right now.", "warning");
             } else {
               // 3. Instantly fetch that specific menu
               const menuRes = await axios.get(`http://localhost:5000/api/canteens/${autoCanteenId}/menu`);
@@ -171,7 +173,7 @@ const StudentCanteens = () => {
       );
 
       if (selectedCanteen?._id === payload.canteenId && !payload.isOpen) {
-        alert("This canteen has closed. Returning to the canteen list.");
+        showAlert("Canteen Closed", "This canteen has closed. Returning to the canteen list.", "info");
         goToList();
       }
     };
@@ -181,7 +183,10 @@ const StudentCanteens = () => {
 
   // Order Placement
   const handlePlaceDebtRequest = async () => {
-    if (Object.keys(cart).length === 0) return alert("Your cart is empty!");
+    if (Object.keys(cart).length === 0) {
+      showAlert("Cart Empty", "Your cart is empty! Please add some items before ordering.", "warning");
+      return;
+    }
     
     try {
       const token = sessionStorage.getItem('token');
@@ -204,7 +209,7 @@ const StudentCanteens = () => {
         goToList();
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Order failed. Please log in again.");
+      showAlert("Order Failed", err.response?.data?.message || "Order failed. Please try again.", "error");
     }
   };
 

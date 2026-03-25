@@ -75,7 +75,8 @@ export default function StudHistory() {
           
           const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
-          const isDebtPayment = order.items && order.items.length > 0 && order.items[0].name === 'Offline Debt Payment';
+          const isDebtPayment = order.items && order.items.length > 0 && 
+                               (order.items[0].name === 'Offline Debt Payment' || order.items[0].name === 'Online Debt Payment');
 
           const baseData = {
             id: order._id,

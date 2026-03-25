@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { Lock, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { useLocation } from 'react-router-dom'; 
+import { useNotifications } from '../context/NotificationContext'; 
+ 
 
 export default function ChangePassword() {
+  const { showAlert } = useNotifications();
   const location = useLocation(); 
   const isOwner = location.pathname.includes('/owner'); 
   const [passwords, setPasswords] = useState({
@@ -23,39 +26,35 @@ export default function ChangePassword() {
       ...passwords,
       [e.target.name]: e.target.value
     });
-    setError('');
-    setSuccess('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     if (!passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword) {
-      setError('Please fill in all fields.');
+      showAlert("Missing Fields", "Please fill in all fields before updating.", "warning");
       return;
     }
 
     if (passwords.currentPassword === passwords.newPassword) {
-      setError('New password cannot be the same as the current password.');
+      showAlert("Invalid Password", "New password cannot be the same as your current password.", "warning");
       return;
     }
 
     if (passwords.newPassword.length < 8) {
-      setError('New password must be at least 8 characters long.');
+      showAlert("Password Too Short", "New password must be at least 8 characters long for security.", "warning");
       return;
     }
 
     if (passwords.newPassword !== passwords.confirmPassword) {
-      setError('New passwords do not match.');
+      showAlert("Mismatch", "New passwords do not match. Please re-type carefully.", "warning");
       return;
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       if (!token) {
-        setError('You are not logged in!');
+        showAlert("Access Denied", "You are not logged in! Please log in again to continue.", "error");
         return;
       }
 
@@ -74,17 +73,19 @@ export default function ChangePassword() {
       const data = await response.json();
 
       if (data.status === 'success') {
-        setSuccess('Password updated successfully!');
+        showAlert("Password Updated", "Your password has been changed successfully!", "success");
         setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' }); 
         
-        // Update token in local storage
+        // Sync fresh token and user data to both storage mechanisms
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.data.user));
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(data.data.user));
       } else {
-        setError(data.message || 'Failed to update password. Please try again.');
+        showAlert("Failed", data.message || "Failed to update password. Please check your credentials.", "error");
       }
     } catch (err) {
-      setError('Failed to update password. Please try again or check your connection.');
+      showAlert("Error", "Could not connect to the server. Please check your connection.", "error");
     }
   };
 
@@ -102,17 +103,8 @@ export default function ChangePassword() {
           </div>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm font-medium">
-            {error}
-          </div>
-        )}
+          {/* Success and Error messages are now handled by global showAlert modals */}
 
-        {success && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm font-medium">
-            {success}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           

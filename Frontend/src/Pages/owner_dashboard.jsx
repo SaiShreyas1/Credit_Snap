@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
+import { useNotifications } from '../context/NotificationContext';
 
 export default function OwnerDashboard() {
+  const { showAlert } = useNotifications();
   // ==========================================
   // 1. CANTEEN DATABASE STATE (Integrated)
   // ==========================================
@@ -87,7 +89,7 @@ export default function OwnerDashboard() {
   // ==========================================
   const toggleStatus = async () => {
     if (!canteen) {
-      alert("⚠️ ERROR: Cannot toggle status! Your Owner account does not have a Canteen registered in the MongoDB database yet. Please run the backend fix script.");
+      showAlert("Account Error", "Your Owner account does not have a Canteen registered in the database yet. Please contact support or run the fix script.", "error");
       return;
     }
     try {
@@ -114,7 +116,7 @@ export default function OwnerDashboard() {
         fetchOrders();
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to update order");
+      showAlert("Update Failed", err.response?.data?.message || "Failed to update order status.", "error");
     }
   };
 
@@ -127,7 +129,7 @@ export default function OwnerDashboard() {
       );
       setOrders(orders.filter(order => order._id !== orderId));
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to clear order");
+      showAlert("Error", err.response?.data?.message || "Failed to clear order.", "error");
     }
   };
 
@@ -143,7 +145,7 @@ export default function OwnerDashboard() {
       );
       setOrders(orders.filter(order => order.status === 'pending'));
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to clear orders");
+      showAlert("Error", err.response?.data?.message || "Failed to clear orders.", "error");
     }
   };
 

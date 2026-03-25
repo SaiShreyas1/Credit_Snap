@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { Search, ChevronDown, Filter, ArrowDownUp, AlertTriangle, Loader2 } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { useNotifications } from '../context/NotificationContext';
 
 // Sub-component for individual Canteen Debt Cards (MATCHING STUD CANTEENS UI)
 const DebtCard = ({ data }) => {
+  const { showAlert } = useNotifications();
   return (
     <div className="bg-white rounded-xl mb-4 p-6 flex justify-between items-center shadow-sm border border-gray-100 transition-all overflow-hidden hover:shadow-md">
       
@@ -21,7 +23,7 @@ const DebtCard = ({ data }) => {
             className="bg-[#6366f1] hover:bg-[#4f46e5] text-white px-6 py-2 rounded-xl text-sm font-medium transition cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
-              alert(`Clearing debt for ${data.name} will be integrated later!`);
+              showAlert("Payment Information", `To clear your debt for ${data.name}, please visit the canteen and pay the owner directly, or use the upcoming online payment feature.`, "info");
             }}
           >
             Clear Debt

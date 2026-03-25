@@ -3,6 +3,7 @@ import { AlertTriangle, ChevronDown, X } from 'lucide-react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../context/NotificationContext';
 
 const formatOrderDate = (dateString) => {
   const date = new Date(dateString);
@@ -94,12 +95,12 @@ const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder }) => {
 
 
 export default function StudDashboard() {
+  const { showAlert, showConfirm } = useNotifications();
   const navigate = useNavigate();
   const [totalDebt, setTotalDebt] = useState(0);
   const [alerts, setAlerts] = useState([]);
   const [currentOrders, setCurrentOrders] = useState([]);
-  const [cancelConfirm, setCancelConfirm] = useState({ isOpen: false, orderId: null });
-  const [errorToast, setErrorToast] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const fetchTotalDebt = async () => {
     try {
@@ -139,8 +140,9 @@ export default function StudDashboard() {
           const now = new Date();
           const fortyEightHoursMs = 48 * 60 * 60 * 1000;
           const recentActualOrders = res.data.data.filter(order => {
-            const isOfflinePayment = order.items && order.items.length > 0 && order.items[0].name === 'Offline Debt Payment';
-            if (isOfflinePayment) return false;
+            const isPayment = order.items && order.items.length > 0 && 
+                             (order.items[0].name === 'Offline Debt Payment' || order.items[0].name === 'Online Debt Payment');
+            if (isPayment) return false;
             const orderDate = new Date(order.createdAt);
             const isRecent = (now - orderDate) <= fortyEightHoursMs;
             return isRecent;
@@ -179,26 +181,25 @@ export default function StudDashboard() {
     };
   }, []);
 
-  // Opens custom confirm modal instead of window.confirm()
   const handleCancelOrder = (orderId) => {
-    setCancelConfirm({ isOpen: true, orderId });
-  };
-
-  const confirmCancel = async () => {
-    const orderId = cancelConfirm.orderId;
-    setCancelConfirm({ isOpen: false, orderId: null });
-    try {
-      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      await axios.patch(`http://localhost:5000/api/orders/${orderId}/cancel`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setCurrentOrders(prev => prev.map(o =>
-        o._id === orderId ? { ...o, status: 'cancelled' } : o
-      ));
-    } catch (err) {
-      setErrorToast(err.response?.data?.message || "Error cancelling order");
-      setTimeout(() => setErrorToast(null), 4000);
-    }
+    showConfirm(
+      "Cancel Order",
+      "Are you sure you want to cancel this order? This action cannot be undone.",
+      async () => {
+        try {
+          const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+          await axios.patch(`http://localhost:5000/api/orders/${orderId}/cancel`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setCurrentOrders(prev => prev.map(o =>
+            o._id === orderId ? { ...o, status: 'cancelled' } : o
+          ));
+          showAlert("Order Cancelled", "Your order has been successfully cancelled.", "success");
+        } catch (err) {
+          showAlert("Error", err.response?.data?.message || "Error cancelling order", "error");
+        }
+      }
+    );
   };
 
   // 🌟 FIX: Updated Change Order Logic using Router State
@@ -224,7 +225,7 @@ export default function StudDashboard() {
       });
       
     } catch (err) {
-      alert("Failed to change order. Please try again.");
+      showAlert("Error", "Failed to change order. Please try again.", "error");
     }
   };
 
@@ -283,51 +284,7 @@ export default function StudDashboard() {
         </div>
       </div>
 
-      {/* ── CANCEL CONFIRMATION MODAL ── */}
-      {cancelConfirm.isOpen && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 relative border border-gray-100">
-            <button
-              onClick={() => setCancelConfirm({ isOpen: false, orderId: null })}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="flex flex-col items-center text-center gap-4">
-              <div className="bg-red-50 p-4 rounded-full">
-                <AlertTriangle className="w-8 h-8 text-red-500" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Cancel Order?</h2>
-              <p className="text-gray-500 text-sm">This action cannot be undone. Are you sure you want to cancel this order?</p>
-              <div className="flex gap-3 w-full mt-2">
-                <button
-                  onClick={() => setCancelConfirm({ isOpen: false, orderId: null })}
-                  className="cursor-pointer flex-1 py-2.5 rounded-xl border border-gray-200 font-semibold text-gray-700 hover:bg-gray-50 transition text-sm"
-                >
-                  Keep Order
-                </button>
-                <button
-                  onClick={confirmCancel}
-                  className="cursor-pointer flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold transition text-sm shadow-sm"
-                >
-                  Yes, Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── ERROR TOAST ── */}
-      {errorToast && (
-        <div className="fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl bg-red-500 text-white font-medium">
-          <AlertTriangle className="w-5 h-5" />
-          {errorToast}
-          <button onClick={() => setErrorToast(null)} className="ml-4 text-white/70 hover:text-white cursor-pointer">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      )}
+      {/* Removed local Cancel Confirm Modal and Error Toast as they are now handled by global NotificationContext */}
     </main>
   );
 }

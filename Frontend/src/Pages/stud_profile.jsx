@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../context/NotificationContext';
 
 export default function StudProfile() {
+  const { showAlert } = useNotifications();
   const navigate = useNavigate();
   
   // 1. Master State
@@ -95,12 +97,24 @@ export default function StudProfile() {
         setIsEditing(false);
         
         // Sync local storage so header/layout knows about the updated name!
+        // Sync local storage so header/layout knows about the updated name!
         localStorage.setItem('user', JSON.stringify(updatedUser));
+        setStudentInfo({
+          name: updatedUser.name,
+          email: updatedUser.email,
+          phone: updatedUser.phoneNo,
+          rollNo: updatedUser.rollNo,
+          hallNo: updatedUser.hallNo,
+          roomNo: updatedUser.roomNo,
+          profilePhoto: updatedUser.profilePhoto
+        });
+        setIsEditing(false);
+        showAlert("Success", "Profile updated successfully!", "success");
       } else {
-        alert(data.message || 'Error updating profile');
+        showAlert("Error", data.message || 'Error updating profile', "error");
       }
     } catch (err) {
-      alert('Network Error: Could not connect to backend.');
+      showAlert("Network Error", "Could not connect to backend.", "error");
     }
   };
 
@@ -113,7 +127,7 @@ export default function StudProfile() {
     if (!file) return;
 
     if (file.size > 500 * 1024) {
-      alert("Image is too large! Please upload a profile picture smaller than 500KB.");
+      showAlert("Image Too Large", "Please upload a profile picture smaller than 500KB.", "warning");
       return;
     }
 

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../context/NotificationContext';
 import './signup.css';
 import studentLogo from '../assets/Student_without_bg_logo.png';
 import canteenLogo from '../assets/Canteen_without_bg_logo.png';
 
 const Signup = () => {
+  const { showAlert } = useNotifications();
   const navigate = useNavigate();
 
   // Field States
@@ -73,8 +75,12 @@ const Signup = () => {
         if (isStudent) {
           navigate('/verify-email-pending');
         } else {
-          alert('Owner Account Created Successfully! Please login.');
-          navigate('/');
+          showAlert(
+            "Account Created", 
+            "Owner Account Created Successfully! Please login to your dashboard.", 
+            "success",
+            () => navigate('/')
+          );
         }
       } else {
         setErrorMsg('Signup failed: ' + data.message);

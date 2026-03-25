@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../context/NotificationContext';
 
 export default function OwnerProfile() {
+  const { showAlert } = useNotifications();
   const navigate = useNavigate();
   
   // 1. Master State
@@ -81,11 +83,12 @@ export default function OwnerProfile() {
       if (data.status === 'success') {
         setOwnerInfo(editForm); // save the new data locally to reflect changes
         setIsEditing(false);
+        showAlert("Success", "Profile updated successfully!", "success");
       } else {
-        alert(data.message || 'Error updating profile');
+        showAlert("Error", data.message || 'Error updating profile', "error");
       }
     } catch (err) {
-      alert('Network Error: Could not connect to backend.');
+      showAlert("Network Error", "Could not connect to backend.", "error");
     }
   };
 
@@ -98,7 +101,7 @@ export default function OwnerProfile() {
     if (!file) return;
 
     if (file.size > 500 * 1024) {
-      alert("Image is too large! Please upload a profile picture smaller than 500KB.");
+      showAlert("Image Too Large", "Please upload a profile picture smaller than 500KB.", "warning");
       return;
     }
 

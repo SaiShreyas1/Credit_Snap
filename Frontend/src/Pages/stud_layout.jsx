@@ -277,10 +277,10 @@ export default function StudLayout() {
                     <p className="text-xs text-gray-500">Roll No: {userProfile ? userProfile.rollNo : "Loading..."}</p>
                   </div>
                   <div className="flex flex-col">
-                    <div onClick={() => navigate('/student/profile')} className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 text-sm text-gray-700 transition">
+                    <div onClick={() => { navigate('/student/profile'); setIsProfileOpen(false); }} className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 text-sm text-gray-700 transition">
                       <Settings className="w-4 h-4" /> Account Settings
                     </div>
-                    <div onClick={() => navigate('/')} className="px-4 py-3 hover:bg-red-50 cursor-pointer flex items-center gap-3 text-sm text-red-600 font-medium transition border-t border-gray-100">
+                    <div onClick={() => { navigate('/'); setIsProfileOpen(false); }} className="px-4 py-3 hover:bg-red-50 cursor-pointer flex items-center gap-3 text-sm text-red-600 font-medium transition border-t border-gray-100">
                       <LogOut className="w-4 h-4" /> Logout
                     </div>
                   </div>
