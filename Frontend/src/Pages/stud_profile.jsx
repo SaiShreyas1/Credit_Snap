@@ -48,8 +48,9 @@ export default function StudProfile() {
           setStudentInfo(realData);
           setEditForm(realData);
           
-          // Also gently update local storage so other parts of the app are up to date
-          localStorage.setItem('user', JSON.stringify(user));
+          // Keep the active session in sync without leaving stale user data behind
+          sessionStorage.setItem('user', JSON.stringify(user));
+          localStorage.removeItem('user');
         }
       } catch (error) {
         console.error('Failed to fetch profile:', error);
@@ -96,9 +97,9 @@ export default function StudProfile() {
         });
         setIsEditing(false);
         
-        // Sync local storage so header/layout knows about the updated name!
-        // Sync local storage so header/layout knows about the updated name!
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        // Keep the active session in sync without leaving stale user data behind
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+        localStorage.removeItem('user');
         setStudentInfo({
           name: updatedUser.name,
           email: updatedUser.email,
@@ -240,7 +241,15 @@ export default function StudProfile() {
               </button>
             </div>
             <div className="mt-6 flex justify-center">
-              <button onClick={() => navigate('/')} className="cursor-pointer bg-[#ea580c] text-white px-14 py-3 rounded-full font-medium text-lg hover:bg-orange-700 transition shadow-sm">
+              <button onClick={() => {
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('user');
+                sessionStorage.removeItem('canteenId');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('canteenId');
+                navigate('/');
+              }} className="cursor-pointer bg-[#ea580c] text-white px-14 py-3 rounded-full font-medium text-lg hover:bg-orange-700 transition shadow-sm">
                 Log Out
               </button>
             </div>

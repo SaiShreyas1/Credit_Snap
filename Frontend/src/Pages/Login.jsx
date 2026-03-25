@@ -45,7 +45,15 @@ const Login = () => {
       if (data.status === 'success') {
         console.log("Login successful! VIP Token Generated.");
 
-        // Save the token and user data to the browser's memory
+        // Clear any stale auth from a previous account before saving the new session
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('canteenId');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('canteenId');
+
+        // Save the token and user data to the browser's current session
         sessionStorage.setItem('token', data.token);
         sessionStorage.setItem('user', JSON.stringify(data.data.user));
 

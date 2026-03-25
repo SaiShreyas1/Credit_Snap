@@ -280,7 +280,16 @@ export default function StudLayout() {
                     <div onClick={() => { navigate('/student/profile'); setIsProfileOpen(false); }} className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 text-sm text-gray-700 transition">
                       <Settings className="w-4 h-4" /> Account Settings
                     </div>
-                    <div onClick={() => { navigate('/'); setIsProfileOpen(false); }} className="px-4 py-3 hover:bg-red-50 cursor-pointer flex items-center gap-3 text-sm text-red-600 font-medium transition border-t border-gray-100">
+                    <div onClick={() => {
+                      sessionStorage.removeItem('token');
+                      sessionStorage.removeItem('user');
+                      sessionStorage.removeItem('canteenId');
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('user');
+                      localStorage.removeItem('canteenId');
+                      navigate('/');
+                      setIsProfileOpen(false);
+                    }} className="px-4 py-3 hover:bg-red-50 cursor-pointer flex items-center gap-3 text-sm text-red-600 font-medium transition border-t border-gray-100">
                       <LogOut className="w-4 h-4" /> Logout
                     </div>
                   </div>

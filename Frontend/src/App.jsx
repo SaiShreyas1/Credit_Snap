@@ -54,8 +54,10 @@ axios.interceptors.response.use(
       // Wipe everything clean so it doesn't get stuck in a loop
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('canteenId');
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('user');
+      sessionStorage.removeItem('canteenId');
       
       // Kick them back to the Login page ("/")
       window.location.href = '/'; 
@@ -68,9 +70,8 @@ axios.interceptors.response.use(
 export default function App() {
   // A robust component to check for a token AND the correct role before allowing access
   const RoleProtectedRoute = ({ children, allowedRole }) => {
-    // Note: Since we recently switched some logic to localStorage, I'm checking both here to be safe!
-    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-    const userStr = sessionStorage.getItem('user') || localStorage.getItem('user');
+    const token = sessionStorage.getItem('token');
+    const userStr = sessionStorage.getItem('user');
 
     if (!token || !userStr) {
       // If there's no token or user data, kick them back to login

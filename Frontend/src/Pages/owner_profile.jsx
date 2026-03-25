@@ -207,7 +207,15 @@ export default function OwnerProfile() {
               </button>
             </div>
             <div className="mt-6 flex justify-center">
-              <button onClick={() => navigate('/')} className="cursor-pointer bg-[#C28813] text-white px-14 py-3 rounded-full font-medium text-lg hover:bg-black transition shadow-sm">
+              <button onClick={() => {
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('user');
+                sessionStorage.removeItem('canteenId');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('canteenId');
+                navigate('/');
+              }} className="cursor-pointer bg-[#C28813] text-white px-14 py-3 rounded-full font-medium text-lg hover:bg-black transition shadow-sm">
                 Log Out
              </button>
             </div>

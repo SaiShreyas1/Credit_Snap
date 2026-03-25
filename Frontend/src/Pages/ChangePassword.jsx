@@ -76,11 +76,11 @@ export default function ChangePassword() {
         showAlert("Password Updated", "Your password has been changed successfully!", "success");
         setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' }); 
         
-        // Sync fresh token and user data to both storage mechanisms
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
+        // Keep fresh auth in the current session only
         sessionStorage.setItem('token', data.token);
         sessionStorage.setItem('user', JSON.stringify(data.data.user));
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
       } else {
         showAlert("Failed", data.message || "Failed to update password. Please check your credentials.", "error");
       }
