@@ -75,8 +75,9 @@ exports.addMenuItem = async (req, res) => {
   try {
     const { canteenId } = req.params;
     
-    // 🔪 TRICK 1: Kill any invisible spaces before or after the name
-    const trimmedName = req.body.name.trim();
+    
+    // 🔪 TRICK 1: Kill outside spaces AND squash multiple inside spaces down to one
+const trimmedName = req.body.name.trim().replace(/\s+/g, ' ');
 
     // 🪤 TRAP 1: Let's see exactly what the server is searching for
     console.log(`\n--- 🛑 DUPLICATE CHECK TRIGGERED ---`);
