@@ -25,11 +25,11 @@ exports.getOwnerAnalytics = async (req, res) => {
     // 3. Define valid statuses (only count accepted/completed orders)
     const validStatuses = ['accepted', 'completed'];
 
-    // 🎯 THE FIX: Create a base match condition that EXCLUDES offline debt payments
+    // Ignore debt-payment receipts so analytics only reflect real food orders
     const baseMatchCondition = {
       canteen: searchId,
       status: { $in: validStatuses },
-      'items.name': { $ne: 'Offline Debt Payment' } // 👈 Ignores the receipts!
+      'items.name': { $nin: ['Offline Debt Payment', 'Online Debt Payment'] }
     };
 
     // ==========================================

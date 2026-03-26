@@ -33,6 +33,12 @@ export default function OwnerLayout() {
 
     // New order placed by a student
     socket.on('newOrder', (order) => {
+      const firstItemName = order.items?.[0]?.name;
+      const isDebtPayment =
+        firstItemName === 'Offline Debt Payment' ||
+        firstItemName === 'Online Debt Payment';
+      if (isDebtPayment) return;
+
       const studentName = order.student?.name || 'A student';
       const items = order.items?.map(i => `${i.quantity}x ${i.name}`).join(', ') || 'an order';
       addNotification('info', `New Order 🛍️`, `${studentName} placed: ${items} (₹${order.totalAmount})`);

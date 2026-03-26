@@ -42,9 +42,14 @@ export default function OwnerDashboard() {
       });
 
       if (response.data.status === 'success') {
-        const actualOrders = response.data.data.filter(
-          order => !order.isCleared && !(order.items && order.items.length > 0 && order.items[0].name === 'Offline Debt Payment')
-        );
+        const actualOrders = response.data.data.filter((order) => {
+          const firstItemName = order.items?.[0]?.name;
+          const isDebtPayment =
+            firstItemName === 'Offline Debt Payment' ||
+            firstItemName === 'Online Debt Payment';
+
+          return !order.isCleared && !isDebtPayment;
+        });
         setOrders(actualOrders);
       }
     } catch (err) {
@@ -76,7 +81,14 @@ export default function OwnerDashboard() {
 
     socket.on('newOrder', (newOrder) => {
       console.log('🔔 New real-time order received!', newOrder);
-      setOrders(prevOrders => [newOrder, ...prevOrders]);
+      const firstItemName = newOrder.items?.[0]?.name;
+      const isDebtPayment =
+        firstItemName === 'Offline Debt Payment' ||
+        firstItemName === 'Online Debt Payment';
+
+      if (!isDebtPayment) {
+        setOrders(prevOrders => [newOrder, ...prevOrders]);
+      }
     });
 
     return () => {

@@ -201,8 +201,14 @@ exports.getStudentHistory = async (req, res) => {
     const combinedHistory = []; // 🏆 FIX 2: Create a unified array for easier frontend mapping
 
     allRecords.forEach(record => {
-      // Safe check for payment type
-      const isPayment = record.items && record.items.length > 0 && record.items[0].name === 'Offline Debt Payment';
+      // Treat both offline and online debt receipts as payments, not food orders
+      const isPayment =
+        record.items &&
+        record.items.length > 0 &&
+        (
+          record.items[0].name === 'Offline Debt Payment' ||
+          record.items[0].name === 'Online Debt Payment'
+        );
 
       // Safe Date parsing
       const dateObj = record.createdAt ? new Date(record.createdAt) : new Date();
