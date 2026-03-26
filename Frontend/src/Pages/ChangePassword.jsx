@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState } from 'react';
 import { Lock, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { useLocation } from 'react-router-dom'; 
@@ -58,7 +59,7 @@ export default function ChangePassword() {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/users/updatePassword', {
+      const response = await fetch(`${BASE_URL}/api/users/updatePassword`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

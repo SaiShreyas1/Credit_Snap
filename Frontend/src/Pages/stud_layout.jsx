@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Home, Utensils, Wallet, History, HelpCircle, Bell, UserCircle, Settings, LogOut, CheckCircle, XCircle, AlertTriangle, IndianRupee, X } from 'lucide-react';
@@ -30,7 +31,7 @@ export default function StudLayout() {
     const userStr = sessionStorage.getItem('user') || localStorage.getItem('user');
     if (!userStr) return;
     const user = JSON.parse(userStr);
-    const socket = io('http://localhost:5000');
+    const socket = io(`${BASE_URL}`);
 
     socket.on('connect', () => socket.emit('join-student', user._id));
 
@@ -49,7 +50,7 @@ export default function StudLayout() {
     socket.on('debt-updated', async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const res = await fetch('http://localhost:5000/api/debts/my-debts', {
+        const res = await fetch(`${BASE_URL}/api/debts/my-debts`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -104,7 +105,7 @@ export default function StudLayout() {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         if (!token) return;
 
-        const response = await fetch('http://localhost:5000/api/users/my-profile', {
+        const response = await fetch(`${BASE_URL}/api/users/my-profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();

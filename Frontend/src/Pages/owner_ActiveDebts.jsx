@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Search, ChevronDown, CheckCircle, BellRing, AlertTriangle, X, IndianRupee, Edit3 } from 'lucide-react';
@@ -23,7 +24,7 @@ export default function ActiveDebtsContent() {
   const fetchDebts = async () => {
     try {
       const token = sessionStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/debts/active", {
+      const res = await axios.get(`${BASE_URL}/api/debts/active`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -53,7 +54,7 @@ export default function ActiveDebtsContent() {
     const canteenIdStr = sessionStorage.getItem('canteenId');
     if (!canteenIdStr) return;
 
-    const socket = io('http://localhost:5000');
+    const socket = io(`${BASE_URL}`);
 
     socket.on('connect', () => {
       socket.emit('join-canteen', canteenIdStr);
@@ -85,7 +86,7 @@ export default function ActiveDebtsContent() {
     
     try {
       const token = sessionStorage.getItem("token");
-      await axios.post(`http://localhost:5000/api/debts/${id}/notify`, {}, {
+      await axios.post(`${BASE_URL}/api/debts/${id}/notify`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const s = students.find(s => s.id === id);
@@ -126,7 +127,7 @@ export default function ActiveDebtsContent() {
     try {
       const token = sessionStorage.getItem("token");
       await axios.post(
-        `http://localhost:5000/api/debts/${targetStudent.id}/pay`, 
+        `${BASE_URL}/api/debts/${targetStudent.id}/pay`, 
         { amountPaid: paymentAmount },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -160,7 +161,7 @@ export default function ActiveDebtsContent() {
     try {
       const token = sessionStorage.getItem("token");
       await axios.patch(
-        `http://localhost:5000/api/debts/${targetStudent.id}/limit`, 
+        `${BASE_URL}/api/debts/${targetStudent.id}/limit`, 
         { limit: newLimitNum },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -192,7 +193,7 @@ export default function ActiveDebtsContent() {
     try {
       const token = sessionStorage.getItem("token");
       await axios.patch(
-        `http://localhost:5000/api/canteens/my/default-limit`, 
+        `${BASE_URL}/api/canteens/my/default-limit`, 
         { defaultLimit: newLimitNum },
         { headers: { Authorization: `Bearer ${token}` } }
       );

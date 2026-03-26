@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { Search, ChevronDown, ArrowDownUp, AlertTriangle, Loader2, X } from 'lucide-react';
@@ -82,7 +83,7 @@ export default function ViewDebts() {
         return;
       }
 
-      const res = await axios.get('http://localhost:5000/api/debts/my-debts', {
+      const res = await axios.get(`${BASE_URL}/api/debts/my-debts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -110,7 +111,7 @@ export default function ViewDebts() {
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        const socket = io('http://localhost:5000');
+        const socket = io(`${BASE_URL}`);
 
         socket.on('connect', () => {
           socket.emit('join-student', user._id);
@@ -179,7 +180,7 @@ export default function ViewDebts() {
       }
 
       const createOrderRes = await axios.post(
-        `http://localhost:5000/api/payments/debts/${debt.id}/create-order`,
+        `${BASE_URL}/api/payments/debts/${debt.id}/create-order`,
         { amount: amount || debt.currentDebt },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -199,7 +200,7 @@ export default function ViewDebts() {
         handler: async (response) => {
           try {
             await axios.post(
-              'http://localhost:5000/api/payments/verify',
+              `${BASE_URL}/api/payments/verify`,
               {
                 paymentRecordId: checkoutData.paymentRecordId,
                 ...response

@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import './ForgotPassword.css';
@@ -27,7 +28,7 @@ const ForgotPassword = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/forgotPassword', {
+      const response = await fetch(`${BASE_URL}/api/users/forgotPassword`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

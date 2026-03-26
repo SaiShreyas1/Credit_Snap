@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import './ForgotPassword.css';
@@ -38,7 +39,7 @@ const ResetPassword = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/users/resetPassword/${token}`, {
+      const response = await fetch(`${BASE_URL}/api/users/resetPassword/${token}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

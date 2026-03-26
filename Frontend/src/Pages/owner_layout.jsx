@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Home, Edit, Wallet, BarChart2, History, HelpCircle, Bell, UserCircle, Settings, LogOut, ShoppingBag, CheckCircle, AlertTriangle, IndianRupee, X, IndianRupee as RupeeIcon } from 'lucide-react';
@@ -60,7 +61,7 @@ export default function OwnerLayout() {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         if (!token) return;
 
-        const response = await fetch('http://localhost:5000/api/users/my-profile', {
+        const response = await fetch(`${BASE_URL}/api/users/my-profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -86,7 +87,7 @@ export default function OwnerLayout() {
           // Join socket room using the canteenId from the API (not sessionStorage)
           const canteenId = canteen?._id;
           if (canteenId) {
-            socket = io('http://localhost:5000');
+            socket = io(`${BASE_URL}`);
             socket.on('connect', () => socket.emit('join-canteen', canteenId));
 
             socket.on('newOrder', (order) => {

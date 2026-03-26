@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { History, Search, ChevronDown, CheckCircle, ArrowUpDown, ShoppingBag, Calendar, Clock } from 'lucide-react';
@@ -31,10 +32,10 @@ export default function OwnerHistory() {
       const token = sessionStorage.getItem("token");
       
       const [ordersRes, debtsRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/orders/my-orders", {
+        axios.get(`${BASE_URL}/api/orders/my-orders`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get("http://localhost:5000/api/debts/active", {
+        axios.get(`${BASE_URL}/api/debts/active`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -114,7 +115,7 @@ export default function OwnerHistory() {
     const canteenId = sessionStorage.getItem('canteenId');
     if (!canteenId) return;
 
-    const socket = io('http://localhost:5000');
+    const socket = io(`${BASE_URL}`);
     socket.on('connect', () => socket.emit('join-canteen', canteenId));
     socket.on('newOrder', () => fetchHistory());
     socket.on('orderStatusUpdated', () => fetchHistory());

@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, ChevronDown, X } from 'lucide-react';
 import axios from 'axios';
@@ -106,7 +107,7 @@ export default function StudDashboard() {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       if (!token) return;
-      const res = await axios.get('http://localhost:5000/api/debts/my-debts', {
+      const res = await axios.get(`${BASE_URL}/api/debts/my-debts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.status === 'success') {
@@ -133,7 +134,7 @@ export default function StudDashboard() {
       try {
         const token = sessionStorage.getItem('token');
         if (!token) return;
-        const res = await axios.get('http://localhost:5000/api/orders/my-active-orders', {
+        const res = await axios.get(`${BASE_URL}/api/orders/my-active-orders`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data.status === 'success') {
@@ -162,7 +163,7 @@ export default function StudDashboard() {
     if (!userStr) return;
     const user = JSON.parse(userStr);
     const userIdStr = user._id;
-    const socket = io('http://localhost:5000');
+    const socket = io(`${BASE_URL}`);
     socket.on('connect', () => {
       socket.emit('join-student', userIdStr);
     });
@@ -188,7 +189,7 @@ export default function StudDashboard() {
       async () => {
         try {
           const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-          await axios.patch(`http://localhost:5000/api/orders/${orderId}/cancel`, {}, {
+          await axios.patch(`${BASE_URL}/api/orders/${orderId}/cancel`, {}, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setCurrentOrders(prev => prev.map(o =>
@@ -208,7 +209,7 @@ export default function StudDashboard() {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       
       // 1. Cancel it on the backend
-      await axios.patch(`http://localhost:5000/api/orders/${order._id}/cancel`, {}, {
+      await axios.patch(`${BASE_URL}/api/orders/${order._id}/cancel`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

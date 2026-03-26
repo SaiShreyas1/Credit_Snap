@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
@@ -28,7 +29,7 @@ export default function OwnerDashboard() {
   const fetchMyCanteen = async () => {
     try {
       const token = getAuthToken();
-      const res = await axios.get('http://localhost:5000/api/canteens/my', {
+      const res = await axios.get(`${BASE_URL}/api/canteens/my`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCanteen(res.data.data.canteen);
@@ -42,7 +43,7 @@ export default function OwnerDashboard() {
   const fetchOrders = async () => {
     try {
       const token = getAuthToken();
-      const response = await axios.get('http://localhost:5000/api/orders/my-orders', {
+      const response = await axios.get(`${BASE_URL}/api/orders/my-orders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -72,7 +73,7 @@ export default function OwnerDashboard() {
   useEffect(() => {
     if (!canteen || !canteen._id) return;
 
-    const socket = io('http://localhost:5000');
+    const socket = io(`${BASE_URL}`);
     const canteenIdStr = canteen._id;
 
     socket.on('connect', () => {
@@ -111,7 +112,7 @@ export default function OwnerDashboard() {
     try {
       const newStatus = !isCanteenOpen;
       const token = getAuthToken();
-      await axios.put(`http://localhost:5000/api/canteens/${canteen._id}/status`, 
+      await axios.put(`${BASE_URL}/api/canteens/${canteen._id}/status`, 
         { isOpen: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -124,7 +125,7 @@ export default function OwnerDashboard() {
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
       const token = getAuthToken();
-      const response = await axios.patch('http://localhost:5000/api/orders/update-status', 
+      const response = await axios.patch(`${BASE_URL}/api/orders/update-status`, 
         { orderId, status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -139,7 +140,7 @@ export default function OwnerDashboard() {
   const removeOrder = async (orderId) => {
     try {
       const token = getAuthToken();
-      await axios.patch('http://localhost:5000/api/orders/clear', 
+      await axios.patch(`${BASE_URL}/api/orders/clear`, 
         { orderIds: [orderId] },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -155,7 +156,7 @@ export default function OwnerDashboard() {
     
     try {
       const token = getAuthToken();
-      await axios.patch('http://localhost:5000/api/orders/clear', 
+      await axios.patch(`${BASE_URL}/api/orders/clear`, 
         { orderIds: idsToClear },
         { headers: { Authorization: `Bearer ${token}` } }
       );

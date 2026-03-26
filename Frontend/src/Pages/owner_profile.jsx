@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -33,7 +34,7 @@ export default function OwnerProfile() {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         if (!token) return navigate('/');
 
-        const response = await fetch('http://localhost:5000/api/users/my-profile', {
+        const response = await fetch(`${BASE_URL}/api/users/my-profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -80,7 +81,7 @@ export default function OwnerProfile() {
         payload.razorpayMerchantKeySecret = editForm.razorpayMerchantKeySecret.trim();
       }
 
-      const response = await fetch('http://localhost:5000/api/users/update-my-profile', {
+      const response = await fetch(`${BASE_URL}/api/users/update-my-profile`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

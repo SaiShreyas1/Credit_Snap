@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -55,7 +56,7 @@ const StudentCanteens = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/canteens');
+        const response = await axios.get(`${BASE_URL}/api/canteens`);
         let canteens = [];
         if (response.data.status === 'success') {
           canteens = response.data.data.canteens;
@@ -79,7 +80,7 @@ const StudentCanteens = () => {
             if (canteenToOpen.status === "Closed") {
               showAlert("Canteen Closed", "This canteen is currently closed. You cannot modify your order right now.", "warning");
             } else {
-              const menuRes = await axios.get(`http://localhost:5000/api/canteens/${autoCanteenId}/menu`);
+              const menuRes = await axios.get(`${BASE_URL}/api/canteens/${autoCanteenId}/menu`);
               
               if (menuRes.data.status === 'success') {
                 const availableMenu = menuRes.data.data.menu.filter(item => item.isAvailable);
@@ -121,7 +122,7 @@ const StudentCanteens = () => {
   // Normal Menu Fetching
   const fetchMenu = async (canteenId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/canteens/${canteenId}/menu`);
+      const response = await axios.get(`${BASE_URL}/api/canteens/${canteenId}/menu`);
       if (response.data.status === 'success') {
         const availableMenu = response.data.data.menu.filter(item => item.isAvailable);
         setMenuData(availableMenu);
@@ -192,7 +193,7 @@ const StudentCanteens = () => {
         totalAmount: getTotalCost()
       };
 
-      const response = await axios.post('http://localhost:5000/api/orders/place', orderData, {
+      const response = await axios.post(`${BASE_URL}/api/orders/place`, orderData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Login.css';
@@ -11,7 +12,7 @@ const VerifyEmail = () => {
   useEffect(() => {
     const verifyToken = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/users/verifyEmail/${token}`, {
+        const response = await fetch(`${BASE_URL}/api/users/verifyEmail/${token}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState } from 'react';
 import './Login.css';
 import { useNavigate, Link } from 'react-router-dom';
@@ -31,7 +32,7 @@ const Login = () => {
 
     // 2. THE MAGIC CONNECTION TO MONGODB
     try {
-      const response = await fetch('http://localhost:5000/api/users/login', {
+      const response = await fetch(`${BASE_URL}/api/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

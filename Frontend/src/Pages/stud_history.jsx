@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom'; // 🌟 ADDED IMPORTS
@@ -64,7 +65,7 @@ export default function StudHistory() {
         return;
       }
 
-      const res = await axios.get('http://localhost:5000/api/orders/my-active-orders', {
+      const res = await axios.get(`${BASE_URL}/api/orders/my-active-orders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -132,7 +133,7 @@ export default function StudHistory() {
 
     try {
       const user = JSON.parse(userStr);
-      const socket = io('http://localhost:5000');
+      const socket = io(`${BASE_URL}`);
       socket.on('connect', () => socket.emit('join-student', user._id));
       socket.on('debt-updated', () => fetchHistory());
       socket.on('orderStatusUpdated', () => fetchHistory());

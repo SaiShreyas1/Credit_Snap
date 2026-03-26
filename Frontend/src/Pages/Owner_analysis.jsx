@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
@@ -19,7 +20,7 @@ export default function Owneranalytics() {
   const fetchAnalytics = async () => {
     try {
       const token = sessionStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/analytics/owner', {
+      const response = await axios.get(`${BASE_URL}/api/analytics/owner`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -44,7 +45,7 @@ export default function Owneranalytics() {
     const canteenId = sessionStorage.getItem('canteenId');
     if (!canteenId) return;
 
-    const socket = io('http://localhost:5000');
+    const socket = io(`${BASE_URL}`);
     socket.on('connect', () => socket.emit('join-canteen', canteenId));
 
     // Whenever a new order lands OR a debt is paid, re-fetch the analytics

@@ -1,3 +1,4 @@
+import { BASE_URL } from '../config';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../context/NotificationContext';
@@ -51,7 +52,7 @@ const Signup = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/signup', {
+      const response = await fetch(`${BASE_URL}/api/users/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
