@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 
 export default function Help() {
-  const [openIndexes, setOpenIndexes] = useState([0]);
+  const [openIndexes, setOpenIndexes] = useState([]);
 
   const faqs = [
     {
