@@ -1,12 +1,16 @@
 const Canteen = require('../models/canteenModel');
 const MenuItem = require('../models/menuItemModel');
 const User = require('../models/userModel');
+const Debt = require('../models/debtModel'); // Moved to top for optimal performance
 
 // ==========================================
-// CANTEEN SETTINGS (For the Dashboard)
+// CANTEEN DASHBOARD SETTINGS
 // ==========================================
 
-// Create a Canteen
+/**
+ * Creates a new canteen profile.
+ * @route POST /api/canteens
+ */
 exports.createCanteen = async (req, res) => {
   try {
     const newCanteen = await Canteen.create(req.body);
@@ -16,7 +20,10 @@ exports.createCanteen = async (req, res) => {
   }
 };
 
-// Toggle Canteen Open/Closed (Matches your Dashboard Switch)
+/**
+ * Toggles the canteen's open/closed status and broadcasts to connected clients.
+ * @route PATCH /api/canteens/:canteenId/status
+ */
 exports.updateCanteenStatus = async (req, res) => {
   try {
     const { canteenId } = req.params;
@@ -29,167 +36,30 @@ exports.updateCanteenStatus = async (req, res) => {
     );
 
     if (!updatedCanteen) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Canteen not found'
-      });
+      return res.status(404).json({ status: 'fail', message: 'Canteen not found' });
     }
 
-    const io = req.app.get('io');
-    io.emit('canteen-status-updated', {
-      canteenId: updatedCanteen._id.toString(),
-      isOpen: updatedCanteen.isOpen,
-    });
-
-    res.status(200).json({
-      status: 'success',
-      data: { canteen: updatedCanteen }
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: 'fail',
-      message: error.message
-    });
-  }
-};
-
-
-
-// ==========================================
-// MENU MANAGEMENT (For the OwnerEditMenu page)
-// ==========================================
-
-// Get the full menu for a specific canteen
-exports.getMenu = async (req, res) => {
-  try {
-    const menu = await MenuItem.find({ canteenId: req.params.canteenId });
-    res.status(200).json({ status: 'success', results: menu.length, data: { menu } });
-  } catch (error) {
-    res.status(400).json({ status: 'fail', message: error.message });
-  }
-};
-
-// Add a new item (Matches your Add Modal)
-// Add a new item (Matches your Add Modal)
-exports.addMenuItem = async (req, res) => {
-  try {
-    const { canteenId } = req.params;
-    
-    
-    // 🔪 TRICK 1: Kill outside spaces AND squash multiple inside spaces down to one
-const trimmedName = req.body.name.trim().replace(/\s+/g, ' ');
-
-    // 🪤 TRAP 1: Let's see exactly what the server is searching for
-    console.log(`\n--- 🛑 DUPLICATE CHECK TRIGGERED ---`);
-    console.log(`Checking for name: "${trimmedName}"`);
-    console.log(`Inside Canteen ID: ${canteenId}`);
-
-    // The Search Query
-    const existingItem = await MenuItem.findOne({
-      canteenId: canteenId,
-      name: { $regex: new RegExp(`^${trimmedName}$`, 'i') } 
-    });
-
-    // 🪤 TRAP 2: What did the database find?
-    console.log(`Database found:`, existingItem);
-
-    // The Bouncer
-    if (existingItem) {
-      console.log(`🚫 BLOCKED: Duplicate found!`);
-      return res.status(400).json({
-        status: 'fail',
-        message: `An item named "${trimmedName}" already exists in your menu!`
-      });
-    }
-
-    console.log(`✅ PASSED: Creating new item...`);
-
-    // ✅ Create the item using the safely trimmed name
-    const newItem = await MenuItem.create({ 
-      ...req.body, 
-      name: trimmedName, // Force the clean name into the database
-      canteenId: canteenId 
-    });
-
+    // Broadcast status change to update frontend dashboards in real-time
     const io = req.app.get('io');
     if (io) {
-      io.to(`canteen:${newItem.canteenId}`).emit('menu-updated', {
-        canteenId: newItem.canteenId.toString(),
+      io.emit('canteen-status-updated', {
+        canteenId: updatedCanteen._id.toString(),
+        isOpen: updatedCanteen.isOpen,
       });
     }
 
-    res.status(201).json({
-      status: 'success',
-      data: { menuItem: newItem }
-    });
-  } catch (error) {
-    console.log(`❌ ERROR:`, error.message);
-    res.status(400).json({ status: 'fail', message: error.message });
-  }
-};
-
-
-// Edit an item OR toggle availability (Matches Edit Modal & Switch)
-exports.updateMenuItem = async (req, res) => {
-  try {
-    const updatedItem = await MenuItem.findByIdAndUpdate(
-      req.params.itemId,
-      req.body,
-      { new: true }
-    );
-
-    const io = req.app.get('io');
-    io.to(`canteen:${updatedItem.canteenId}`).emit('menu-updated', {
-      canteenId: updatedItem.canteenId.toString(),
-    });
-
-    res.status(200).json({
-      status: 'success',
-      data: { menuItem: updatedItem }
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: 'fail',
-      message: error.message
-    });
-  }
-};
-
-
-// Delete an item (Matches your Trash2 Icon)
-exports.deleteMenuItem = async (req, res) => {
-  try {
-    const itemToDelete = await MenuItem.findById(req.params.itemId);
-
-    if (!itemToDelete) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Menu item not found'
-      });
-    }
-
-    await MenuItem.findByIdAndDelete(req.params.itemId);
-
-    const io = req.app.get('io');
-    io.to(`canteen:${itemToDelete.canteenId}`).emit('menu-updated', {
-      canteenId: itemToDelete.canteenId.toString(),
-    });
-
-    res.status(204).json({
-      status: 'success',
-      data: null
-    });
+    res.status(200).json({ status: 'success', data: { canteen: updatedCanteen } });
   } catch (error) {
     res.status(400).json({ status: 'fail', message: error.message });
   }
 };
 
-// controllers/canteenController.js
-
-// Get my canteen (For the Owner Dashboard)
+/**
+ * Retrieves the canteen details for the currently authenticated owner.
+ * @route GET /api/canteens/my-canteen
+ */
 exports.getMyCanteen = async (req, res) => {
   try {
-    // Assuming `req.user` is populated by `protect` middleware
     const canteen = await Canteen.findOne({ ownerId: req.user._id });
     if (!canteen) {
       return res.status(404).json({ status: 'fail', message: 'No canteen found for this owner' });
@@ -200,7 +70,149 @@ exports.getMyCanteen = async (req, res) => {
   }
 };
 
-// Update default limit for the owner's canteen and apply to all students
+/**
+ * Retrieves a list of all available canteens for the student directory.
+ * @route GET /api/canteens
+ */
+exports.getAllCanteens = async (req, res) => {
+  try {
+    const canteens = await Canteen.find().populate('ownerId', 'name');
+    
+    // Format response to match frontend UI requirements
+    const formattedCanteens = canteens.map(c => ({
+      _id: c._id, 
+      name: c.name || (c.ownerId && c.ownerId.name) || "Unnamed Canteen",
+      status: c.isOpen ? "Open" : "Closed",
+      timings: "4:00 PM - 4:00 AM" // Static fallback; consider moving to schema
+    }));
+
+    res.status(200).json({ status: 'success', data: { canteens: formattedCanteens } });
+  } catch (err) {
+    res.status(404).json({ status: 'fail', message: err.message });
+  }
+};
+
+// ==========================================
+// MENU MANAGEMENT
+// ==========================================
+
+/**
+ * Retrieves the full menu for a specific canteen.
+ * @route GET /api/canteens/:canteenId/menu
+ */
+exports.getMenu = async (req, res) => {
+  try {
+    const menu = await MenuItem.find({ canteenId: req.params.canteenId });
+    res.status(200).json({ status: 'success', results: menu.length, data: { menu } });
+  } catch (error) {
+    res.status(400).json({ status: 'fail', message: error.message });
+  }
+};
+
+/**
+ * Adds a new menu item, preventing duplicate entries by name.
+ * @route POST /api/canteens/:canteenId/menu
+ */
+exports.addMenuItem = async (req, res) => {
+  try {
+    const { canteenId } = req.params;
+    
+    // Sanitize input: Remove leading/trailing spaces and collapse multiple spaces
+    const trimmedName = req.body.name.trim().replace(/\s+/g, ' ');
+
+    // Prevent duplicate item names (case-insensitive)
+    const existingItem = await MenuItem.findOne({
+      canteenId: canteenId,
+      name: { $regex: new RegExp(`^${trimmedName}$`, 'i') } 
+    });
+
+    if (existingItem) {
+      return res.status(400).json({
+        status: 'fail',
+        message: `An item named "${trimmedName}" already exists in your menu.`
+      });
+    }
+
+    const newItem = await MenuItem.create({ 
+      ...req.body, 
+      name: trimmedName, 
+      canteenId: canteenId 
+    });
+
+    // Notify connected clients that the menu has changed
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`canteen:${newItem.canteenId}`).emit('menu-updated', {
+        canteenId: newItem.canteenId.toString(),
+      });
+    }
+
+    res.status(201).json({ status: 'success', data: { menuItem: newItem } });
+  } catch (error) {
+    res.status(400).json({ status: 'fail', message: error.message });
+  }
+};
+
+/**
+ * Edits an existing menu item or toggles its availability.
+ * @route PATCH /api/canteens/menu/:itemId
+ */
+exports.updateMenuItem = async (req, res) => {
+  try {
+    const updatedItem = await MenuItem.findByIdAndUpdate(
+      req.params.itemId,
+      req.body,
+      { new: true }
+    );
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`canteen:${updatedItem.canteenId}`).emit('menu-updated', {
+        canteenId: updatedItem.canteenId.toString(),
+      });
+    }
+
+    res.status(200).json({ status: 'success', data: { menuItem: updatedItem } });
+  } catch (error) {
+    res.status(400).json({ status: 'fail', message: error.message });
+  }
+};
+
+/**
+ * Deletes a menu item from the database.
+ * @route DELETE /api/canteens/menu/:itemId
+ */
+exports.deleteMenuItem = async (req, res) => {
+  try {
+    const itemToDelete = await MenuItem.findById(req.params.itemId);
+
+    if (!itemToDelete) {
+      return res.status(404).json({ status: 'fail', message: 'Menu item not found' });
+    }
+
+    await MenuItem.findByIdAndDelete(req.params.itemId);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`canteen:${itemToDelete.canteenId}`).emit('menu-updated', {
+        canteenId: itemToDelete.canteenId.toString(),
+      });
+    }
+
+    res.status(204).json({ status: 'success', data: null });
+  } catch (error) {
+    res.status(400).json({ status: 'fail', message: error.message });
+  }
+};
+
+// ==========================================
+// KHATA LIMIT MANAGEMENT
+// ==========================================
+
+/**
+ * Updates the default credit limit for a canteen and enforces it against existing debts.
+ * @route PATCH /api/canteens/limit
+ */
 exports.updateDefaultLimit = async (req, res) => {
   try {
     const { defaultLimit } = req.body;
@@ -215,25 +227,22 @@ exports.updateDefaultLimit = async (req, res) => {
       return res.status(404).json({ status: 'fail', message: 'No canteen found for this owner' });
     }
 
-    // NEW VALIDATION: Check if any student currently owes more than the new limit
-    const Debt = require('../models/debtModel');
+    // Validation: Prevent lowering the limit below a student's current outstanding balance
     const maxDebtDoc = await Debt.findOne({ canteen: canteen._id }).sort('-amountOwed');
     
     if (maxDebtDoc && maxDebtDoc.amountOwed > numLimit) {
       return res.status(400).json({ 
         status: 'fail', 
-        message: `Cannot set default limit to ₹${numLimit}. At least one student currently owes ₹${maxDebtDoc.amountOwed}.` 
+        message: `Cannot set limit to ₹${numLimit}. A student currently owes ₹${maxDebtDoc.amountOwed}.` 
       });
     }
 
-    // Update canteen's setting
     canteen.defaultLimit = numLimit;
     await canteen.save();
 
-    // Mass-update all existing debts for this canteen
+    // Mass-update the limit for all existing active debt records tied to this canteen
     await Debt.updateMany({ canteen: canteen._id }, { limit: numLimit });
 
-    // Tell UI to refresh
     const io = req.app.get('io');
     if (io) {
       io.to(`canteen:${canteen._id}`).emit('debt-updated');
@@ -246,29 +255,5 @@ exports.updateDefaultLimit = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
-  }
-};
-
-// Get all canteens
-exports.getAllCanteens = async (req, res) => {
-  try {
-    // 🏆 FIXED: Fetch actual Canteens from db, and populate owner's name
-    const canteens = await Canteen.find().populate('ownerId', 'name');
-    
-    // Map data to the clean format the frontend expects
-    const formattedCanteens = canteens.map(c => ({
-      _id: c._id, 
-      name: c.name || (c.ownerId && c.ownerId.name) || "Unnamed Canteen",
-      status: c.isOpen ? "Open" : "Closed",
-      timings: "4:00 PM - 4:00 AM" // You can add this to the model later!
-    }));
-
-   res.status(200).json({
-  status: 'success',
-  data: { canteens: formattedCanteens }
-  });
-
-  } catch (err) {
-    res.status(404).json({ status: 'fail', message: err.message });
   }
 };
