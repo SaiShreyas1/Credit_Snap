@@ -51,11 +51,10 @@ const StudentCanteens = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 🌟 THE FIX: Bulletproof Initialization using React Router State
+  // Bulletproof Initialization using React Router State
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // 1. Fetch the overall Canteens List
         const response = await axios.get('http://localhost:5000/api/canteens');
         let canteens = [];
         if (response.data.status === 'success') {
@@ -63,10 +62,8 @@ const StudentCanteens = () => {
           setCanteensData(canteens);
         }
 
-        // 2. Check if we arrived here from "Change Order" via Router State
         const navState = location.state;
         
-        // 2a. If the sidebar "Canteens" link was clicked — always reset to list view
         if (navState && navState.reset) {
           setStep('list');
           setSelectedCanteen(null);
@@ -82,14 +79,12 @@ const StudentCanteens = () => {
             if (canteenToOpen.status === "Closed") {
               showAlert("Canteen Closed", "This canteen is currently closed. You cannot modify your order right now.", "warning");
             } else {
-              // 3. Instantly fetch that specific menu
               const menuRes = await axios.get(`http://localhost:5000/api/canteens/${autoCanteenId}/menu`);
               
               if (menuRes.data.status === 'success') {
                 const availableMenu = menuRes.data.data.menu.filter(item => item.isAvailable);
                 setMenuData(availableMenu);
                 
-                // 4. Recover the cart items from router state
                 try {
                   const savedItems = navState.cartItems || [];
                   const newCartState = {};
@@ -105,14 +100,12 @@ const StudentCanteens = () => {
                   console.error("Cart Recovery Failed:", e);
                 }
 
-                // 5. 🚀 Instantly snap the UI directly to the CHECKOUT step!
                 setSelectedCanteen(canteenToOpen);
                 setStep('checkout');
               }
             }
           }
           
-          // 6. Clear router state so refreshing the page doesn't re-trigger the change order flow
           navigate(location.pathname, { replace: true, state: null });
         }
       } catch (err) {
@@ -232,10 +225,12 @@ const StudentCanteens = () => {
     setCurrentSort("name-az");
   };
 
-  // Cart Handlers
+  // --- NEW CART HANDLERS FOR KEYBOARD INPUT ---
+  
   const updateQuantity = (id, delta) => {
     setCart(prev => {
-      const newQty = (prev[id] || 0) + delta;
+      const currentQty = prev[id] === '' ? 0 : (prev[id] || 0);
+      const newQty = currentQty + delta;
       if (newQty <= 0) {
         const newCart = { ...prev };
         delete newCart[id];
@@ -245,10 +240,29 @@ const StudentCanteens = () => {
     });
   };
 
+  // Handles typing direct numbers
+  const setAbsoluteQuantity = (id, value) => {
+    setCart(prev => ({ ...prev, [id]: value }));
+  };
+
+  // Handles clicking away from the input field
+  const handleQuantityBlur = (id) => {
+    setCart(prev => {
+      const currentVal = prev[id];
+      if (currentVal === '' || currentVal <= 0) {
+        const newCart = { ...prev };
+        delete newCart[id]; // Safely remove if left empty
+        return newCart;
+      }
+      return prev;
+    });
+  };
+
   const getTotalCost = () => {
     return Object.entries(cart).reduce((total, [id, qty]) => {
       const item = menuData.find(i => i._id === id);
-      return total + (item ? item.price * qty : 0);
+      const validQty = qty === '' ? 0 : qty; // Fix to prevent NaN when typing
+      return total + (item ? item.price * validQty : 0);
     }, 0);
   };
 
@@ -256,7 +270,7 @@ const StudentCanteens = () => {
     return Object.entries(cart)
       .map(([id, qty]) => {
         const item = menuData.find(i => i._id === id);
-        return item ? `${item.name} x${qty}` : "";
+        return item && qty !== '' ? `${item.name} x${qty}` : "";
       })
       .filter(Boolean)
       .join(", ");
@@ -451,7 +465,24 @@ const StudentCanteens = () => {
                   <button className="cursor-pointer p-2.5 hover:bg-gray-200 transition text-gray-700" onClick={() => updateQuantity(item._id, -1)}>
                     <Minus className="w-5 h-5" />
                   </button>
-                  <span className="px-5 font-semibold text-black text-xl">{cart[item._id]}</span>
+                  
+                  {/* 🌟 KEYBOARD EDITABLE INPUT (MENU) */}
+                  <input
+                    type="number"
+                    value={cart[item._id]}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setAbsoluteQuantity(item._id, '');
+                      } else {
+                        const parsed = parseInt(val, 10);
+                        if (!isNaN(parsed) && parsed >= 0) setAbsoluteQuantity(item._id, parsed);
+                      }
+                    }}
+                    onBlur={() => handleQuantityBlur(item._id)}
+                    className="w-14 text-center font-semibold text-black text-xl bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+
                   <button className="cursor-pointer p-2.5 hover:bg-gray-200 transition text-gray-700" onClick={() => updateQuantity(item._id, 1)}>
                     <Plus className="w-5 h-5" />
                   </button>
@@ -462,12 +493,11 @@ const StudentCanteens = () => {
         </div>
       )}
 
-      {/* 🌟 STEP: CHECKOUT (Now Fully Editable!) */}
+      {/* STEP: CHECKOUT */}
       {step === 'checkout' && (
         <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
             <h2 className="text-2xl font-medium text-black">Review Your Order</h2>
-            {/* Added a quick link back to menu just in case they want to add completely new items */}
             <button 
               onClick={() => setStep('menu')} 
               className="text-[#f97316] hover:text-[#ea580c] font-semibold text-sm underline cursor-pointer"
@@ -490,18 +520,36 @@ const StudentCanteens = () => {
                       <p className="text-sm text-gray-500">Rs.{item.price} each</p>
                     </div>
                     
-                    {/* 🌟 Editable Controls on Checkout Page */}
                     <div className="flex items-center gap-6">
                       <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50 shadow-sm">
                         <button className="cursor-pointer p-2 hover:bg-gray-200 transition text-gray-700" onClick={() => updateQuantity(id, -1)}>
                           <Minus className="w-4 h-4" />
                         </button>
-                        <span className="px-4 font-semibold text-black text-lg">{qty}</span>
+                        
+                        {/* 🌟 KEYBOARD EDITABLE INPUT (CHECKOUT) */}
+                        <input
+                          type="number"
+                          value={qty}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '') {
+                              setAbsoluteQuantity(id, '');
+                            } else {
+                              const parsed = parseInt(val, 10);
+                              if (!isNaN(parsed) && parsed >= 0) setAbsoluteQuantity(id, parsed);
+                            }
+                          }}
+                          onBlur={() => handleQuantityBlur(id)}
+                          className="w-12 text-center font-semibold text-black text-lg bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+
                         <button className="cursor-pointer p-2 hover:bg-gray-200 transition text-gray-700" onClick={() => updateQuantity(id, 1)}>
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
-                      <p className="text-lg font-bold text-black w-20 text-right">Rs.{item.price * qty}</p>
+                      <p className="text-lg font-bold text-black w-20 text-right">
+                        Rs.{item.price * (qty === '' ? 0 : qty)}
+                      </p>
                     </div>
                   </div>
                 );

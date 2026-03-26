@@ -67,9 +67,14 @@ export default function StudLayout() {
       } catch {}
     });
 
-    // Owner sent a manual notification email (bell button)
+    // Owner sent a manual notification email
     socket.on('notify-student', ({ canteenName, amountOwed }) => {
       addNotification('info', 'Payment Reminder 💬', `${canteenName} reminds you to clear your ₹${amountOwed} pending debt.`);
+    });
+
+    // 🌟 NEW: Listen for successful payment event
+    socket.on('payment-successful', ({ amount, canteenName }) => {
+      addNotification('success', 'Payment Received! 💳', `Payment of ₹${amount} successfully processed to ${canteenName}.`);
     });
 
     return () => socket.disconnect();
@@ -115,7 +120,6 @@ export default function StudLayout() {
     fetchProfile();
   }, [location.pathname]);
   
-  // --- NEW: Sidebar Toggle State ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const notificationRef = useRef(null);
@@ -133,6 +137,23 @@ export default function StudLayout() {
   const toggleNotifications = () => { setIsNotificationsOpen(!isNotificationsOpen); setIsProfileOpen(false); };
   const toggleProfile = () => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); };
   const isActive = (path) => location.pathname.includes(path);
+
+  // 🌟 NEW: Smart Notification Routing
+  const handleNotificationClick = (notif) => {
+    // 1. Mark as read and close dropdown
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+    setIsNotificationsOpen(false);
+    
+    // 2. Route based on notification type
+    if (notif.title.includes('Payment Received')) {
+      // Routes to History page AND tells it to open the 'debt' tab
+      navigate('/student/history', { state: { targetTab: 'debt' } });
+    } else if (notif.title.includes('Debt') || notif.title.includes('Payment Reminder')) {
+      navigate('/student/debts');
+    } else if (notif.title.includes('Order')) {
+      navigate('/student/dashboard');
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
@@ -160,19 +181,16 @@ export default function StudLayout() {
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Canteens</span>}
             </div>
             
-            {/* --- MERGED: View debts button --- */}
             <div onClick={() => navigate('/student/debts')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('debts') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <Wallet className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">View debts</span>}
             </div>
 
-            {/* --- MERGED: History button --- */}
             <div onClick={() => navigate('/student/history')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('history') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <History className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm whitespace-nowrap">History</span>}
             </div>
 
-            {/* --- MERGED: Help button --- */}
             <div onClick={() => navigate('/student/help')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('help') ? 'bg-[#ea580c] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <HelpCircle className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm whitespace-nowrap">Help</span>}
@@ -181,7 +199,6 @@ export default function StudLayout() {
           </nav>
         </div>
         
-        {/* --- MERGED: About us button keeps navigation, active state styling, AND collapsible sidebar logic --- */}
         <div 
           onClick={() => navigate('/student/about')} 
           className={`p-4 border-t border-slate-700 flex justify-center items-center cursor-pointer transition-all duration-300 ${isActive('about') ? 'bg-[#f97316] text-white' : 'hover:bg-slate-700 text-gray-300'}`}
@@ -216,7 +233,6 @@ export default function StudLayout() {
               )}
               {isNotificationsOpen && (
                 <div className="absolute right-0 mt-4 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
-                  {/* Header */}
                   <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4 text-gray-600" />
@@ -232,7 +248,6 @@ export default function StudLayout() {
                       )}
                     </div>
                   </div>
-                  {/* Notification List */}
                   <div className="max-h-[380px] overflow-y-auto divide-y divide-gray-50">
                     {notifications.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -244,7 +259,7 @@ export default function StudLayout() {
                       notifications.map((notif) => (
                         <div
                           key={notif.id}
-                          onClick={() => setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n))}
+                          onClick={() => handleNotificationClick(notif)}
                           className={`flex gap-3 px-5 py-4 cursor-pointer transition-colors ${
                             notif.read ? 'bg-white hover:bg-gray-50' : 'bg-orange-50/60 hover:bg-orange-50'
                           }`}

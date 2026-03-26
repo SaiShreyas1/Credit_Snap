@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import { useLocation, useNavigate } from 'react-router-dom'; // 🌟 ADDED IMPORTS
 import { History, Search, ChevronDown, ShoppingBag, Calendar, Clock } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -20,7 +21,12 @@ const parseDateTime = (dateStr, timeStr) => {
 };
 
 export default function StudHistory() {
-  const [activeTab, setActiveTab] = useState('order');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // 🌟 Auto-set tab if user navigated here from a notification
+  const [activeTab, setActiveTab] = useState(location.state?.targetTab || 'order');
+  
   const [search, setSearch] = useState('');
   const [sortOpen, setSortOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -32,6 +38,14 @@ export default function StudHistory() {
 
   const sortRef = useRef(null);
   const filterRef = useRef(null);
+
+  // 🌟 Clear router state on mount so manual tab switching still works later
+  useEffect(() => {
+    if (location.state?.targetTab) {
+      setActiveTab(location.state.targetTab);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
     function handleClickOutside(event) {
