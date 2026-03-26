@@ -24,25 +24,41 @@ const StudentCanteens = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState('list');
+  // ==========================================
+  // STATE MANAGEMENT
+  // ==========================================
+  
+  // View State: Controls which screen the user is currently seeing
+  const [step, setStep] = useState('list'); // 'list' | 'menu' | 'checkout'
+  
+  // Data State: Holds data fetched from the API
   const [canteensData, setCanteensData] = useState([]);
+  const [menuData, setMenuData] = useState([]);
   const [selectedCanteen, setSelectedCanteen] = useState(null);
+  
+  // Cart State: Stores item IDs as keys and quantities as values (e.g., { "item123": 2 })
   const [cart, setCart] = useState({});
+  
+  // UI State
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
+  // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentFilter, setCurrentFilter] = useState("all");
-  const [currentSort, setCurrentSort] = useState("name-az");
+  const [currentFilter, setCurrentFilter] = useState("all"); // 'all' | 'open'
+  const [currentSort, setCurrentSort] = useState("name-az"); // 'name-az' | 'name-za' | 'price-low-high' | 'price-high-low'
 
+  // Dropdown UI State
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
-
   const filterRef = useRef(null);
   const sortRef = useRef(null);
-  const [menuData, setMenuData] = useState([]);
 
-  // Handle clicks outside dropdowns
+  // ==========================================
+  // EFFECTS & LIFECYCLES
+  // ==========================================
+
+  // 1. Handle clicks outside filter/sort dropdowns to close them automatically
   useEffect(() => {
     function handleClickOutside(event) {
       if (filterRef.current && !filterRef.current.contains(event.target)) setIsFilterDropdownOpen(false);
@@ -52,10 +68,11 @@ const StudentCanteens = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Bulletproof Initialization using React Router State
+  // 2. Initial Data Load & Router State Management
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
+        // Fetch all available canteens
         const response = await axios.get(`${BASE_URL}/api/canteens`);
         let canteens = [];
         if (response.data.status === 'success') {
@@ -65,6 +82,7 @@ const StudentCanteens = () => {
 
         const navState = location.state;
         
+        // Scenario A: User navigated here to explicitly reset their view
         if (navState && navState.reset) {
           setStep('list');
           setSelectedCanteen(null);
@@ -72,6 +90,8 @@ const StudentCanteens = () => {
           return;
         }
         
+        // Scenario B: User clicked "Edit Order" from another page. 
+        // We need to auto-load the specific canteen, its menu, and populate the cart.
         if (navState && navState.isChangingOrder && canteens.length > 0) {
           const autoCanteenId = navState.canteenId;
           const canteenToOpen = canteens.find(c => c._id === autoCanteenId);
@@ -80,12 +100,14 @@ const StudentCanteens = () => {
             if (canteenToOpen.status === "Closed") {
               showAlert("Canteen Closed", "This canteen is currently closed. You cannot modify your order right now.", "warning");
             } else {
+              // Fetch the menu for the specific canteen being edited
               const menuRes = await axios.get(`${BASE_URL}/api/canteens/${autoCanteenId}/menu`);
               
               if (menuRes.data.status === 'success') {
                 const availableMenu = menuRes.data.data.menu.filter(item => item.isAvailable);
                 setMenuData(availableMenu);
                 
+                // Reconstruct the cart state from the saved items passed via router state
                 try {
                   const savedItems = navState.cartItems || [];
                   const newCartState = {};
@@ -101,12 +123,14 @@ const StudentCanteens = () => {
                   console.error("Cart Recovery Failed:", e);
                 }
 
+                // Auto-navigate user directly to the checkout review step
                 setSelectedCanteen(canteenToOpen);
                 setStep('checkout');
               }
             }
           }
           
+          // Clear the router state so refreshing the page doesn't trigger this again
           navigate(location.pathname, { replace: true, state: null });
         }
       } catch (err) {
@@ -119,7 +143,11 @@ const StudentCanteens = () => {
     fetchInitialData();
   }, [location.state, location.pathname, navigate]); 
 
-  // Normal Menu Fetching
+  // ==========================================
+  // DATA FETCHING & SOCKET LISTENERS
+  // ==========================================
+
+  // Fetch the latest menu for a specific canteen and clean up the cart
   const fetchMenu = async (canteenId) => {
     try {
       const response = await axios.get(`${BASE_URL}/api/canteens/${canteenId}/menu`);
@@ -127,6 +155,7 @@ const StudentCanteens = () => {
         const availableMenu = response.data.data.menu.filter(item => item.isAvailable);
         setMenuData(availableMenu);
 
+        // Remove items from the current cart if they are no longer available on the menu
         setCart(prev =>
           Object.fromEntries(
             Object.entries(prev).filter(([id]) =>
@@ -141,7 +170,8 @@ const StudentCanteens = () => {
     }
   };
 
-  // Socket: Live Menu Updates
+  // Socket Listener: Real-time Menu Updates
+  // Triggers only when the user is actively viewing a specific canteen's menu or checkout
   useEffect(() => {
     if (!selectedCanteen?._id || (step !== "menu" && step !== "checkout")) return;
 
@@ -149,23 +179,27 @@ const StudentCanteens = () => {
     socket.emit("join-canteen", canteenId);
 
     const handleMenuUpdated = (payload) => {
+      // Re-fetch the menu if the canteen owner makes a change
       if (payload.canteenId === canteenId) fetchMenu(canteenId);
     };
     socket.on("menu-updated", handleMenuUpdated);
 
+    // Cleanup: Leave the socket room when component unmounts or selected canteen changes
     return () => {
       socket.off("menu-updated", handleMenuUpdated);
       socket.emit("leave-canteen", canteenId);
     };
   }, [step, selectedCanteen]);
 
-  // Socket: Canteen Status Updates
+  // Socket Listener: Real-time Canteen Status (Open/Closed)
   useEffect(() => {
     const handleCanteenStatusUpdated = (payload) => {
+      // Update the status in the main canteen list
       setCanteensData(prev =>
         prev.map(c => c._id === payload.canteenId ? { ...c, status: payload.isOpen ? "Open" : "Closed" } : c)
       );
 
+      // If the canteen the user is currently viewing closes, kick them back to the main list
       if (selectedCanteen?._id === payload.canteenId && !payload.isOpen) {
         showAlert("Canteen Closed", "This canteen has closed. Returning to the canteen list.", "info");
         goToList();
@@ -175,7 +209,10 @@ const StudentCanteens = () => {
     return () => socket.off("canteen-status-updated", handleCanteenStatusUpdated);
   }, [selectedCanteen]);
 
-  // Order Placement
+
+  // ==========================================
+  // ORDER SUBMISSION
+  // ==========================================
   const handlePlaceDebtRequest = async () => {
     if (Object.keys(cart).length === 0) {
       showAlert("Cart Empty", "Your cart is empty! Please add some items before ordering.", "warning");
@@ -184,12 +221,14 @@ const StudentCanteens = () => {
     
     try {
       const token = sessionStorage.getItem('token');
+      
+      // Format the cart data to match the backend Order schema
       const orderData = {
         canteenId: selectedCanteen._id,
         items: Object.entries(cart).map(([id, qty]) => {
           const item = menuData.find(i => i._id === id);
           return item ? { name: item.name, quantity: qty, price: item.price } : null;
-        }).filter(Boolean),
+        }).filter(Boolean), // Remove any null items
         totalAmount: getTotalCost()
       };
 
@@ -200,14 +239,17 @@ const StudentCanteens = () => {
       if (response.data.status === 'success') {
         setToast(`Order sent to ${selectedCanteen.name}!`);
         setTimeout(() => setToast(null), 3500);
-        goToList();
+        goToList(); // Reset view after successful order
       }
     } catch (err) {
       showAlert("Order Failed", err.response?.data?.message || "Order failed. Please try again.", "error");
     }
   };
 
-  // Navigation Handlers
+
+  // ==========================================
+  // NAVIGATION HANDLERS
+  // ==========================================
   const goToMenu = async (canteen) => {
     if (canteen.status === "Closed") return;
     await fetchMenu(canteen._id);
@@ -219,19 +261,25 @@ const StudentCanteens = () => {
 
   const goToList = () => {
     setStep('list');
-    setCart({});
+    setCart({}); // Clear cart when leaving the canteen
     setSelectedCanteen(null);
     setMenuData([]);
     setCurrentFilter("all");
     setCurrentSort("name-az");
   };
 
-  // --- NEW CART HANDLERS FOR KEYBOARD INPUT ---
+
+  // ==========================================
+  // CART INPUT HANDLERS
+  // ==========================================
   
+  // Handles button clicks (+ / -)
   const updateQuantity = (id, delta) => {
     setCart(prev => {
       const currentQty = prev[id] === '' ? 0 : (prev[id] || 0);
       const newQty = currentQty + delta;
+      
+      // Remove item from cart if quantity drops to 0 or below
       if (newQty <= 0) {
         const newCart = { ...prev };
         delete newCart[id];
@@ -241,32 +289,35 @@ const StudentCanteens = () => {
     });
   };
 
-  // Handles typing direct numbers
+  // Handles direct user typing in the input field
   const setAbsoluteQuantity = (id, value) => {
     setCart(prev => ({ ...prev, [id]: value }));
   };
 
-  // Handles clicking away from the input field
+  // Handles when the user clicks away from the input field
+  // Prevents invalid states (like an empty string) from remaining in the cart object
   const handleQuantityBlur = (id) => {
     setCart(prev => {
       const currentVal = prev[id];
       if (currentVal === '' || currentVal <= 0) {
         const newCart = { ...prev };
-        delete newCart[id]; // Safely remove if left empty
+        delete newCart[id]; 
         return newCart;
       }
       return prev;
     });
   };
 
+  // Cart Utility: Calculates total price, handling potential empty string states during typing
   const getTotalCost = () => {
     return Object.entries(cart).reduce((total, [id, qty]) => {
       const item = menuData.find(i => i._id === id);
-      const validQty = qty === '' ? 0 : qty; // Fix to prevent NaN when typing
+      const validQty = qty === '' ? 0 : qty; 
       return total + (item ? item.price * validQty : 0);
     }, 0);
   };
 
+  // Cart Utility: Generates the comma-separated string shown in the floating footer
   const getCartSummaryText = () => {
     return Object.entries(cart)
       .map(([id, qty]) => {
@@ -277,7 +328,12 @@ const StudentCanteens = () => {
       .join(", ");
   };
 
-  // Filters & Sorting
+
+  // ==========================================
+  // DERIVED STATE (FILTERING & SORTING)
+  // ==========================================
+  
+  // Applies active filters and search query to the canteen list
   let displayCanteens = canteensData
     .filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .filter(c => {
@@ -292,6 +348,7 @@ const StudentCanteens = () => {
 
   const getFilterText = () => currentFilter === 'open' ? "Open Only" : "All Canteens";
 
+  // Applies active filters and search query to the menu items
   let displayMenu = menuData
     .filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
@@ -310,6 +367,11 @@ const StudentCanteens = () => {
     return "Sort by";
   };
 
+
+  // ==========================================
+  // RENDER UI
+  // ==========================================
+
   if (loading) {
     return (
       <div className="p-8 text-center text-xl font-medium bg-[#F8FAFC] h-full flex flex-col items-center justify-center gap-2">
@@ -321,7 +383,8 @@ const StudentCanteens = () => {
 
   return (
     <main className="p-10 pb-32 w-full h-full bg-[#F8FAFC] overflow-y-auto relative">
-      {/* Dynamic Header */}
+      
+      {/* --- DYNAMIC HEADER --- */}
       {step !== 'list' && (
         <h1 className="text-3xl font-medium text-black mb-10 flex items-center gap-4">
           <ArrowLeft
@@ -332,7 +395,7 @@ const StudentCanteens = () => {
         </h1>
       )}
 
-      {/* Top Search & Filter Bar */}
+      {/* --- TOP SEARCH & FILTER BAR --- */}
       {step !== 'checkout' && (
         <div className="flex justify-between items-center mb-10 gap-6">
           <div className="bg-white rounded-full flex items-center px-5 h-11 w-[450px] shadow-sm border border-gray-100 focus-within:ring-2 focus-within:ring-[#f97316] focus-within:border-[#f97316] transition">
@@ -356,6 +419,7 @@ const StudentCanteens = () => {
                   <div className="flex items-center gap-2"><Filter className="w-5 h-5" />{getFilterText()}</div>
                   <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
+                {/* Filter Dropdown Content */}
                 {isFilterDropdownOpen && (
                   <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
                     <div onClick={() => { setCurrentFilter('all'); setIsFilterDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentFilter === 'all' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>All Canteens</div>
@@ -373,10 +437,12 @@ const StudentCanteens = () => {
                 <div className="flex items-center gap-2"><ArrowDownUp className="w-5 h-5" />{getSortText()}</div>
                 <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
+              {/* Sort Dropdown Content */}
               {isSortDropdownOpen && (
                 <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
                   <div onClick={() => { setCurrentSort('name-az'); setIsSortDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentSort === 'name-az' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>Name: A to Z</div>
                   <div onClick={() => { setCurrentSort('name-za'); setIsSortDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentSort === 'name-za' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>Name: Z to A</div>
+                  {/* Price sorting is only visible when looking at a specific menu */}
                   {step === 'menu' && (
                     <>
                       <div onClick={() => { setCurrentSort('price-low-high'); setIsSortDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentSort === 'price-low-high' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>Price: Low to High</div>
@@ -390,7 +456,7 @@ const StudentCanteens = () => {
         </div>
       )}
 
-      {/* STEP: CANTEENS LIST */}
+      {/* --- STEP 1: CANTEENS LIST VIEW --- */}
       {step === 'list' && (
         <div className="flex flex-col">
           {displayCanteens.length === 0 && (
@@ -427,9 +493,11 @@ const StudentCanteens = () => {
         </div>
       )}
 
-      {/* STEP: CANTEEN MENU */}
+      {/* --- STEP 2: CANTEEN MENU VIEW --- */}
       {step === 'menu' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+          
+          {/* Canteen Closed Notice */}
           {selectedCanteen?.status === "Closed" && (
             <div className="col-span-1 md:col-span-2 bg-white rounded-2xl p-10 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-2">
               <AlertTriangle className="w-10 h-10 text-orange-400" />
@@ -441,12 +509,14 @@ const StudentCanteens = () => {
             </div>
           )}
 
+          {/* Empty Menu Notice */}
           {selectedCanteen?.status === "Open" && displayMenu.length === 0 && (
             <div className="col-span-2 text-center text-gray-500 py-10 text-xl font-bold bg-white rounded-2xl border border-gray-100 shadow-sm">
               This canteen has no food items available right now!
             </div>
           )}
 
+          {/* Render Menu Items */}
           {selectedCanteen?.status === "Open" && displayMenu.length > 0 && displayMenu.map(item => (
             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center transition hover:shadow-md" key={item._id}>
               <div>
@@ -454,6 +524,7 @@ const StudentCanteens = () => {
                 <p className="text-[#f97316] font-semibold text-lg">Rs.{item.price}</p>
               </div>
 
+              {/* Add to Cart button OR +/- Controls */}
               {!cart[item._id] ? (
                 <button
                   className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white px-6 py-2.5 rounded-xl font-medium transition text-base shadow-sm"
@@ -467,7 +538,7 @@ const StudentCanteens = () => {
                     <Minus className="w-5 h-5" />
                   </button>
                   
-                  {/* 🌟 KEYBOARD EDITABLE INPUT (MENU) */}
+                  {/* 🌟 KEYBOARD EDITABLE INPUT */}
                   <input
                     type="number"
                     value={cart[item._id]}
@@ -494,7 +565,7 @@ const StudentCanteens = () => {
         </div>
       )}
 
-      {/* STEP: CHECKOUT */}
+      {/* --- STEP 3: CHECKOUT REVIEW VIEW --- */}
       {step === 'checkout' && (
         <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
@@ -573,7 +644,7 @@ const StudentCanteens = () => {
         </div>
       )}
 
-      {/* CART FOOTER */}
+      {/* --- CART FOOTER (Floating Bar) --- */}
       {step === 'menu' && Object.keys(cart).length > 0 && (
         <div className="fixed bottom-0 right-0 w-[calc(100%-192px)] bg-white border-t border-gray-200 px-10 py-5 flex justify-between items-center shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40">
           <div className="flex items-center gap-4">
@@ -594,7 +665,7 @@ const StudentCanteens = () => {
         </div>
       )}
 
-      {/* GREEN SUCCESS TOAST */}
+      {/* --- GREEN SUCCESS TOAST NOTIFICATION --- */}
       {toast && (
         <div className="fixed bottom-8 right-8 z-50">
           <div className="flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl text-white font-medium bg-green-600">

@@ -6,14 +6,24 @@ import { io } from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../context/NotificationContext';
 
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+
+/**
+ * Formats a raw timestamp into a human-readable string.
+ * Converts dates to "Today, HH:MM", "Yesterday, HH:MM", or falls back to "MM/DD/YYYY, HH:MM".
+ */
 const formatOrderDate = (dateString) => {
   const date = new Date(dateString);
   const now = new Date();
 
+  // Check if the date is exactly today
   const isToday = date.getDate() === now.getDate() &&
     date.getMonth() === now.getMonth() &&
     date.getFullYear() === now.getFullYear();
 
+  // Check if the date is exactly yesterday
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   const isYesterday = date.getDate() === yesterday.getDate() &&
@@ -27,9 +37,19 @@ const formatOrderDate = (dateString) => {
   return `${date.toLocaleDateString()}, ${timeString}`;
 };
 
+// ==========================================
+// SUB-COMPONENTS
+// ==========================================
+
+/**
+ * Renders an individual order card.
+ * If the order is 'pending', the card becomes clickable and expands to reveal action buttons.
+ */
 const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder }) => {
+  // Controls the slide-down action menu for pending orders
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Safe fallbacks in case populated data is missing
   const canteenName = order.canteen?.name || 'Unknown Canteen';
   const orderItems = order.items?.map(i => `${i.quantity}x ${i.name}`).join(', ') || 'Unknown Items';
   const isPending = order.status === 'pending';
@@ -42,7 +62,7 @@ const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder }) => {
       `}
       onClick={() => isPending && setIsExpanded(!isExpanded)}
     >
-      {/* Main Row */}
+      {/* Main Visible Row */}
       <div className="p-5 flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium text-gray-900 mb-1">{orderItems}</h3>
@@ -52,6 +72,7 @@ const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder }) => {
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
+            {/* Dynamic Status Badge */}
             <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
               order.status === 'pending' ? 'bg-orange-100 text-orange-700' :
               order.status === 'accepted' ? 'bg-green-100 text-green-700' :
@@ -59,6 +80,7 @@ const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder }) => {
             }`}>
               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
             </span>
+            {/* Dropdown chevron only shows for pending orders */}
             {isPending && (
               <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
             )}
@@ -69,11 +91,11 @@ const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder }) => {
         </div>
       </div>
 
-      {/* Slide-in Action Panel */}
+      {/* Slide-in Action Panel (Only renders if order is pending AND user clicked it) */}
       {isPending && isExpanded && (
         <div
           className="px-5 pb-4 pt-1 border-t border-orange-50 flex gap-3 bg-orange-50/40"
-          onClick={(e) => e.stopPropagation()} // prevent card toggle when clicking buttons
+          onClick={(e) => e.stopPropagation()} // Prevents the card from collapsing when a button is clicked
         >
           <button
             onClick={() => onChangeOrder(order)}
@@ -95,27 +117,43 @@ const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder }) => {
 };
 
 
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
+
 export default function StudDashboard() {
   const { showAlert, showConfirm } = useNotifications();
   const navigate = useNavigate();
+  
+  // View State
   const [totalDebt, setTotalDebt] = useState(0);
   const [alerts, setAlerts] = useState([]);
   const [currentOrders, setCurrentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // ------------------------------------------
+  // DATA FETCHING
+  // ------------------------------------------
+
+  // Fetches the user's total active debt and generates limit warnings
   const fetchTotalDebt = async () => {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       if (!token) return;
+      
       const res = await axios.get(`${BASE_URL}/api/debts/my-debts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
       if (res.data.status === 'success') {
+        // Calculate total combined debt across all canteens
         const sum = res.data.data.reduce((total, d) => total + d.amountOwed, 0);
         setTotalDebt(sum);
+        
+        // Generate alert notifications if any individual canteen debt approaches the limit
         const generatedAlerts = [];
         res.data.data.forEach(d => {
-          if (d.amountOwed >= 2400) {
+          if (d.amountOwed >= 2400) { // 2400 is 80% of the assumed 3000 limit
             generatedAlerts.push({
               canteen: d.canteen?.name || "Unknown Canteen",
               message: `Debt is at ₹${d.amountOwed} (≥80% of ₹3000 limit)`
@@ -129,44 +167,63 @@ export default function StudDashboard() {
     }
   };
 
+  // ------------------------------------------
+  // LIFECYCLES & SOCKETS
+  // ------------------------------------------
+
+  // 1. Initial Load: Fetch orders and debt
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         const token = sessionStorage.getItem('token');
         if (!token) return;
+        
         const res = await axios.get(`${BASE_URL}/api/orders/my-active-orders`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        
         if (res.data.status === 'success') {
           const now = new Date();
           const fortyEightHoursMs = 48 * 60 * 60 * 1000;
+          
+          // Filter out system "payment" orders and orders older than 48 hours
           const recentActualOrders = res.data.data.filter(order => {
+            // Because debt payments are logged as orders in the DB, we hide them from the dashboard list
             const isPayment = order.items && order.items.length > 0 && 
-                             (order.items[0].name === 'Offline Debt Payment' || order.items[0].name === 'Online Debt Payment');
+                              (order.items[0].name === 'Offline Debt Payment' || order.items[0].name === 'Online Debt Payment');
             if (isPayment) return false;
+            
+            // Only show orders from the last 2 days
             const orderDate = new Date(order.createdAt);
             const isRecent = (now - orderDate) <= fortyEightHoursMs;
             return isRecent;
           });
+          
           setCurrentOrders(recentActualOrders);
         }
       } catch (err) {
         console.error('Failed to fetch orders:', err);
       }
     };
+    
     fetchOrders();
     fetchTotalDebt();
   }, []);
 
+  // 2. Real-time Socket Connection
   useEffect(() => {
     const userStr = sessionStorage.getItem('user');
     if (!userStr) return;
     const user = JSON.parse(userStr);
     const userIdStr = user._id;
+    
+    // Connect to the WebSocket server
     const socket = io(`${BASE_URL}`);
     socket.on('connect', () => {
-      socket.emit('join-student', userIdStr);
+      socket.emit('join-student', userIdStr); // Join user-specific room for targeted notifications
     });
+    
+    // Listener: Updates the UI instantly when a canteen accepts/rejects an order
     socket.on('orderStatusUpdated', (updatedOrder) => {
       setCurrentOrders((prevOrders) =>
         prevOrders.map((order) =>
@@ -174,14 +231,23 @@ export default function StudDashboard() {
         )
       );
     });
+    
+    // Listener: Refreshes the debt hero banner instantly if a payment is processed
     socket.on('debt-updated', () => {
       fetchTotalDebt();
     });
+    
+    // Cleanup: Disconnect when the user leaves the dashboard
     return () => {
       socket.disconnect();
     };
   }, []);
 
+  // ------------------------------------------
+  // ACTION HANDLERS
+  // ------------------------------------------
+
+  // Safely cancels an order via the API and updates local UI state
   const handleCancelOrder = (orderId) => {
     showConfirm(
       "Cancel Order",
@@ -192,9 +258,12 @@ export default function StudDashboard() {
           await axios.patch(`${BASE_URL}/api/orders/${orderId}/cancel`, {}, {
             headers: { Authorization: `Bearer ${token}` }
           });
+          
+          // Update local state so UI updates without needing a full page refresh
           setCurrentOrders(prev => prev.map(o =>
             o._id === orderId ? { ...o, status: 'cancelled' } : o
           ));
+          
           showAlert("Order Cancelled", "Your order has been successfully cancelled.", "success");
         } catch (err) {
           showAlert("Error", err.response?.data?.message || "Error cancelling order", "error");
@@ -203,20 +272,20 @@ export default function StudDashboard() {
     );
   };
 
-  // 🌟 FIX: Updated Change Order Logic using Router State
+  // Edit Order Workflow: Cancels current order, redirects to Canteen page, and pre-fills the cart
   const handleChangeOrder = async (order) => {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       
-      // 1. Cancel it on the backend
+      // 1. Cancel the existing order on the backend so they aren't charged double
       await axios.patch(`${BASE_URL}/api/orders/${order._id}/cancel`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // 2. Extract Canteen ID
+      // 2. Extract Canteen ID safely (handling populated vs unpopulated mongoose documents)
       const canteenId = typeof order.canteen === 'object' ? order.canteen._id : order.canteen;
 
-      // 3. Navigate to the Canteens page with router state
+      // 3. Navigate to the Canteens page, passing the old cart state so it opens automatically
       navigate('/student/canteens', {
         state: {
           isChangingOrder: true,
@@ -230,9 +299,17 @@ export default function StudDashboard() {
     }
   };
 
+  // ------------------------------------------
+  // RENDER UI
+  // ------------------------------------------
+
   return (
     <main className="p-8 overflow-y-auto flex-1 bg-gray-50 min-h-screen">
+      
+      {/* --- TOP ROW: DEBT WIDGET & ALERTS --- */}
       <div className="flex flex-col md:flex-row gap-6 mb-8">
+        
+        {/* Total Debt Hero Card */}
         <div className="bg-gradient-to-r from-[#1e3a8a] to-[#3b82f6] rounded-2xl p-6 text-white flex-1 shadow-lg h-40 flex flex-col justify-between">
           <div>
             <p className="text-lg opacity-90">Total Debt:</p>
@@ -246,6 +323,8 @@ export default function StudDashboard() {
             </div>
           )}
         </div>
+        
+        {/* Debt Limits / Alerts Card */}
         <div className="bg-white rounded-2xl p-4 flex-1 shadow-sm border border-gray-100 max-w-md flex flex-col h-40">
           <div className="flex items-center gap-2 mb-3 shrink-0">
             <AlertTriangle className="w-5 h-5 text-orange-500" />
@@ -265,6 +344,8 @@ export default function StudDashboard() {
           </div>
         </div>
       </div>
+
+      {/* --- BOTTOM ROW: RECENT ORDERS FEED --- */}
       <div>
         <h2 className="text-2xl font-semibold text-gray-800 mb-4">Current Orders:</h2>
         <div className="space-y-4">
@@ -285,7 +366,7 @@ export default function StudDashboard() {
         </div>
       </div>
 
-      {/* Removed local Cancel Confirm Modal and Error Toast as they are now handled by global NotificationContext */}
+      {/* Note: Modals and Toasts are managed globally by NotificationContext */}
     </main>
   );
-}
+}
