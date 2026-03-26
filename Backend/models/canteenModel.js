@@ -3,10 +3,14 @@ const { encryptValue, decryptValue } = require('../utils/secretCrypto');
 
 const KEY_ID_REGEX = /^rzp_(test|live)_[A-Za-z0-9]+$/;
 
+/**
+ * @desc Mongoose schema for Canteen profiles, including settings and payment integration.
+ */
 const canteenSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'A canteen must have a name']
+    required: [true, 'A canteen must have a name'],
+    trim: true
   },
   ownerId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -15,7 +19,7 @@ const canteenSchema = new mongoose.Schema({
   },
   isOpen: {
     type: Boolean,
-    default: false // Matches your React initial state logic
+    default: false
   },
   timings: {
     type: String,
@@ -24,7 +28,8 @@ const canteenSchema = new mongoose.Schema({
   },
   defaultLimit: {
     type: Number,
-    default: 3000
+    default: 3000,
+    min: [0, 'Default limit cannot be negative']
   },
   razorpayMerchantKeyId: {
     type: String,
@@ -34,24 +39,43 @@ const canteenSchema = new mongoose.Schema({
       message: 'Please provide a valid Razorpay key ID.'
     }
   },
+  // Stored securely; never returned in standard queries unless explicitly requested
   razorpayMerchantKeySecretEncrypted: {
     type: String,
-    select: false
+    select: false 
   }
-}, { timestamps: true });
+}, { 
+  timestamps: true 
+});
 
-canteenSchema.methods.setRazorpayMerchantKeySecret = function setRazorpayMerchantKeySecret(secret) {
+// ==========================================
+// INSTANCE METHODS
+// ==========================================
+
+/**
+ * Encrypts and securely stores the Razorpay Merchant Secret.
+ * @param {string} secret - The raw Razorpay secret key.
+ */
+canteenSchema.methods.setRazorpayMerchantKeySecret = function(secret) {
   const trimmedSecret = (secret || '').trim();
   this.razorpayMerchantKeySecretEncrypted = trimmedSecret ? encryptValue(trimmedSecret) : undefined;
 };
 
-canteenSchema.methods.getRazorpayMerchantKeySecret = function getRazorpayMerchantKeySecret() {
+/**
+ * Decrypts and retrieves the Razorpay Merchant Secret.
+ * @returns {string} The decrypted secret key, or an empty string if none exists.
+ */
+canteenSchema.methods.getRazorpayMerchantKeySecret = function() {
   return this.razorpayMerchantKeySecretEncrypted
     ? decryptValue(this.razorpayMerchantKeySecretEncrypted)
     : '';
 };
 
-canteenSchema.methods.hasRazorpayMerchantCredentials = function hasRazorpayMerchantCredentials() {
+/**
+ * Checks if the canteen has fully configured its Razorpay integration.
+ * @returns {boolean} True if both the Key ID and encrypted Secret exist.
+ */
+canteenSchema.methods.hasRazorpayMerchantCredentials = function() {
   return Boolean(this.razorpayMerchantKeyId && this.razorpayMerchantKeySecretEncrypted);
 };
 
