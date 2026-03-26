@@ -11,19 +11,19 @@ export default function StudentHelp() {
     },
     {
       question: "Payment Related Issues",
-      answer: "Details regarding payment related issues will appear here."
+      answer: "If you encounter any issues while making an online payment (like money deducted but debt not updated), please wait a few minutes and refresh the page. If the issue persists, contact the canteen owner or email our support with your transaction details."
     },
     {
-      question: "Can i pay my debt offline",
-      answer: "Information explaining offline debt payments will appear here."
+      question: "Can I pay my debt offline?",
+      answer: "Yes, you can directly pay the canteen owner with cash or via their personal UPI at the counter. Once you pay them, the canteen owner will manually update your debt balance in the system, which will immediately reflect in your account."
     },
     {
       question: "Updating Personal Information",
-      answer: "Steps to update your personal information will appear here."
+      answer: "To update your personal details like your phone number, or hall and room number, simply navigate to the Profile section by clicking on your avatar at the top right of the navigation bar, and then click on 'Edit Profile'."
     },
     {
       question: "How to pay Debts",
-      answer: "Instructions on paying debts will appear here."
+      answer: "Navigate to the 'View Debts' section from the left sidebar menu. Here you will see a list of canteens you owe money to. Click the 'Pay Debt' button, enter the amount you wish to pay, and proceed securely with the Razorpay payment gateway. Alternatively, you can pay via cash or UPI directly at the canteen counter, and the owner will manually update and clear your debt in the system."
     }
   ];
 
