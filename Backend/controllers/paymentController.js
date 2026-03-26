@@ -264,6 +264,11 @@ exports.verifyDebtPayment = async (req, res) => {
       }
       if (debt.canteen) {
         io.to(`canteen:${debt.canteen}`).emit('debt-updated');
+        io.to(`canteen:${debt.canteen}`).emit('payment-received', {
+          studentName: debt.student?.name || 'A student',
+          amount: claimedPayment.amount,
+          canteenName: canteen.name
+        });
       }
     }
 

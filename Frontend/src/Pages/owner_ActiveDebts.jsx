@@ -63,6 +63,10 @@ export default function ActiveDebtsContent() {
       fetchDebts();
     });
 
+    socket.on('payment-received', (data) => {
+      showToast(`💰 ${data.studentName} paid ₹${data.amount}!`, 'success');
+    });
+
     return () => {
       socket.disconnect();
     };

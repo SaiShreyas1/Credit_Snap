@@ -58,6 +58,11 @@ export default function OwnerLayout() {
       // Generic refresh hint; specific events come via debt-threshold
     });
 
+    // Online payment received
+    socket.on('payment-received', (data) => {
+      addNotification('success', `Payment Received 💰`, `${data.studentName} paid ₹${data.amount} online.`);
+    });
+
     return () => socket.disconnect();
   }, [addNotification]);
 

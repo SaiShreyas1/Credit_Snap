@@ -70,20 +70,59 @@ exports.getMenu = async (req, res) => {
 };
 
 // Add a new item (Matches your Add Modal)
+// Add a new item (Matches your Add Modal)
 exports.addMenuItem = async (req, res) => {
   try {
-    const newItem = await MenuItem.create({ ...req.body, canteenId: req.params.canteenId });
+    const { canteenId } = req.params;
+    
+    // 🔪 TRICK 1: Kill any invisible spaces before or after the name
+    const trimmedName = req.body.name.trim();
+
+    // 🪤 TRAP 1: Let's see exactly what the server is searching for
+    console.log(`\n--- 🛑 DUPLICATE CHECK TRIGGERED ---`);
+    console.log(`Checking for name: "${trimmedName}"`);
+    console.log(`Inside Canteen ID: ${canteenId}`);
+
+    // The Search Query
+    const existingItem = await MenuItem.findOne({
+      canteenId: canteenId,
+      name: { $regex: new RegExp(`^${trimmedName}$`, 'i') } 
+    });
+
+    // 🪤 TRAP 2: What did the database find?
+    console.log(`Database found:`, existingItem);
+
+    // The Bouncer
+    if (existingItem) {
+      console.log(`🚫 BLOCKED: Duplicate found!`);
+      return res.status(400).json({
+        status: 'fail',
+        message: `An item named "${trimmedName}" already exists in your menu!`
+      });
+    }
+
+    console.log(`✅ PASSED: Creating new item...`);
+
+    // ✅ Create the item using the safely trimmed name
+    const newItem = await MenuItem.create({ 
+      ...req.body, 
+      name: trimmedName, // Force the clean name into the database
+      canteenId: canteenId 
+    });
 
     const io = req.app.get('io');
-    io.to(`canteen:${newItem.canteenId}`).emit('menu-updated', {
-      canteenId: newItem.canteenId.toString(),
-    });
+    if (io) {
+      io.to(`canteen:${newItem.canteenId}`).emit('menu-updated', {
+        canteenId: newItem.canteenId.toString(),
+      });
+    }
 
     res.status(201).json({
       status: 'success',
       data: { menuItem: newItem }
     });
   } catch (error) {
+    console.log(`❌ ERROR:`, error.message);
     res.status(400).json({ status: 'fail', message: error.message });
   }
 };

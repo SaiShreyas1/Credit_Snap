@@ -91,6 +91,10 @@ export default function OwnerDashboard() {
       }
     });
 
+    socket.on('payment-received', (data) => {
+      showAlert(`💰 Payment Received!`, `${data.studentName} paid ₹${data.amount} online.`, 'success');
+    });
+
     return () => {
       socket.disconnect();
     };
