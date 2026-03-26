@@ -6,6 +6,13 @@ const Debt = require('../models/debtModel');
 const Payment = require('../models/paymentModel');
 const { settleDebtPayment } = require('../utils/debtPayments');
 
+// ==========================================
+// UTILITY FUNCTIONS
+// ==========================================
+
+/**
+ * Generates an HMAC SHA256 signature to verify Razorpay webhooks/callbacks.
+ */
 const buildSignature = (secret, orderId, paymentId) => (
   crypto
     .createHmac('sha256', secret)
@@ -13,6 +20,9 @@ const buildSignature = (secret, orderId, paymentId) => (
     .digest('hex')
 );
 
+/**
+ * Extracts a readable error message from Razorpay's nested error objects.
+ */
 const getGatewayErrorMessage = (error, fallbackMessage) => (
   error?.error?.description ||
   error?.description ||
@@ -22,6 +32,9 @@ const getGatewayErrorMessage = (error, fallbackMessage) => (
   fallbackMessage
 );
 
+/**
+ * Retrieves and validates the specific Canteen's Razorpay API keys.
+ */
 const getMerchantCredentials = (canteen) => {
   const keyId = canteen?.razorpayMerchantKeyId?.trim();
   const keySecret = canteen?.getRazorpayMerchantKeySecret?.();
@@ -35,11 +48,23 @@ const getMerchantCredentials = (canteen) => {
   return { keyId, keySecret };
 };
 
+/**
+ * Initializes a new Razorpay client scoped to a specific canteen's credentials.
+ */
 const getRazorpayClient = ({ keyId, keySecret }) => new Razorpay({
   key_id: keyId,
   key_secret: keySecret
 });
 
+// ==========================================
+// CORE PAYMENT CONTROLLERS
+// ==========================================
+
+/**
+ * @desc    Step 1: Creates a new Razorpay Order for a student's debt payment.
+ * @route   POST /api/payments/create/:debtId
+ * @access  Private (Student Only)
+ */
 exports.createDebtOrder = async (req, res) => {
   try {
     if (req.user.role !== 'student') {
@@ -57,10 +82,12 @@ exports.createDebtOrder = async (req, res) => {
       return res.status(404).json({ status: 'fail', message: 'Debt record not found!' });
     }
 
+    // Security Check: Prevent users from paying someone else's debt
     if (debt.student._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ status: 'fail', message: 'You can only pay your own debts.' });
     }
 
+    // Validate the requested payment amount
     const requestedAmount = Number(req.body.amount || debt.amountOwed);
     if (!requestedAmount || Number.isNaN(requestedAmount) || requestedAmount <= 0) {
       return res.status(400).json({ status: 'fail', message: 'Please enter a valid amount to pay.' });
@@ -73,12 +100,15 @@ exports.createDebtOrder = async (req, res) => {
       });
     }
 
+    // Setup Razorpay Order Payload
     const amount = Number(requestedAmount.toFixed(2));
-    // Razorpay receipts must be unique and at most 40 characters.
     const receipt = `debt_${Date.now()}_${debt._id.toString().slice(-8)}`;
     const merchantCredentials = getMerchantCredentials(debt.canteen);
     const razorpay = getRazorpayClient(merchantCredentials);
+    
+    // Razorpay requires amounts in smaller currency units (Paise for INR)
     const amountInPaise = Math.round(amount * 100);
+    
     const razorpayOrder = await razorpay.orders.create({
       amount: amountInPaise,
       currency: 'INR',
@@ -91,6 +121,7 @@ exports.createDebtOrder = async (req, res) => {
       }
     });
 
+    // Create a 'Created' status record in our local database
     const paymentRecord = await Payment.create({
       purpose: 'debt',
       student: req.user._id,
@@ -122,11 +153,16 @@ exports.createDebtOrder = async (req, res) => {
     });
   } catch (error) {
     const message = getGatewayErrorMessage(error, 'Unable to create the Razorpay order right now.');
-    console.error('Razorpay createDebtOrder error:', error);
+    console.error('[Payment Controller] ❌ Razorpay createDebtOrder error:', error);
     res.status(400).json({ status: 'fail', message });
   }
 };
 
+/**
+ * @desc    Step 2: Verifies the Razorpay callback signature and settles the debt.
+ * @route   POST /api/payments/verify
+ * @access  Private (Student Only)
+ */
 exports.verifyDebtPayment = async (req, res) => {
   try {
     if (req.user.role !== 'student') {
@@ -153,6 +189,7 @@ exports.verifyDebtPayment = async (req, res) => {
       return res.status(403).json({ status: 'fail', message: 'You can only verify your own payments.' });
     }
 
+    // Idempotency Check: Prevent duplicate processing if the user refreshes
     if (payment.status === 'paid') {
       return res.status(200).json({
         status: 'success',
@@ -165,6 +202,7 @@ exports.verifyDebtPayment = async (req, res) => {
       return res.status(400).json({ status: 'fail', message: 'Razorpay order mismatch detected.' });
     }
 
+    // Lock the record into 'processing' state to prevent race conditions
     const claimedPayment = await Payment.findOneAndUpdate(
       { _id: payment._id, status: 'created' },
       {
@@ -180,7 +218,6 @@ exports.verifyDebtPayment = async (req, res) => {
 
     if (!claimedPayment) {
       const latestPayment = await Payment.findById(payment._id);
-
       if (latestPayment && latestPayment.status === 'paid') {
         return res.status(200).json({
           status: 'success',
@@ -188,7 +225,6 @@ exports.verifyDebtPayment = async (req, res) => {
           data: { alreadyProcessed: true }
         });
       }
-
       return res.status(409).json({
         status: 'fail',
         message: 'This payment is already being processed. Please refresh and check your debt balance.'
@@ -203,10 +239,10 @@ exports.verifyDebtPayment = async (req, res) => {
       claimedPayment.status = 'failed';
       claimedPayment.failureReason = 'Canteen record was missing during verification.';
       await claimedPayment.save();
-
       return res.status(404).json({ status: 'fail', message: 'Canteen record not found!' });
     }
 
+    // Signature Verification Math
     const merchantCredentials = getMerchantCredentials(canteen);
     const expectedSignature = buildSignature(
       merchantCredentials.keySecret,
@@ -218,13 +254,13 @@ exports.verifyDebtPayment = async (req, res) => {
       claimedPayment.status = 'failed';
       claimedPayment.failureReason = 'Invalid Razorpay signature.';
       await claimedPayment.save();
-
       return res.status(400).json({ status: 'fail', message: 'Invalid Razorpay signature.' });
     }
 
     const razorpay = getRazorpayClient(merchantCredentials);
     let gatewayPayment = await razorpay.payments.fetch(razorpay_payment_id);
 
+    // Auto-capture the payment if Razorpay left it in the 'authorized' state
     if (gatewayPayment.status === 'authorized') {
       gatewayPayment = await razorpay.payments.capture(
         razorpay_payment_id,
@@ -237,12 +273,12 @@ exports.verifyDebtPayment = async (req, res) => {
       throw new Error(`Razorpay payment is in "${gatewayPayment.status}" state and cannot settle this debt yet.`);
     }
 
+    // THE SETTLEMENT: Actually reduce the math on the student's debt!
     const debt = await Debt.findById(claimedPayment.debt).populate('student');
     if (!debt) {
       claimedPayment.status = 'failed';
       claimedPayment.failureReason = 'Debt record was missing during verification.';
       await claimedPayment.save();
-
       return res.status(404).json({ status: 'fail', message: 'Debt record not found!' });
     }
 
@@ -252,17 +288,17 @@ exports.verifyDebtPayment = async (req, res) => {
       receiptLabel: 'Online Debt Payment'
     });
 
+    // Mark the record as fully successful
     claimedPayment.status = 'paid';
     claimedPayment.settledAt = new Date();
     claimedPayment.failureReason = '';
     await claimedPayment.save();
 
+    // 📡 Emit live updates to both the Student and Owner dashboards
     const io = req.app.get('io');
     if (io) {
       if (debt.student?._id) {
         io.to(`student:${debt.student._id}`).emit('debt-updated');
-        
-        // 🌟 NEW: Emit successful payment notification to the student
         io.to(`student:${debt.student._id}`).emit('payment-successful', {
           amount: claimedPayment.amount,
           canteenName: canteen.name
@@ -286,6 +322,7 @@ exports.verifyDebtPayment = async (req, res) => {
   } catch (error) {
     const message = getGatewayErrorMessage(error, 'Unable to verify the Razorpay payment right now.');
 
+    // If an error occurs, try to safely mark the local payment record as failed
     if (req.body && req.body.paymentRecordId) {
       await Payment.findOneAndUpdate({
         _id: req.body.paymentRecordId,
@@ -298,7 +335,7 @@ exports.verifyDebtPayment = async (req, res) => {
       }).catch(() => null);
     }
 
-    console.error('Razorpay verifyDebtPayment error:', error);
+    console.error('[Payment Controller] ❌ Razorpay verifyDebtPayment error:', error);
     res.status(400).json({ status: 'fail', message });
   }
 };
