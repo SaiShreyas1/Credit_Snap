@@ -36,7 +36,7 @@ const DebtCard = ({ data, onPayDebt, isPaying }) => (
       </p>
       {data.currentDebt > 0 ? (
         <button
-          className={`text-white px-6 py-2 rounded-xl text-sm font-medium transition cursor-pointer ${isPaying ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#6366f1] hover:bg-[#4f46e5]'}`}
+          className={`text-white px-6 py-2 rounded-xl text-sm font-medium transition cursor-pointer ${isPaying ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#f97316] hover:bg-[#ea580c]'}`}
           disabled={isPaying}
           onClick={() => onPayDebt(data)}
         >
@@ -398,7 +398,7 @@ export default function ViewDebts() {
                 disabled={!isPaymentAmountValid()}
                 className={`flex-1 font-medium py-3 rounded-lg transition ${
                   isPaymentAmountValid()
-                    ? 'bg-[#6366f1] hover:bg-[#4f46e5] text-white cursor-pointer'
+                    ? 'bg-[#f97316] hover:bg-[#ea580c] text-white cursor-pointer'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
