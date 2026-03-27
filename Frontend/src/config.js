@@ -1,27 +1,27 @@
-const trimTrailingSlash = (value = '') => value.replace(/\/+$/, '');
-
-const resolveBaseUrl = () => {
-  const configuredBaseUrl = trimTrailingSlash(import.meta.env.VITE_API_BASE_URL || '');
-  if (configuredBaseUrl) {
-    return configuredBaseUrl;
-  }
-
-  if (typeof window !== 'undefined') {
-    const { protocol, hostname, host } = window.location;
-
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:5000';
-    }
-
-    return `${protocol}//${host}`;
-  }
-
-  return 'http://localhost:5000';
-};
-
-export let BASE_URL = resolveBaseUrl();
+export let BASE_URL = 'http://localhost:5000';
 
 export const checkServerBaseUrl = async () => {
-  BASE_URL = resolveBaseUrl();
+  const SERVER_IP = typeof window !== 'undefined'
+    ? window.location.origin
+    : 'http://172.27.16.252:5000';
+  const LOCAL_IP = 'http://localhost:5000';
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+    await fetch(SERVER_IP, {
+      method: 'GET',
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    BASE_URL = SERVER_IP;
+    console.log(`[Config] Connected to Server Host: ${BASE_URL}`);
+  } catch {
+    BASE_URL = LOCAL_IP;
+    console.log(`[Config] Server Host unreachable. Yielding to Localhost: ${BASE_URL}`);
+  }
+
   return BASE_URL;
 };

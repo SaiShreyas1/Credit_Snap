@@ -12,19 +12,19 @@ export default function OwnerDashboard() {
     return firstItemName === 'Offline Debt Payment' || firstItemName === 'Online Debt Payment';
   };
   // ==========================================
-  // 1. CANTEEN DATABASE STATE (Integrated)
+  // 1.CANTEEN DATABASE STATE (Integrated)
   // ==========================================
   const [canteen, setCanteen] = useState(null);
   const [isCanteenOpen, setIsCanteenOpen] = useState(false);
 
   // ==========================================
-  // 2. ORDERS DATABASE STATE (Friend's code)
+  // 2.ORDERS DATABASE STATE (Friend's code)
   // ==========================================
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // ==========================================
-  // 3. FETCH DATA ON LOAD
+  // 3.FETCH DATA ON LOAD
   // ==========================================
   const fetchMyCanteen = async () => {
     try {
@@ -33,7 +33,7 @@ export default function OwnerDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCanteen(res.data.data.canteen);
-      setIsCanteenOpen(res.data.data.canteen.isOpen); // Sets UI based on MongoDB!
+      setIsCanteenOpen(res.data.data.canteen.isOpen); //Here we set UI based on MongoDB!
       sessionStorage.setItem('canteenId', res.data.data.canteen._id);
     } catch (err) {
       console.error("Failed to load canteen", err);
@@ -68,7 +68,7 @@ export default function OwnerDashboard() {
   }, []);
 
   // ==========================================
-  // 3.5 REAL-TIME SOCKET.IO CONNECTION
+  //3.5 REAL-TIME SOCKET.IO CONNECTION
   // ==========================================
   useEffect(() => {
     if (!canteen || !canteen._id) return;
@@ -102,7 +102,7 @@ export default function OwnerDashboard() {
   }, [canteen]);
 
   // ==========================================
-  // 4. API ACTIONS
+  //4. API ACTIONS
   // ==========================================
   const toggleStatus = async () => {
     if (!canteen) {
@@ -167,7 +167,7 @@ export default function OwnerDashboard() {
   };
 
   // ==========================================
-  // 6. RENDER UI
+  //6. RENDER UI
   // ==========================================
   return (
     <div className="active-orders-container">
@@ -377,7 +377,7 @@ export default function OwnerDashboard() {
         .close-x:hover { color: #000; }
       `}</style>
 
-      {/* Top Header Row */}
+      {/*Top Header Row*/}
       <div className="page-header">
         <h1 className="page-title">Active Orders</h1>
         <div className="status-container">
@@ -386,7 +386,7 @@ export default function OwnerDashboard() {
             <input 
               type="checkbox" 
               checked={isCanteenOpen} 
-              onChange={toggleStatus} // 🚨 INTEGRATED HERE!
+              onChange={toggleStatus} //INTEGRATED HERE!
             />
             <span className="slider"></span>
           </label>
@@ -419,7 +419,7 @@ export default function OwnerDashboard() {
 
           {orders.map((order) => (
             <div className="order-card" key={order._id}>
-              {/* Show X button only if it's already processed (debt or rejected) */}
+              {/*We shall show X button only if it's already processed (debt or rejected*/}
               {order.status !== 'pending' && (
                 <button className="close-x" onClick={() => removeOrder(order._id)}>✕</button>
               )}

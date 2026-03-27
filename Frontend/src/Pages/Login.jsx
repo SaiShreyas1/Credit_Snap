@@ -9,7 +9,7 @@ import { Eye, EyeOff } from 'lucide-react';
 const Login = () => {
   const navigate = useNavigate();
 
-  // --- STATES ---
+  //--- STATES ---
   const [role, setRole] = useState('Student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,22 +17,22 @@ const Login = () => {
   const [emailError, setEmailError] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  // --- LOGIN LOGIC ---
+  //--- LOGIN LOGIC ---
   const handleLogin = async (e) => {
     e.preventDefault();
     const isStudent = role === 'Student';
 
-    // 1. Frontend Validation Check for IITK Emails
+    //1.Frontend Validation Check for IITK Emails
     if (isStudent && !email.endsWith('@iitk.ac.in')) {
       setEmailError('Access restricted: Please use your @iitk.ac.in email.');
       return;
     }
 
-    // Clear any old errors before trying to log in
+    //Clear any old errors before trying to log in
     setEmailError('');
     setLoginError('');
 
-    // 2. THE MAGIC CONNECTION TO MONGODB
+    //2.CONNECTION TO MONGODB
     try {
       const response = await fetch(`${BASE_URL}/api/users/login`, {
         method: 'POST',
@@ -44,7 +44,7 @@ const Login = () => {
 
       const data = await response.json();
 
-      // 3. VALIDATE THE LOGIN
+      //3.VALIDATE THE LOGIN
       if (data.status === 'success') {
         console.log("Login successful! VIP Token Generated.");
 
@@ -64,11 +64,10 @@ const Login = () => {
         if (data.data.user.role === 'student') {
           navigate('/student/dashboard');
         } else if (data.data.user.role === 'owner') {
-          // 🏆 FIXED: Must route to dashboard first so Canteen ID is fetched and stored!
           navigate('/owner/dashboard');
         }
       } else {
-        // If the password was wrong, or email wasn't found, show the error!
+        //If the password was wrong, or email wasn't found, show the error!
         setLoginError(data.message);
       }
     } catch (error) {

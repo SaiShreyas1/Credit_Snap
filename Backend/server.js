@@ -15,13 +15,6 @@ const app = require('./app');
 
 const PORT = process.env.PORT || 5000;
 const DB_URL = process.env.MONGO_URI;
-const configuredFrontendOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-const allowedOrigins = configuredFrontendOrigins.length > 0
-  ? configuredFrontendOrigins
-  : ['http://localhost:5173', 'http://localhost:5174'];
 
 // ==========================================
 // SERVER & SOCKET.IO INITIALIZATION
@@ -34,13 +27,7 @@ const httpServer = createServer(app);
 // specifically allowing connections from the local React development environments
 const io = new Server(httpServer, {
   cors: {
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`Socket.IO origin "${origin}" is not allowed.`));
-    },
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
   },
