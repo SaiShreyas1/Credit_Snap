@@ -2,7 +2,7 @@ export let BASE_URL = 'http://localhost:5000';
 
 export const checkServerBaseUrl = async () => {
   const SERVER_IP = typeof window !== 'undefined'
-    ? window.location.origin
+    ? `${window.location.protocol}//${window.location.hostname}:5000`
     : 'http://172.27.16.252:5000';
   const LOCAL_IP = 'http://localhost:5000';
 

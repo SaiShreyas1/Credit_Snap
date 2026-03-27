@@ -106,12 +106,11 @@ const userSchema = new mongoose.Schema({
  * Encrypts the password before saving it to the database.
  * Only runs if the password field was actually modified.
  */
-userSchema.pre('save', async function(next) { 
-  if (!this.isModified('password')) return next(); 
+userSchema.pre('save', async function() { 
+  if (!this.isModified('password')) return;
   
   // Hash the password with a salt round of 12
   this.password = await bcrypt.hash(this.password, 12);
-  next();
 });
 
 // ==========================================
