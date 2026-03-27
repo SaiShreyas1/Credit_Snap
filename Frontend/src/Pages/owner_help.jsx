@@ -4,6 +4,7 @@ import { ChevronRight, ChevronDown } from 'lucide-react';
 export default function Help() {
   const [openIndexes, setOpenIndexes] = useState([]);
 
+  // Static content array holding frequently asked questions and their comprehensive answers
   const faqs = [
     {
       question: "How to edit menu",
@@ -27,6 +28,7 @@ export default function Help() {
     }
   ];
 
+  // Handle accordion logic to expand or collapse specific FAQ answers independently
   const toggleFaq = (index) => {
     setOpenIndexes((currentIndexes) => (
       currentIndexes.includes(index)

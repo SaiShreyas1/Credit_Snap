@@ -10,6 +10,7 @@ export default function OwnerDashboard() {
     const firstItemName = order?.items?.[0]?.name;
     return firstItemName === 'Offline Debt Payment' || firstItemName === 'Online Debt Payment';
   };
+  // Initialize state configurations for tracking canteen status directly from the DB
   // ==========================================
   // 1. CANTEEN DATABASE STATE (Integrated)
   // ==========================================
@@ -22,6 +23,7 @@ export default function OwnerDashboard() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Define fetching mechanisms to continuously query the database upon initial mount
   // ==========================================
   // 3. FETCH DATA ON LOAD
   // ==========================================
@@ -66,6 +68,7 @@ export default function OwnerDashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  // Establish web socket connectivity to receive instant order dispatches live
   // ==========================================
   // 3.5 REAL-TIME SOCKET.IO CONNECTION
   // ==========================================

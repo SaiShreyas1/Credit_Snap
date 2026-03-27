@@ -10,6 +10,7 @@ export default function ActiveDebtsContent() {
   const [filterBy, setFilterBy] = useState("all");
   const [sortBy, setSortBy] = useState("default");
   
+  // Setup primary states for filtering, sorting, debts tracking, and UI modals
   // 1. Swap hardcoded students for empty array & add loading state
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +20,7 @@ export default function ActiveDebtsContent() {
   const [defaultLimitModal, setDefaultLimitModal] = useState({ isOpen: false, newLimit: '' });
   const [notifyingIds, setNotifyingIds] = useState(new Set());
 
+  // Async function to retrieve and map active debts from the backend database
   // 2. FETCH REAL DEBTS FROM BACKEND
   const fetchDebts = async () => {
     try {
@@ -77,6 +79,7 @@ export default function ActiveDebtsContent() {
     setTimeout(() => setToast(null), 3000); 
   };
 
+  // Trigger email notifications to students regarding their pending dues
   // 3. WIRE UP THE NOTIFY BUTTON
   const handleNotify = async (id) => {
     if (notifyingIds.has(id)) return; // Prevent double-clicks

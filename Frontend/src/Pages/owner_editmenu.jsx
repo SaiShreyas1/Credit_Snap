@@ -16,6 +16,7 @@ export default function OwnerEditMenu() {
   // ==========================================
   // 2. INTERACTION STATE (Modals & Filters)
   // ==========================================
+  // State variables for manipulating UI filters, search texts, and dynamic sorting
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeSort, setActiveSort] = useState('');
@@ -37,6 +38,7 @@ export default function OwnerEditMenu() {
   // ==========================================
   // 3. API FETCH (On Page Load)
   // ==========================================
+  // Pull current canteen details to retrieve the owner's assigned menu catalog
   useEffect(() => {
     const fetchCanteenAndMenu = async () => {
       try {
@@ -69,6 +71,7 @@ export default function OwnerEditMenu() {
   // 4. HANDLERS (Integrated with Backend)
   // ==========================================
 
+  // Flip the active status of an item and instantly update the server database
   // --- TOGGLE AVAILABILITY ---
   const toggleAvailability = async (id) => {
     const item = menuItems.find(i => i.id === id);

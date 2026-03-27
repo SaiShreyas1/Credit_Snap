@@ -1,3 +1,4 @@
+/* Styling for proper formatting of the registration page. */
 /* Full page layout - Locked to exact window height to prevent scrollbar */
 .signup-page {
   display: flex;
@@ -22,6 +23,7 @@
 .bg-yellow-theme { background-color: #FFFDE7; }
 .bg-blue-theme { background-color: #e5eff5; }
 
+/* Set consistent styling for interaction elements and theme buttons based on user type */
 /* --- DYNAMIC BUTTONS --- */
 .btn-yellow { background-color: #D4AC0D; }
 .btn-yellow:hover { background-color: #B8860B; }
@@ -101,6 +103,7 @@
   margin-bottom: 20px; /* Reduced margin */
 }
 
+/* Styles for input fields ensuring a clear visual separation and focus indicators */
 /* Form Inputs */
 .signup-form { 
   width: 100%; 

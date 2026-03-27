@@ -19,6 +19,7 @@ export default function OwnerLayout() {
     paymentToastTimer.current = setTimeout(() => setPaymentToast(null), 5000);
   }, []);
 
+  // Manage array of short-lived notification objects for displaying real-time UI alerts
   // Helper to push a new notification
   const addNotification = useCallback((type, title, message) => {
     setNotifications(prev => [{
@@ -31,6 +32,7 @@ export default function OwnerLayout() {
     }, ...prev].slice(0, 20));
   }, []);
 
+  // Initialize and synchronize websocket connections to dispatch background events dynamically
   // Socket.IO: Live owner notifications
   useEffect(() => {
     let socket;
@@ -112,6 +114,7 @@ export default function OwnerLayout() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
+  // Control visual expansion layout for the primary navigation side panel
   // --- NEW: Sidebar Toggle State ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 

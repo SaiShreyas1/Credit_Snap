@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import OwnerLayout from './owner_layout';
 
 export default function CanteenHome() {
+  // Manage operational boolean flag representing whether the canteen accepts live orders
   // State for the toggle switch (Red = false, Green = true)
   const [isCanteenOpen, setIsCanteenOpen] = useState(false);
 
   return (
     <OwnerLayout>
       <div className="active-orders-container">
+        {/* Isolated inline styling encapsulating the toggle component and active orders view */}
         <style>{`
           .active-orders-container {
             display: flex;
@@ -117,6 +119,7 @@ export default function CanteenHome() {
           </div>
         </div>
 
+        {/* Render contextual status texts alternating dynamically per current toggle state */}
         {/* Dynamic Centered Text */}
         <div className="empty-state-wrapper">
         {isCanteenOpen ? (

@@ -9,6 +9,7 @@ const Signup = () => {
   const { showAlert } = useNotifications();
   const navigate = useNavigate();
 
+  // Field States - Store all form input data such as user credentials and profile details
   // Field States
   const [role, setRole] = useState('Student');
   const isStudent = role === 'Student';
@@ -25,6 +26,7 @@ const Signup = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Handle the signup form submission and send registration data to backend API
   const handleSignup = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -92,6 +94,7 @@ const Signup = () => {
     }
   };
 
+  // Render the signup UI containing dynamic side panels and responsive form layout
   return (
     <div className="signup-page">
       <div className={`signup-left-panel ${isStudent ? 'bg-blue-theme' : 'bg-yellow-theme'}`}>

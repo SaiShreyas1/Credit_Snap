@@ -8,6 +8,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   // --- STATES ---
+  // Define state variables to manage user input, role selection, and error messages
   const [role, setRole] = useState('Student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,6 +16,7 @@ const Login = () => {
   const [loginError, setLoginError] = useState('');
 
   // --- LOGIN LOGIC ---
+  // Function to authenticate the user and retrieve a session token from the backend
   const handleLogin = async (e) => {
     e.preventDefault();
     const isStudent = role === 'Student';
@@ -75,6 +77,7 @@ const Login = () => {
 
   const isStudent = role === 'Student';
 
+  // Return the complete login UI including dynamic branding and form fields depending on role
   return (
     <div className="login-page">
       <div className={`login-left-panel ${isStudent ? 'bg-blue-theme' : 'bg-yellow-theme'}`}>

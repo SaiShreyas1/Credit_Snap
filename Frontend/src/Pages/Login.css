@@ -15,6 +15,7 @@
   transition: background-color 0.4s ease;
 }
 
+/* Styling rules to switch application colors depending on the selected user role */
 /* --- THEME SWAP --- */
 .bg-yellow-theme { background-color: #FFFDE7; } /* Shopkeeper now Soft Yellow */
 .bg-blue-theme { background-color: #e5eff5; }   /* Student is Blue */
@@ -60,6 +61,7 @@
   margin-bottom: 35px;
 }
 
+/* Visual properties for the toggle slider that chooses between Student or Canteen roles */
 /* --- DYNAMIC SELECTOR --- */
 .role-selector {
   display: flex;
@@ -102,6 +104,7 @@
   border-radius: 4px;
 }
 
+/* Button styling configuring backgrounds, hovers, and color transitions per theme */
 /* --- DYNAMIC BUTTONS --- */
 .primary-login-btn {
   color: #FFFFFF;
