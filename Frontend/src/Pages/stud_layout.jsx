@@ -128,7 +128,7 @@ export default function StudLayout() {
 
     // EVENT 4: Razorpay or Offline payment successfully processed
     socket.on('payment-successful', ({ amount, canteenName }) => {
-      addNotification('success', 'Payment Received! 💳', `Payment of ₹${amount} successfully processed to ${canteenName}.`);
+      addNotification('success', 'Payment Successful! 💳', `Payment of ₹${amount} successfully processed to ${canteenName}.`);
     });
 
     // Cleanup: Disconnect when user logs out or leaves the layout entirely
