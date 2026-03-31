@@ -5,6 +5,79 @@ import { Menu, Home, Utensils, Wallet, History, HelpCircle, Bell, UserCircle, Se
 import studentLogo from '../assets/Student_without_bg_logo.png';
 import { io } from 'socket.io-client';
 
+const NOTIFICATION_STORAGE_PREFIX = 'creditsnap:notifications';
+const MAX_NOTIFICATIONS = 20;
+
+const getStoredUser = () => {
+  try {
+    const userStr = sessionStorage.getItem('user') || localStorage.getItem('user');
+    if (!userStr) return null;
+
+    const user = JSON.parse(userStr);
+    if (!user?._id || !user?.role) return null;
+
+    return user;
+  } catch {
+    return null;
+  }
+};
+
+const getNotificationStorageKey = () => {
+  const user = getStoredUser();
+  if (!user) return null;
+
+  return `${NOTIFICATION_STORAGE_PREFIX}:${user.role}:${user._id}`;
+};
+
+const normalizeNotifications = (notifications) => {
+  if (!Array.isArray(notifications)) return [];
+
+  return notifications
+    .filter((notification) => (
+      notification &&
+      notification.id !== undefined &&
+      typeof notification.title === 'string' &&
+      typeof notification.message === 'string'
+    ))
+    .slice(0, MAX_NOTIFICATIONS);
+};
+
+const loadStoredNotifications = () => {
+  const key = getNotificationStorageKey();
+  if (!key) return [];
+
+  try {
+    const rawNotifications = sessionStorage.getItem(key);
+    if (!rawNotifications) return [];
+
+    return normalizeNotifications(JSON.parse(rawNotifications));
+  } catch {
+    return [];
+  }
+};
+
+const saveStoredNotifications = (notifications) => {
+  const key = getNotificationStorageKey();
+  if (!key) return;
+
+  try {
+    sessionStorage.setItem(key, JSON.stringify(normalizeNotifications(notifications)));
+  } catch {
+    // Ignore storage failures so notifications continue working in memory.
+  }
+};
+
+const clearStoredNotifications = () => {
+  const key = getNotificationStorageKey();
+  if (!key) return;
+
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Ignore storage failures during logout cleanup.
+  }
+};
+
 /**
  * StudLayout Component
  * This is the parent "wrapper" component for all student-facing pages.
@@ -28,7 +101,7 @@ export default function StudLayout() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   // Notification System
-  const [notifications, setNotifications] = useState([]); 
+  const [notifications, setNotifications] = useState(() => loadStoredNotifications()); 
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
 
@@ -55,6 +128,10 @@ export default function StudLayout() {
   const unreadCount = notifications.filter(n => !n.read).length;
   const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   const clearAll = () => setNotifications([]);
+
+  useEffect(() => {
+    saveStoredNotifications(notifications);
+  }, [notifications]);
 
   // Maps notification types to specific colored icons
   const notifIcon = (type) => {
@@ -367,7 +444,8 @@ export default function StudLayout() {
                       <Settings className="w-4 h-4" /> Account Settings
                     </div>
                     <div onClick={() => {
-                      // Fully clear both local and session storage on logout
+                      //Fully clear both local and session storage on logout
+                      clearStoredNotifications();
                       sessionStorage.removeItem('token');
                       sessionStorage.removeItem('user');
                       sessionStorage.removeItem('canteenId');

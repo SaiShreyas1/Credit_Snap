@@ -5,12 +5,85 @@ import { Menu, Home, Edit, Wallet, BarChart2, History, HelpCircle, Bell, UserCir
 import canteenLogo from '../assets/Canteen_without_bg_logo.png';
 import { io } from 'socket.io-client';
 
+const NOTIFICATION_STORAGE_PREFIX = 'creditsnap:notifications';
+const MAX_NOTIFICATIONS = 20;
+
+const getStoredUser = () => {
+  try {
+    const userStr = sessionStorage.getItem('user') || localStorage.getItem('user');
+    if (!userStr) return null;
+
+    const user = JSON.parse(userStr);
+    if (!user?._id || !user?.role) return null;
+
+    return user;
+  } catch {
+    return null;
+  }
+};
+
+const getNotificationStorageKey = () => {
+  const user = getStoredUser();
+  if (!user) return null;
+
+  return `${NOTIFICATION_STORAGE_PREFIX}:${user.role}:${user._id}`;
+};
+
+const normalizeNotifications = (notifications) => {
+  if (!Array.isArray(notifications)) return [];
+
+  return notifications
+    .filter((notification) => (
+      notification &&
+      notification.id !== undefined &&
+      typeof notification.title === 'string' &&
+      typeof notification.message === 'string'
+    ))
+    .slice(0, MAX_NOTIFICATIONS);
+};
+
+const loadStoredNotifications = () => {
+  const key = getNotificationStorageKey();
+  if (!key) return [];
+
+  try {
+    const rawNotifications = sessionStorage.getItem(key);
+    if (!rawNotifications) return [];
+
+    return normalizeNotifications(JSON.parse(rawNotifications));
+  } catch {
+    return [];
+  }
+};
+
+const saveStoredNotifications = (notifications) => {
+  const key = getNotificationStorageKey();
+  if (!key) return;
+
+  try {
+    sessionStorage.setItem(key, JSON.stringify(normalizeNotifications(notifications)));
+  } catch {
+    // Ignore storage failures so notifications continue working in memory.
+  }
+};
+
+const clearStoredNotifications = () => {
+  const key = getNotificationStorageKey();
+  if (!key) return;
+
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Ignore storage failures during logout cleanup.
+  }
+};
+
 export default function OwnerLayout() {
   const navigate = useNavigate();
   const location = useLocation(); 
 
   const [userProfile, setUserProfile] = useState({ name: "Loading...", role: "Canteen Owner" });
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState(() => loadStoredNotifications());
   const [paymentToast, setPaymentToast] = useState(null); // { studentName, amount }
   const paymentToastTimer = useRef(null);
   const recentNotificationKeysRef = useRef(new Map());
@@ -163,6 +236,10 @@ export default function OwnerLayout() {
   const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   const clearAll = () => setNotifications([]);
 
+  useEffect(() => {
+    saveStoredNotifications(notifications);
+  }, [notifications]);
+
   const notifIcon = (type) => {
     if (type === 'success') return <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />;
     if (type === 'error')   return <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />;
@@ -224,7 +301,7 @@ export default function OwnerLayout() {
           </nav>
         </div>
         
-        {/* --- MERGED: About us button keeps navigation, active state styling, AND collapsible sidebar logic --- */}
+        {/*About us button keeps navigation, active state styling, AND collapsible sidebar logic --- */}
         <div 
           onClick={() => navigate('/owner/about')} 
           className={`p-4 border-t border-slate-700 flex justify-center items-center cursor-pointer transition-all duration-300 ${isActive('about') ? 'bg-[#eab308] text-[#1e293b]' : 'hover:bg-slate-700 text-gray-300'}`}
@@ -353,6 +430,7 @@ export default function OwnerLayout() {
                       <Settings className="w-4 h-4" /> Canteen Settings
                     </div>
                     <div onClick={() => {
+                      clearStoredNotifications();
                       sessionStorage.removeItem('token');
                       sessionStorage.removeItem('user');
                       sessionStorage.removeItem('canteenId');

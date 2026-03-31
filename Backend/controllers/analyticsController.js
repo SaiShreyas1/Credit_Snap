@@ -32,7 +32,7 @@ exports.getOwnerAnalytics = async (req, res) => {
     // 2. BASE QUERY FILTERS
     // ==========================================
     const searchId = myCanteen._id;
-    const validStatuses = ['accepted', 'completed']; // Only count successful food orders
+    const validStatuses = ['accepted', 'archived']; // Only count successful food orders
 
     // The base match filters out "Debt Payments" so the analytics reflect actual food/item sales,
     // not just students clearing their Khata balance.

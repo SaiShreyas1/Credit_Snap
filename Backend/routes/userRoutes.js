@@ -9,7 +9,7 @@ const router = express.Router();
 
 /**
  * @route   POST /api/users/signup
- * @desc    Register a new student or canteen owner.
+ * @desc    Register a new student.
  * @access  Public
  */
 router.post('/signup', userController.signup);

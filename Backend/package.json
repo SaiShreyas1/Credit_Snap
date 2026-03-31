@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest --runInBand --detectOpenHandles",
+    "test": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles --testTimeout=5000",
     "test:watch": "jest --watch"
   },
   "keywords": [],
@@ -24,6 +24,7 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "jest": "^30.3.0",
     "mongodb-memory-server": "^11.0.1",
     "nodemon": "^3.1.14",
