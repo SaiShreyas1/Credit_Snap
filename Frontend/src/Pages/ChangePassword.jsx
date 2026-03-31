@@ -9,6 +9,7 @@ export default function ChangePassword() {
   const { showAlert } = useNotifications();
   const location = useLocation(); 
   const isOwner = location.pathname.includes('/owner'); 
+  // Maintain controlled form states capturing current, new, and repeated password inputs
   const [passwords, setPasswords] = useState({
     currentPassword: '',
     newPassword: '',
@@ -29,6 +30,7 @@ export default function ChangePassword() {
     });
   };
 
+  // Intercept form submission, validate constraints, and orchestrate the auth API request
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -109,6 +111,7 @@ export default function ChangePassword() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           
+          {/* Render input field for existing password with toggleable visibility icon */}
           {/* Current Password */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Current Password</label>

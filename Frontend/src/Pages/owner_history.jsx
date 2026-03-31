@@ -11,6 +11,7 @@ const parseDateTime = (dateStr, timeStr) => {
 };
 
 export default function OwnerHistory() {
+  // Maintain view context switching between processed orders and debt transaction history
   const [activeTab, setActiveTab] = useState('order'); // 'order' or 'debt'
   const [search, setSearch] = useState('');
   
@@ -27,6 +28,7 @@ export default function OwnerHistory() {
   const [historyData, setHistoryData] = useState({ orders: [], debts: [] });
   const [loading, setLoading] = useState(true);
 
+  // Aggregate data from multiple endpoints mapping orders and resolving final debt values
   const fetchHistory = async () => {
     try {
       const token = sessionStorage.getItem("token");
@@ -108,6 +110,7 @@ export default function OwnerHistory() {
     }
   };
 
+  // Subscribe to real-time socket events refreshing history organically when transactions occur
   useEffect(() => {
     fetchHistory();
 

@@ -5,8 +5,17 @@ import { Search, ChevronDown, ArrowDownUp, AlertTriangle, Loader2, X } from 'luc
 import { io } from 'socket.io-client';
 import { useNotifications } from '../context/NotificationContext';
 
+// ==========================================
+// RAZORPAY CONFIGURATION
+// ==========================================
+
 let razorpayScriptPromise;
 
+/**
+ * Dynamically loads the Razorpay checkout script into the browser.
+ * Uses a Promise to ensure the script is only loaded once, even if multiple
+ * payment attempts are made, preventing duplicate script tags in the DOM.
+ */
 const loadRazorpayScript = () => {
   if (window.Razorpay) {
     return Promise.resolve(true);
@@ -25,6 +34,13 @@ const loadRazorpayScript = () => {
   return razorpayScriptPromise;
 };
 
+// ==========================================
+// SUB-COMPONENTS
+// ==========================================
+
+/**
+ * Renders an individual debt summary for a specific canteen.
+ */
 const DebtCard = ({ data, onPayDebt, isPaying }) => (
   <div className="bg-white rounded-xl mb-4 p-6 flex justify-between items-center shadow-sm border border-gray-100 transition-all overflow-hidden hover:shadow-md">
     <div>
@@ -35,6 +51,8 @@ const DebtCard = ({ data, onPayDebt, isPaying }) => (
       <p className="font-bold text-gray-500 tracking-wide uppercase text-sm">
         Debt: <span className="text-black text-lg ml-1">₹{data.currentDebt} <span className="text-gray-400 font-medium normal-case text-base">/ ₹{data.limit}</span></span>
       </p>
+      
+      {/* Dynamic Button: Changes based on debt balance and processing state */}
       {data.currentDebt > 0 ? (
         <button
           className={`text-white px-6 py-2 rounded-xl text-sm font-medium transition cursor-pointer ${isPaying ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#f97316] hover:bg-[#ea580c]'}`}
@@ -52,20 +70,33 @@ const DebtCard = ({ data, onPayDebt, isPaying }) => (
   </div>
 );
 
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
+
 export default function ViewDebts() {
   const { showAlert } = useNotifications();
+  
+  // Data State
   const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [payingDebtId, setPayingDebtId] = useState(null);
+  
+  // UI & Search State
   const [searchTerm, setSearchTerm] = useState('');
-
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [activeSort, setActiveSort] = useState('A-Z');
-
-  const [payModal, setPayModal] = useState({ isOpen: false, debt: null, amount: '' });
-
   const sortRef = useRef(null);
 
+  // Payment State
+  const [payingDebtId, setPayingDebtId] = useState(null); // Tracks which debt is actively communicating with Razorpay
+  const [payModal, setPayModal] = useState({ isOpen: false, debt: null, amount: '' }); // Custom amount modal state
+
+  // ==========================================
+  // EFFECTS & LIFECYCLES
+  // ==========================================
+
+  // Handle clicking outside the sort dropdown
   useEffect(() => {
     function handleClickOutside(event) {
       if (sortRef.current && !sortRef.current.contains(event.target)) setIsSortOpen(false);
@@ -74,6 +105,7 @@ export default function ViewDebts() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Fetch the latest debt data from the backend
   const fetchMyDebts = async () => {
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -88,6 +120,7 @@ export default function ViewDebts() {
       });
 
       if (res.data.status === 'success') {
+        // Map backend schema to a cleaner format for the UI
         const mappedData = res.data.data.map((d) => ({
           id: d._id,
           name: d.canteen?.name || 'Unknown Canteen',
@@ -103,6 +136,7 @@ export default function ViewDebts() {
     }
   };
 
+  // Initial load and Socket.IO listener setup
   useEffect(() => {
     fetchMyDebts();
 
@@ -117,6 +151,7 @@ export default function ViewDebts() {
           socket.emit('join-student', user._id);
         });
 
+        // Listen for live updates (e.g., if a student pays offline and the canteen owner clears it manually)
         socket.on('debt-updated', () => {
           fetchMyDebts();
         });
@@ -128,11 +163,16 @@ export default function ViewDebts() {
         console.error('Socket err', e);
       }
     }
-
     return undefined;
   }, []);
 
+
+  // ==========================================
+  // PAYMENT MODAL HANDLERS
+  // ==========================================
+
   const openPayModal = (debt) => {
+    // Default the input to the total current debt
     setPayModal({ isOpen: true, debt: debt, amount: debt.currentDebt.toString() });
   };
 
@@ -140,6 +180,7 @@ export default function ViewDebts() {
     setPayModal({ isOpen: false, debt: null, amount: '' });
   };
 
+  // Validates the custom amount before passing it to the Razorpay flow
   const confirmPayment = async () => {
     const paymentAmount = parseFloat(payModal.amount);
     const targetDebt = payModal.debt;
@@ -157,12 +198,23 @@ export default function ViewDebts() {
     await handlePayDebt(targetDebt, paymentAmount);
   };
 
-  // Check if payment amount is valid
+  // Returns true if the input is valid, used to disable the "Pay Now" button
   const isPaymentAmountValid = () => {
     const amount = parseFloat(payModal.amount);
     return !isNaN(amount) && amount > 0 && amount <= (payModal.debt?.currentDebt || 0);
   };
 
+
+  // ==========================================
+  // RAZORPAY INTEGRATION LOGIC
+  // ==========================================
+
+  /**
+   * The core payment orchestration function.
+   * Step 1: Create an Order on the backend.
+   * Step 2: Open Razorpay UI using that Order ID.
+   * Step 3: Send Razorpay's success response back to the backend for cryptographic verification.
+   */
   const handlePayDebt = async (debt, amount = null) => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
@@ -171,14 +223,16 @@ export default function ViewDebts() {
       return;
     }
 
-    setPayingDebtId(debt.id);
+    setPayingDebtId(debt.id); // Triggers "Processing..." state on the button
 
     try {
+      // 1. Ensure SDK is ready
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         throw new Error('Razorpay checkout could not be loaded. Please check your internet connection and try again.');
       }
 
+      // 2. Request backend to create a new Razorpay Order
       const createOrderRes = await axios.post(
         `${BASE_URL}/api/payments/debts/${debt.id}/create-order`,
         { amount: amount || debt.currentDebt },
@@ -186,9 +240,11 @@ export default function ViewDebts() {
       );
 
       const checkoutData = createOrderRes.data.data;
+      
+      // 3. Initialize Razorpay Checkout window
       const razorpay = new window.Razorpay({
         key: checkoutData.keyId,
-        amount: checkoutData.amount,
+        amount: checkoutData.amount, // Note: This is in paise, not rupees
         currency: checkoutData.currency,
         name: checkoutData.merchantName,
         description: checkoutData.description,
@@ -197,8 +253,10 @@ export default function ViewDebts() {
         theme: {
           color: '#f97316'
         },
+        // 4. Handle Success Response
         handler: async (response) => {
           try {
+            // Send payment details to backend for signature verification to prevent spoofing
             await axios.post(
               `${BASE_URL}/api/payments/verify`,
               {
@@ -221,17 +279,21 @@ export default function ViewDebts() {
           }
         },
         modal: {
+          // Handle user closing the popup manually
           ondismiss: () => setPayingDebtId(null)
         }
       });
 
+      // Handle payment failure from within Razorpay (e.g., card declined)
       razorpay.on('payment.failed', (response) => {
         const failureMessage = response.error?.description || 'Payment failed. Please try again.';
         showAlert('Payment Failed', failureMessage, 'error');
         setPayingDebtId(null);
       });
 
+      // Open the UI
       razorpay.open();
+      
     } catch (error) {
       showAlert(
         'Unable To Start Payment',
@@ -241,6 +303,11 @@ export default function ViewDebts() {
       setPayingDebtId(null);
     }
   };
+
+
+  // ==========================================
+  // DERIVED STATE (FILTERING & SORTING)
+  // ==========================================
 
   let processedDebts = [...debts];
 
@@ -258,6 +325,11 @@ export default function ViewDebts() {
     return 0;
   });
 
+
+  // ==========================================
+  // RENDER UI
+  // ==========================================
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-full pt-20">
@@ -269,7 +341,11 @@ export default function ViewDebts() {
 
   return (
     <main className="p-6 md:p-10 w-full min-h-screen bg-[#f8f9fa] relative">
+      
+      {/* --- HEADER: SEARCH & SORT --- */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-5 relative z-20">
+        
+        {/* Search Bar */}
         <div className="flex items-center bg-white border border-gray-200 rounded-full px-5 h-11 w-full max-w-[450px] shadow-sm focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition-all duration-300">
           <Search className="w-4 h-4 text-gray-400 mr-3" />
           <input
@@ -281,6 +357,7 @@ export default function ViewDebts() {
           />
         </div>
 
+        {/* Sort Dropdown */}
         <div className="flex gap-4">
           <div className="relative" ref={sortRef}>
             <button
@@ -311,6 +388,7 @@ export default function ViewDebts() {
         </div>
       </div>
 
+      {/* --- DEBT LIST --- */}
       <div className="flex flex-col">
         {processedDebts.length > 0 ? (
           processedDebts.map((canteen) => (
@@ -322,6 +400,7 @@ export default function ViewDebts() {
             />
           ))
         ) : (
+          /* Empty State */
           <div className="bg-white rounded-3xl p-12 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-3 mt-4 min-h-[300px]">
             <div className="bg-orange-50 p-4 rounded-full mb-2">
               <AlertTriangle className="w-10 h-10 text-[#f97316]" />
@@ -338,10 +417,11 @@ export default function ViewDebts() {
         )}
       </div>
 
-      {/* PAYMENT AMOUNT MODAL */}
+      {/* --- CUSTOM PAYMENT AMOUNT MODAL --- */}
       {payModal.isOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+            
             <button
               onClick={closePayModal}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition cursor-pointer"
@@ -354,11 +434,13 @@ export default function ViewDebts() {
               Enter the amount you want to pay for <strong>{payModal.debt?.name}</strong>.
             </p>
 
+            {/* Total Balance Summary */}
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
               <p className="text-sm text-gray-600 mb-2">Current Debt</p>
               <p className="text-2xl font-bold text-gray-900">₹{payModal.debt?.currentDebt}</p>
             </div>
 
+            {/* Editable Input Field */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Payment Amount
@@ -380,6 +462,8 @@ export default function ViewDebts() {
                   autoFocus
                 />
               </div>
+              
+              {/* Validation Warning */}
               {!isPaymentAmountValid() && payModal.amount && (
                 <p className="text-xs text-red-600 mt-1">
                   Amount must be between ₹1 and ₹{payModal.debt?.currentDebt}
@@ -387,6 +471,7 @@ export default function ViewDebts() {
               )}
             </div>
 
+            {/* Modal Actions */}
             <div className="flex gap-3">
               <button
                 onClick={closePayModal}

@@ -3,6 +3,7 @@ import { Mail, Phone } from 'lucide-react';
 // Import the image file (make sure the filename matches what you saved!)
 import aboutImage from './about-illustration.png'; 
 
+// Renders the static "About Us" page detailing the mission and contact info
 export default function AboutUs() {
   return (
     <main className="p-8 overflow-y-auto flex-1 bg-[#f4f6f4]">
@@ -10,7 +11,7 @@ export default function AboutUs() {
 
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col lg:flex-row gap-10 items-center">
         
-        {/* Illustration Section */}
+        {/* Illustration Section - Displaying the associated teamwork graphic */}
         <div className="w-full lg:w-1/2 flex justify-center">
           <img 
             src={aboutImage} 
@@ -19,7 +20,7 @@ export default function AboutUs() {
           />
         </div>
 
-        {/* Content Section */}
+        {/* Content Section - Displaying mission statement and contact details */}
         <div className="w-full lg:w-1/2 flex flex-col gap-6 pr-4">
           <div className="text-black text-[17px] leading-relaxed">
             <span className="text-[5rem] font-medium float-left mr-2 leading-[0.75] mt-2 text-black">

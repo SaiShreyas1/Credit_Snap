@@ -5,16 +5,115 @@ import { Menu, Home, Utensils, Wallet, History, HelpCircle, Bell, UserCircle, Se
 import studentLogo from '../assets/Student_without_bg_logo.png';
 import { io } from 'socket.io-client';
 
+const NOTIFICATION_STORAGE_PREFIX = 'creditsnap:notifications';
+const MAX_NOTIFICATIONS = 20;
+
+const getStoredUser = () => {
+  try {
+    const userStr = sessionStorage.getItem('user') || localStorage.getItem('user');
+    if (!userStr) return null;
+
+    const user = JSON.parse(userStr);
+    if (!user?._id || !user?.role) return null;
+
+    return user;
+  } catch {
+    return null;
+  }
+};
+
+const getNotificationStorageKey = () => {
+  const user = getStoredUser();
+  if (!user) return null;
+
+  return `${NOTIFICATION_STORAGE_PREFIX}:${user.role}:${user._id}`;
+};
+
+const normalizeNotifications = (notifications) => {
+  if (!Array.isArray(notifications)) return [];
+
+  return notifications
+    .filter((notification) => (
+      notification &&
+      notification.id !== undefined &&
+      typeof notification.title === 'string' &&
+      typeof notification.message === 'string'
+    ))
+    .slice(0, MAX_NOTIFICATIONS);
+};
+
+const loadStoredNotifications = () => {
+  const key = getNotificationStorageKey();
+  if (!key) return [];
+
+  try {
+    const rawNotifications = sessionStorage.getItem(key);
+    if (!rawNotifications) return [];
+
+    return normalizeNotifications(JSON.parse(rawNotifications));
+  } catch {
+    return [];
+  }
+};
+
+const saveStoredNotifications = (notifications) => {
+  const key = getNotificationStorageKey();
+  if (!key) return;
+
+  try {
+    sessionStorage.setItem(key, JSON.stringify(normalizeNotifications(notifications)));
+  } catch {
+    // Ignore storage failures so notifications continue working in memory.
+  }
+};
+
+const clearStoredNotifications = () => {
+  const key = getNotificationStorageKey();
+  if (!key) return;
+
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Ignore storage failures during logout cleanup.
+  }
+};
+
+/**
+ * StudLayout Component
+ * This is the parent "wrapper" component for all student-facing pages.
+ * It contains the persistent Sidebar, Top Navigation Bar, and the global Socket.IO
+ * listener that catches real-time events (like order updates) no matter what page the user is on.
+ */
 export default function StudLayout() {
   const navigate = useNavigate();
   const location = useLocation(); 
 
+  // ==========================================
+  // STATE MANAGEMENT
+  // ==========================================
+  
+  // User Data
   const [userProfile, setUserProfile] = useState(null); 
-  const [notifications, setNotifications] = useState([]); 
+  
+  // UI Toggles
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // Notification System
+  const [notifications, setNotifications] = useState(() => loadStoredNotifications()); 
+  const notificationRef = useRef(null);
+  const profileRef = useRef(null);
 
-  // Helper to push a new notification
+  // ==========================================
+  // NOTIFICATION HELPERS
+  // ==========================================
+
+  /**
+   * Pushes a new notification to the top of the list.
+   * Wrapped in useCallback so it can be safely used inside the Socket useEffect 
+   * without causing infinite re-renders. Limits history to the 20 most recent alerts.
+   */
   const addNotification = useCallback((type, title, message) => {
     setNotifications(prev => [{
       id: Date.now(),
@@ -23,19 +122,48 @@ export default function StudLayout() {
       message,
       time: new Date(),
       read: false
-    }, ...prev].slice(0, 20)); // keep latest 20
+    }, ...prev].slice(0, 20)); 
   }, []);
 
-  // Socket.IO: Live notification events
+  const unreadCount = notifications.filter(n => !n.read).length;
+  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const clearAll = () => setNotifications([]);
+
+  useEffect(() => {
+    saveStoredNotifications(notifications);
+  }, [notifications]);
+
+  // Maps notification types to specific colored icons
+  const notifIcon = (type) => {
+    if (type === 'success') return <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />;
+    if (type === 'error')   return <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />;
+    if (type === 'warning') return <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />;
+    return <IndianRupee className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />;
+  };
+
+  // Formats timestamps into human-readable relative time (e.g., "5m ago")
+  const timeAgo = (date) => {
+    const diff = Math.floor((Date.now() - new Date(date)) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return `${Math.floor(diff / 3600)}h ago`;
+  };
+
+
+  // ==========================================
+  // GLOBAL SOCKET.IO LISTENERS
+  // ==========================================
   useEffect(() => {
     const userStr = sessionStorage.getItem('user') || localStorage.getItem('user');
     if (!userStr) return;
     const user = JSON.parse(userStr);
+    
+    // Connect to the global WebSocket server
     const socket = io(`${BASE_URL}`);
 
     socket.on('connect', () => socket.emit('join-student', user._id));
 
-    // Order accepted / rejected
+    // EVENT 1: Canteen owner accepts/rejects a food order
     socket.on('orderStatusUpdated', (order) => {
       const items = order.items?.map(i => `${i.quantity}x ${i.name}`).join(', ') || 'your order';
       const canteen = order.canteen?.name || 'the canteen';
@@ -46,7 +174,7 @@ export default function StudLayout() {
       }
     });
 
-    // Debt updated — fetch and check thresholds
+    // EVENT 2: User's debt changes (checks if they hit 80% or 100% of their limit)
     socket.on('debt-updated', async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
@@ -54,10 +182,12 @@ export default function StudLayout() {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
+        
         if (data.status === 'success') {
           data.data.forEach(d => {
             const pct = d.limit > 0 ? (d.amountOwed / d.limit) * 100 : 0;
             const canteen = d.canteen?.name || 'a canteen';
+            
             if (pct >= 100) {
               addNotification('error', 'Debt Limit Reached! ⚠️', `You've hit your full ₹${d.limit} limit at ${canteen}. No more orders possible.`);
             } else if (pct >= 80) {
@@ -68,37 +198,26 @@ export default function StudLayout() {
       } catch {}
     });
 
-    // Owner sent a manual notification email
+    // EVENT 3: Canteen owner manually clicks "Send Reminder" button
     socket.on('notify-student', ({ canteenName, amountOwed }) => {
       addNotification('info', 'Payment Reminder 💬', `${canteenName} reminds you to clear your ₹${amountOwed} pending debt.`);
     });
 
-    // 🌟 NEW: Listen for successful payment event
+    // EVENT 4: Razorpay or Offline payment successfully processed
     socket.on('payment-successful', ({ amount, canteenName }) => {
-      addNotification('success', 'Payment Received! 💳', `Payment of ₹${amount} successfully processed to ${canteenName}.`);
+      addNotification('success', 'Payment Successful! 💳', `Payment of ₹${amount} successfully processed to ${canteenName}.`);
     });
 
+    // Cleanup: Disconnect when user logs out or leaves the layout entirely
     return () => socket.disconnect();
   }, [addNotification]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  const clearAll = () => setNotifications([]);
 
-  const notifIcon = (type) => {
-    if (type === 'success') return <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />;
-    if (type === 'error')   return <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />;
-    if (type === 'warning') return <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />;
-    return <IndianRupee className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />;
-  };
+  // ==========================================
+  // PROFILE FETCH & UI EFFECTS
+  // ==========================================
 
-  const timeAgo = (date) => {
-    const diff = Math.floor((Date.now() - new Date(date)) / 1000);
-    if (diff < 60) return 'just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    return `${Math.floor(diff / 3600)}h ago`;
-  };
-
+  // Fetch the latest profile data (like Avatar photo) whenever the route changes
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -121,11 +240,7 @@ export default function StudLayout() {
     fetchProfile();
   }, [location.pathname]);
   
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  const notificationRef = useRef(null);
-  const profileRef = useRef(null);
-
+  // Close dropdown menus if the user clicks anywhere else on the screen
   useEffect(() => {
     function handleClickOutside(event) {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) setIsNotificationsOpen(false);
@@ -135,19 +250,29 @@ export default function StudLayout() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+
+  // ==========================================
+  // NAVIGATION HANDLERS
+  // ==========================================
+
   const toggleNotifications = () => { setIsNotificationsOpen(!isNotificationsOpen); setIsProfileOpen(false); };
   const toggleProfile = () => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); };
+  
+  // Checks if the current URL matches a sidebar link to highlight it
   const isActive = (path) => location.pathname.includes(path);
 
-  // 🌟 NEW: Smart Notification Routing
+  /**
+   * Smart routing based on notification clicks.
+   * Redirects the user to the exact page/tab relevant to the alert they clicked.
+   */
   const handleNotificationClick = (notif) => {
     // 1. Mark as read and close dropdown
     setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
     setIsNotificationsOpen(false);
     
-    // 2. Route based on notification type
+    // 2. Route based on notification content keywords
     if (notif.title.includes('Payment Received')) {
-      // Routes to History page AND tells it to open the 'debt' tab
+      // Navigate to History and auto-open the Transaction tab
       navigate('/student/history', { state: { targetTab: 'debt' } });
     } else if (notif.title.includes('Debt') || notif.title.includes('Payment Reminder')) {
       navigate('/student/debts');
@@ -155,6 +280,11 @@ export default function StudLayout() {
       navigate('/student/dashboard');
     }
   };
+
+
+  // ==========================================
+  // RENDER UI
+  // ==========================================
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
@@ -215,7 +345,10 @@ export default function StudLayout() {
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 flex flex-col overflow-hidden relative transition-all duration-300">
         
+        {/* TOP HEADER */}
         <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-50 shrink-0">
+          
+          {/* Top Left Logo */}
           <div className="flex items-center h-full">
              <img src={studentLogo} alt="CreditSnap Logo" 
                 onClick={() => navigate('/student/dashboard')}
@@ -223,8 +356,10 @@ export default function StudLayout() {
              />
           </div>
           
+          {/* Top Right Icons */}
           <div className="flex items-center gap-6 pr-2">
             
+            {/* NOTIFICATIONS DROPDOWN */}
             <div className="relative" ref={notificationRef}>
               <Bell onClick={toggleNotifications} className="w-6 h-6 text-gray-700 cursor-pointer hover:text-orange-500 transition" />
               {unreadCount > 0 && (
@@ -232,8 +367,11 @@ export default function StudLayout() {
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
+              
               {isNotificationsOpen && (
                 <div className="absolute right-0 mt-4 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
+                  
+                  {/* Dropdown Header */}
                   <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4 text-gray-600" />
@@ -249,6 +387,8 @@ export default function StudLayout() {
                       )}
                     </div>
                   </div>
+                  
+                  {/* Dropdown List */}
                   <div className="max-h-[380px] overflow-y-auto divide-y divide-gray-50">
                     {notifications.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -265,13 +405,18 @@ export default function StudLayout() {
                             notif.read ? 'bg-white hover:bg-gray-50' : 'bg-orange-50/60 hover:bg-orange-50'
                           }`}
                         >
-                          {notifIcon(notif.type)}
+                          {/* Left Icon */}
+                          <div className="flex flex-col items-center">
+                             {notifIcon(notif.type)}
+                             {!notif.read && <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0 mt-1.5"></span>}
+                          </div>
+
+                          {/* Content */}
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm font-semibold text-gray-800 ${!notif.read ? 'text-gray-900' : ''}`}>{notif.title}</p>
                             <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{notif.message}</p>
                             <p className="text-[10px] text-gray-400 mt-1 font-medium">{timeAgo(notif.time)}</p>
                           </div>
-                          {!notif.read && <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0 mt-1.5"></span>}
                         </div>
                       ))
                     )}
@@ -280,12 +425,14 @@ export default function StudLayout() {
               )}
             </div>
 
+            {/* PROFILE MENU DROPDOWN */}
             <div className="relative" ref={profileRef}>
               {userProfile && userProfile.profilePhoto ? (
                 <img onClick={toggleProfile} src={userProfile.profilePhoto} alt="Profile" className="w-8 h-8 rounded-full object-cover cursor-pointer border border-gray-300 hover:border-orange-500 transition" />
               ) : (
                 <UserCircle onClick={toggleProfile} className="w-8 h-8 text-gray-900 cursor-pointer hover:text-orange-500 transition" />
               )}
+              
               {isProfileOpen && (
                 <div className="absolute right-0 mt-4 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
                   <div className="bg-gray-50 p-4 border-b border-gray-100">
@@ -297,6 +444,8 @@ export default function StudLayout() {
                       <Settings className="w-4 h-4" /> Account Settings
                     </div>
                     <div onClick={() => {
+                      //Fully clear both local and session storage on logout
+                      clearStoredNotifications();
                       sessionStorage.removeItem('token');
                       sessionStorage.removeItem('user');
                       sessionStorage.removeItem('canteenId');
@@ -316,6 +465,8 @@ export default function StudLayout() {
           </div>
         </header>
 
+        {/* CHILD ROUTE INJECTION POINT */}
+        {/* The <Outlet /> renders whatever child component matches the current URL route */}
         <div className="flex-1 overflow-y-auto bg-gray-50 relative">
            <Outlet />
         </div>

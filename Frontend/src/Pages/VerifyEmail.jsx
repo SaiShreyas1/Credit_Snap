@@ -9,6 +9,7 @@ const VerifyEmail = () => {
   const [status, setStatus] = useState('Verifying your email...');
   const called = useRef(false);
 
+  // Automatically trigger API validation for the email token exactly once upon component mount
   useEffect(() => {
     const verifyToken = async () => {
       try {
@@ -24,6 +25,7 @@ const VerifyEmail = () => {
         if (data.status === 'success') {
           setStatus('Email verified successfully! Redirecting to login...');
           
+          // Pause execution allowing the user to observe the success state before redirecting
           // Wait a brief moment so they can read the success message
           setTimeout(() => {
             navigate('/');
@@ -42,6 +44,7 @@ const VerifyEmail = () => {
     }
   }, [token, navigate]);
 
+  // Render minimal feedback interface displaying dynamic connection success or failure alerts
   return (
     <div className="login-page">
       <div className="login-right-panel" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>

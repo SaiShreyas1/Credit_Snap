@@ -20,6 +20,7 @@ export default function OwnerProfile() {
   const { showAlert } = useNotifications();
   const navigate = useNavigate();
   
+  // Construct the central data object holding canteen identity and administrator contact info
   // 1. Master State
   const [ownerInfo, setOwnerInfo] = useState(buildOwnerInfo(null, null));
 
@@ -27,6 +28,7 @@ export default function OwnerProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(ownerInfo);
 
+  // Request authorized profile metadata from server during component initialization cycle
   // 🚀 FETCH PROFILE ON MOUNT
   useEffect(() => {
     const fetchProfile = async () => {
@@ -52,6 +54,7 @@ export default function OwnerProfile() {
     fetchProfile();
   }, [navigate]);
 
+  // Functions for orchestrating the view/edit mode swaps and managing network payload dispatch
   // 3. Handlers
   const handleEditClick = () => {
     setEditForm(ownerInfo); // reset form to current data

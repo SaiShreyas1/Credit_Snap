@@ -36,13 +36,28 @@ const signToken = (id) => {
 // ==========================================
 
 /**
- * @desc    Register a new user (Student or Owner)
+ * @desc    Register a new student user
  * @route   POST /api/users/signup
  * @access  Public
  */
 exports.signup = async (req, res) => {
   try {
-    const { name, email, password, role, rollNo, phoneNo, hallNo, roomNo, canteenName, timings } = req.body;
+    const { name, email, password, role, rollNo, phoneNo, hallNo, roomNo } = req.body;
+    const signupRole = 'student';
+
+    if (role && role !== signupRole) {
+      return res.status(403).json({
+        status: 'fail',
+        message: 'Canteen owner accounts cannot be created through public signup.'
+      });
+    }
+
+    if (!email || !email.endsWith('@iitk.ac.in')) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Please sign up with a valid @iitk.ac.in email address.'
+      });
+    }
 
     // 1. Cleanup unverified ghost accounts or block existing active accounts
     const existingEmail = await User.findOne({ email });
@@ -65,7 +80,7 @@ exports.signup = async (req, res) => {
       }
     }
 
-    if (role === 'student' && rollNo) {
+    if (rollNo) {
       const existingRollNo = await User.findOne({ rollNo });
       if (existingRollNo) {
         if (!existingRollNo.isVerified) {
@@ -84,70 +99,18 @@ exports.signup = async (req, res) => {
       email,
       phoneNo,
       password,
-      role,
+      role: signupRole,
       rollNo,
       hallNo,
       roomNo,
-      emailVerificationToken: role === 'owner' ? undefined : verificationToken,
-      isVerified: role === 'owner' ? true : false
+      emailVerificationToken: verificationToken,
+      isVerified: false
     });
 
-    // 3. OWNER LOGIC: Auto-create canteen and send welcome email
-    if (newUser.role === 'owner') {
-      const finalCanteenName = canteenName || `${newUser.name}'s Canteen`;
-      
-      await Canteen.create({
-        name: finalCanteenName,
-        ownerId: newUser._id,
-        timings: timings || '4:00 PM - 4:00 AM',
-        isOpen: false
-      });
-
-      const loginURL = `http://localhost:5173/`;
-      const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-          <h2 style="color: #eab308;">Welcome to Credit Snap!</h2>
-          <p>Hello <strong>${newUser.name}</strong>,</p>
-          <p>Your Canteen Owner account for <strong>${finalCanteenName}</strong> has been successfully created.</p>
-          
-          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0 0 10px 0;"><strong>Your Login Credentials:</strong></p>
-            <p style="margin: 0 0 5px 0;">Email: <strong>${newUser.email}</strong></p>
-            <p style="margin: 0;">Password: <strong>${password}</strong></p>
-          </div>
-
-          <p style="color: #ef4444; font-weight: bold;">⚠️ IMPORTANT: Please log in and change your password immediately for security purposes.</p>
-          
-          <div style="margin: 30px 0;">
-            <a href="${loginURL}" style="background-color: #eab308; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Log In Here</a>
-          </div>
-          <p style="font-size: 0.9em; color: #666;">Once logged in, navigate to Canteen Settings to update your password.</p>
-        </div>
-      `;
-
-      try {
-        await sendEmail({
-          email: newUser.email,
-          subject: 'Credit Snap - Your Owner Account is Ready',
-          message: `Welcome to Credit Snap!\nEmail: ${newUser.email}\nPassword: ${password}\nPlease log in at ${loginURL} and change your password immediately.`,
-          html
-        });
-        
-        return res.status(201).json({
-          status: 'success',
-          message: 'Signup successful. Welcome email sent to the owner with credentials.'
-        });
-      } catch (err) {
-        console.error("[Auth Controller] Owner Welcome Email Error:", err);
-        return res.status(201).json({
-          status: 'success',
-          message: 'Signup successful, but there was an error sending the welcome email.'
-        });
-      }
-    }
-
-    // 4. STUDENT LOGIC: Send verification email
-    const verifyURL = `http://localhost:5173/verify-email/${verificationToken}`;
+    
+    // 3. Send verification email for student signup
+    const frontendBaseUrl = req.get('origin') || process.env.FRONTEND_URL || 'http://localhost:5173';
+    const verifyURL = `${frontendBaseUrl}/verify-email/${verificationToken}`;
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
         <h2 style="color: #f97316;">Welcome to Credit Snap!</h2>
@@ -176,7 +139,6 @@ exports.signup = async (req, res) => {
       console.error("[Auth Controller] Verification Email Error:", err);
       // Rollback database creation if email fails
       await User.findByIdAndDelete(newUser._id);
-      if (newUser.role === 'owner') await Canteen.findOneAndDelete({ ownerId: newUser._id });
       
       return res.status(500).json({ status: 'error', message: 'Error sending verification email. Please try again later.' });
     }
@@ -376,7 +338,8 @@ exports.forgotPassword = async (req, res) => {
     const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
-    const resetURL = `http://localhost:5173/reset-password/${resetToken}?role=${user.role}`;
+    const frontendBaseUrl = req.get('origin') || process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetURL = `${frontendBaseUrl}/reset-password/${resetToken}?role=${user.role}`;
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
         <h2 style="color: #f97316;">Password Reset</h2>

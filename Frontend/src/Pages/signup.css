@@ -1,12 +1,14 @@
+/* Styling for proper formatting of the registration page. */
 /* Full page layout - Locked to exact window height to prevent scrollbar */
 .signup-page {
   display: flex;
-  height: 100vh; 
+  height: 100vh;
   width: 100vw;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* This strictly prevents the scrollbar */
+  overflow: hidden;
+  /* This strictly prevents the scrollbar */
 }
 
 /* Left side - Locked to the Student Blue Theme */
@@ -19,15 +21,31 @@
 }
 
 /* --- THEMES --- */
-.bg-yellow-theme { background-color: #FFFDE7; }
-.bg-blue-theme { background-color: #e5eff5; }
+.bg-yellow-theme {
+  background-color: #FFFDE7;
+}
 
+.bg-blue-theme {
+  background-color: #e5eff5;
+}
+
+/* Set consistent styling for interaction elements and theme buttons based on user type */
 /* --- DYNAMIC BUTTONS --- */
-.btn-yellow { background-color: #D4AC0D; }
-.btn-yellow:hover { background-color: #B8860B; }
+.btn-yellow {
+  background-color: #D4AC0D;
+}
 
-.btn-blue { background-color: #183B66; }
-.btn-blue:hover { background-color: #0F2540; }
+.btn-yellow:hover {
+  background-color: #B8860B;
+}
+
+.btn-blue {
+  background-color: #183B66;
+}
+
+.btn-blue:hover {
+  background-color: #0F2540;
+}
 
 /* --- ROLE SELECTOR --- */
 .role-selector {
@@ -37,8 +55,13 @@
   overflow: hidden;
 }
 
-.selector-yellow { background-color: #FFFDE7; }
-.selector-blue { background-color: #e5eff5; }
+.selector-yellow {
+  background-color: #FFFDE7;
+}
+
+.selector-blue {
+  background-color: #e5eff5;
+}
 
 .role-btn {
   flex: 1;
@@ -83,7 +106,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0; /* Removed extra padding that caused scrolling */
+  padding: 0;
+  /* Removed extra padding that caused scrolling */
 }
 
 .form-container {
@@ -92,44 +116,73 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 20px; /* Tighter container padding */
+  padding: 10px 20px;
+  /* Tighter container padding */
 }
 
 .signup-heading {
-  color: #183B66; 
-  font-size: 28px; /* Slightly smaller to save space */
-  margin-bottom: 20px; /* Reduced margin */
+  color: #183B66;
+  font-size: 28px;
+  /* Slightly smaller to save space */
+  margin-bottom: 20px;
+  /* Reduced margin */
 }
 
+/* Styles for input fields ensuring a clear visual separation and focus indicators */
 /* Form Inputs */
-.signup-form { 
-  width: 100%; 
-  display: flex; 
-  flex-direction: column; 
+.signup-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.input-group { 
-  margin-bottom: 12px; /* Tightened gap between inputs */
+.input-group {
+  margin-bottom: 12px;
+  /* Tightened gap between inputs */
 }
 
 /* Side-by-Side inputs for Hall and Room */
 .split-group {
   display: flex;
-  gap: 15px; 
-  margin-bottom: 12px; /* Tightened gap */
+  gap: 15px;
+  margin-bottom: 12px;
+  /* Tightened gap */
   width: 100%;
 }
 
 .split-group .custom-input {
-  flex: 1; 
+  flex: 1;
 }
 
 .custom-input {
   width: 100%;
-  padding: 12px; /* Reduced from 14px to save vertical space */
+  padding: 12px;
+  /* Reduced from 14px to save vertical space */
   border: 1px solid #B0B0B0;
   border-radius: 4px;
   box-sizing: border-box;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper .custom-input {
+  padding-right: 45px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .custom-input:focus {
@@ -147,7 +200,7 @@
   font-weight: 500;
   cursor: pointer;
   width: 75%;
-  display: block; 
+  display: block;
   margin: 15px auto 0 auto;
   transition: background-color 0.3s ease;
 }
@@ -157,9 +210,10 @@
   color: #888888;
 }
 
-.login-redirect { 
-  margin-top: 15px; /* Reduced top margin */
-  font-size: 13px; 
+.login-redirect {
+  margin-top: 15px;
+  /* Reduced top margin */
+  font-size: 13px;
   text-align: center;
 }
 
@@ -173,19 +227,24 @@
 @media (max-width: 800px) {
   .signup-page {
     flex-direction: column;
-    overflow: auto; /* Allow scroll on mobile where screen is too small */
+    overflow: auto;
+    /* Allow scroll on mobile where screen is too small */
   }
+
   .signup-left-panel {
     padding: 20px 0;
   }
+
   .signup-brand-logo-wrap {
     max-width: 250px;
     max-height: 250px;
   }
+
   .signup-right-panel {
     padding: 20px;
   }
 }
+
 /* Error message styling */
 .error-text {
   color: #D32F2F;

@@ -10,6 +10,7 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Parse token from navigation parameters and extract expected visual role variant
   // Read the role from query parameters (e.g., ?role=owner)
   const queryParams = new URLSearchParams(location.search);
   const role = queryParams.get('role') || 'Student'; // Default to student
@@ -21,6 +22,7 @@ const ResetPassword = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Evaluate form passwords enforcing conditions and dispatch patch request securely
   const handleReset = async (e) => {
     e.preventDefault();
 
@@ -68,6 +70,7 @@ const ResetPassword = () => {
 
   return (
     <div className="forgot-page">
+      {/* Side panel displaying appropriate branding illustration driven by user role */}
       <div className={`forgot-left-panel ${isOwner ? 'bg-yellow-theme' : 'bg-blue-theme'}`}>
         <img 
           src={isOwner ? canteenLogo : studentLogo} 

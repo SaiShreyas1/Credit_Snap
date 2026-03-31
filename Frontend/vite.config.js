@@ -7,4 +7,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  // We just add this test block right below your plugins!
+  test: {
+    environment: 'jsdom',
+    globals: true,
+  }
 })

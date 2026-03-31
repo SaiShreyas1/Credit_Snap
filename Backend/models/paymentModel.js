@@ -1,64 +1,110 @@
 const mongoose = require('mongoose');
 
+/**
+ * @desc Mongoose schema representing a financial transaction (payment)
+ * made by a student to a canteen to clear their Khata debt via Razorpay.
+ */
 const paymentSchema = new mongoose.Schema({
-  provider: {
-    type: String,
-    enum: ['razorpay'],
-    default: 'razorpay'
-  },
-  purpose: {
-    type: String,
-    enum: ['debt'],
-    required: true
-  },
+  
+  // ==========================================
+  // 1. TRANSACTION RELATIONSHIPS
+  // ==========================================
   student: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: [true, 'A payment must be linked to a student.']
   },
   canteen: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Canteen',
-    required: true
+    required: [true, 'A payment must be linked to a canteen.']
   },
   debt: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Debt',
-    required: true
+    required: [true, 'A payment must be applied to a specific debt record.']
+  },
+
+  // ==========================================
+  // 2. FINANCIAL DETAILS
+  // ==========================================
+  purpose: {
+    type: String,
+    enum: {
+      values: ['debt'],
+      message: '{VALUE} is not a valid payment purpose.'
+    },
+    required: [true, 'Payment purpose is required.']
   },
   amount: {
     type: Number,
-    required: true,
-    min: [1, 'Payment amount must be at least 1 rupee']
+    required: [true, 'Payment amount is required.'],
+    min: [1, 'Payment amount must be at least 1 rupee.']
   },
   currency: {
     type: String,
     default: 'INR'
   },
+
+  // ==========================================
+  // 3. PAYMENT PROVIDER DETAILS (Razorpay)
+  // ==========================================
+  provider: {
+    type: String,
+    enum: ['razorpay'],
+    default: 'razorpay'
+  },
   receipt: {
     type: String,
-    required: true,
+    required: [true, 'A unique receipt ID is required.'],
     unique: true
   },
   providerOrderId: {
     type: String,
-    required: true,
+    required: [true, 'Provider Order ID is required.'],
     unique: true
   },
   providerPaymentId: {
     type: String,
     unique: true,
-    sparse: true
+    sparse: true // Allows multiple 'null' or missing values for incomplete payments
   },
-  providerKeyId: String,
-  providerSignature: String,
+  providerKeyId: {
+    type: String
+  },
+  providerSignature: {
+    type: String
+  },
+
+  // ==========================================
+  // 4. TRANSACTION STATUS
+  // ==========================================
   status: {
     type: String,
-    enum: ['created', 'processing', 'paid', 'failed'],
+    enum: {
+      values: ['created', 'processing', 'paid', 'failed'],
+      message: '{VALUE} is not a valid payment status.'
+    },
     default: 'created'
   },
-  settledAt: Date,
-  failureReason: String
-}, { timestamps: true });
+  settledAt: {
+    type: Date
+  },
+  failureReason: {
+    type: String
+  }
+}, { 
+  timestamps: true 
+});
+
+// ==========================================
+// DATABASE INDEXES (For Query Performance)
+// ==========================================
+
+// Optimizes queries for a student viewing their past payment history
+paymentSchema.index({ student: 1, createdAt: -1 });
+
+// Optimizes queries for a canteen owner viewing their income ledger
+paymentSchema.index({ canteen: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Payment', paymentSchema);

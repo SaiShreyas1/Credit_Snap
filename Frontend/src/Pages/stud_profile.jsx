@@ -8,7 +8,11 @@ export default function StudProfile() {
   const { showAlert } = useNotifications();
   const navigate = useNavigate();
   
-  // 1. Master State
+  // ==========================================
+  // STATE MANAGEMENT
+  // ==========================================
+
+  // 1. Master State: Holds the currently saved and verified user data.
   const [studentInfo, setStudentInfo] = useState({
     name: "Loading...",
     email: "Loading...",
@@ -19,9 +23,14 @@ export default function StudProfile() {
     profilePhoto: null
   });
 
-  // 2. Edit Mode State
+  // 2. Edit Mode State: Controls the UI toggle and holds temporary draft data.
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(studentInfo);
+
+
+  // ==========================================
+  // DATA FETCHING & SYNCHRONIZATION
+  // ==========================================
 
   // Fetch actual user data on load from API to ensure it's up to date
   React.useEffect(() => {
@@ -37,6 +46,8 @@ export default function StudProfile() {
         
         if (data.status === 'success') {
           const user = data.data.user;
+          
+          // Map backend data to our frontend state structure, providing fallbacks
           const realData = {
             name: user.name || "N/A",
             email: user.email || "N/A",
@@ -47,7 +58,7 @@ export default function StudProfile() {
             profilePhoto: user.profilePhoto || null
           };
           setStudentInfo(realData);
-          setEditForm(realData);
+          setEditForm(realData); // Pre-fill the edit form with the fetched data
           
           // Keep the active session in sync without leaving stale user data behind
           sessionStorage.setItem('user', JSON.stringify(user));
@@ -61,16 +72,23 @@ export default function StudProfile() {
     fetchProfile();
   }, [navigate]);
 
-  // 3. Handlers
+
+  // ==========================================
+  // FORM & ACTION HANDLERS
+  // ==========================================
+
+  // Toggles to Edit Mode and ensures the draft form matches current actual data
   const handleEditClick = () => {
-    setEditForm(studentInfo); // reset form to current data
+    setEditForm(studentInfo); 
     setIsEditing(true);
   };
 
+  // Discards any draft changes and returns to View Mode
   const handleCancelClick = () => {
     setIsEditing(false);
   };
 
+  // Submits the draft changes to the backend API
   const handleSaveClick = async () => {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
@@ -87,30 +105,24 @@ export default function StudProfile() {
       if (data.status === 'success') {
         const updatedUser = data.data.user;
         
-        // Update local state
-        setStudentInfo({
-          ...editForm,
+        // Map the successful response back into the Master State
+        const newStudentInfo = {
           name: updatedUser.name,
-          phone: updatedUser.phoneNo,
-          hallNo: updatedUser.hallNo,
-          roomNo: updatedUser.roomNo,
-          profilePhoto: updatedUser.profilePhoto
-        });
-        setIsEditing(false);
-        
-        // Keep the active session in sync without leaving stale user data behind
-        sessionStorage.setItem('user', JSON.stringify(updatedUser));
-        localStorage.removeItem('user');
-        setStudentInfo({
-          name: updatedUser.name,
-          email: updatedUser.email,
+          email: updatedUser.email, // Email generally doesn't change, but good to sync
           phone: updatedUser.phoneNo,
           rollNo: updatedUser.rollNo,
           hallNo: updatedUser.hallNo,
           roomNo: updatedUser.roomNo,
           profilePhoto: updatedUser.profilePhoto
-        });
-        setIsEditing(false);
+        };
+
+        setStudentInfo(newStudentInfo);
+        setIsEditing(false); // Return to View Mode
+        
+        // Keep the browser session storage synchronized with the new database values
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+        localStorage.removeItem('user');
+        
         showAlert("Success", "Profile updated successfully!", "success");
       } else {
         showAlert("Error", data.message || 'Error updating profile', "error");
@@ -120,50 +132,68 @@ export default function StudProfile() {
     }
   };
 
+  // Generic input handler for all text fields in the Edit Form
   const handleChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
 
+  // ==========================================
+  // PROFILE PHOTO HANDLING
+  // ==========================================
+
+  // Converts uploaded image to a Base64 string for easy JSON transmission
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Hard limit: 500KB to prevent database bloat
     if (file.size > 500 * 1024) {
       showAlert("Image Too Large", "Please upload a profile picture smaller than 500KB.", "warning");
       return;
     }
 
+    // Read the file and convert to Base64 data URL
     const reader = new FileReader();
     reader.onloadend = () => {
       setEditForm({ ...editForm, profilePhoto: reader.result });
-      setIsEditing(true);
+      setIsEditing(true); // Automatically switch to edit mode if they just uploaded a photo
     };
     reader.readAsDataURL(file);
   };
 
+  // Clears the photo from the draft state
   const handleRemovePhoto = (e) => {
     e.preventDefault();
     setEditForm({ ...editForm, profilePhoto: "" });
     setIsEditing(true);
   };
 
+  // Determine which photo to show: the draft one (if editing) or the saved one
   const displayPhoto = isEditing ? editForm.profilePhoto : studentInfo.profilePhoto;
+
+
+  // ==========================================
+  // RENDER UI
+  // ==========================================
 
   return (
     <div className="flex-1 h-full min-h-screen flex items-start justify-center pt-24 bg-white">
       
-      {/* The Gray Card */}
+      {/* The Main Profile Card */}
       <div className="relative bg-[#e5e5e5] rounded-[32px] border border-gray-400 shadow-sm w-full max-w-2xl px-12 pt-20 pb-12">
         
-        {/* The Overlapping Avatar Cutout */}
+        {/* Floating Avatar Container */}
         <div className="absolute -top-16 left-1/2 transform -translate-x-1/2">
           <div className="relative bg-[#0f172a] rounded-full flex items-center justify-center w-32 h-32 border-[8px] border-white overflow-hidden group transition-all">
+            
+            {/* Display Image or Placeholder Icon */}
             {displayPhoto ? (
               <img src={displayPhoto} alt="Profile" className="w-full h-full object-cover" />
             ) : (
               <User className="w-16 h-16 text-white" strokeWidth={2} />
             )}
             
+            {/* Hover Overlay for Upload/Remove (Only visible on hover) */}
             <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-1">
               <label className="cursor-pointer hover:opacity-80 transition-opacity">
                 <span className="text-white text-[11px] font-semibold tracking-wider uppercase">Change</span>
@@ -178,7 +208,7 @@ export default function StudProfile() {
           </div>
         </div>
 
-        {/* Text Details / Input Fields */}
+        {/* Dynamic User Details Section */}
         <div className="space-y-6 text-[1.15rem] text-gray-900 px-6 mt-4">
           
           <div className="flex items-center">
@@ -192,6 +222,7 @@ export default function StudProfile() {
           
           <div className="flex items-center">
             <span className="w-40 font-medium shrink-0">Email :</span>
+            {/* Email is uneditable, just slightly faded during edit mode */}
             <span className={isEditing ? "text-gray-500" : ""}>{studentInfo.email}</span>
           </div>
           
@@ -229,9 +260,10 @@ export default function StudProfile() {
 
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons Section */}
         {!isEditing ? (
-          // VIEW MODE
+          
+          /* --- VIEW MODE BUTTONS --- */
           <>
             <div className="mt-14 flex justify-between gap-4 px-6">
               <button onClick={() => navigate('/student/change-password')} className="cursor-pointer bg-[#0f172a] text-white px-8 py-3 rounded-full font-medium hover:bg-slate-900 transition shadow-sm w-1/2">
@@ -241,8 +273,10 @@ export default function StudProfile() {
                 Edit Profile
               </button>
             </div>
+            
             <div className="mt-6 flex justify-center">
               <button onClick={() => {
+                // Completely clear local state to prevent security bleeding
                 sessionStorage.removeItem('token');
                 sessionStorage.removeItem('user');
                 sessionStorage.removeItem('canteenId');
@@ -255,8 +289,10 @@ export default function StudProfile() {
               </button>
             </div>
           </>
+          
         ) : (
-          // EDIT MODE
+          
+          /* --- EDIT MODE BUTTONS --- */
           <div className="mt-14 flex justify-between gap-4 px-6">
             <button onClick={handleCancelClick} className="cursor-pointer bg-gray-500 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-600 transition shadow-sm w-1/2">
               Cancel
@@ -265,6 +301,7 @@ export default function StudProfile() {
               Save Changes
             </button>
           </div>
+          
         )}
 
       </div>

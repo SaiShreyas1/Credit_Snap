@@ -1,5 +1,12 @@
+/**
+ * @file server.js
+ * @desc Main entry point for the backend server. Bootstraps the Express application, 
+ * configures Socket.IO for real-time bidirectional communication, and connects to the MongoDB database.
+ */
+
 const path = require('path');
 
+// Load environment variables from the .env file
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mongoose = require('mongoose');
 const { createServer } = require('http');
@@ -9,21 +16,37 @@ const app = require('./app');
 const PORT = process.env.PORT || 5000;
 const DB_URL = process.env.MONGO_URI;
 
+// ==========================================
+// SERVER & SOCKET.IO INITIALIZATION
+// ==========================================
+
+// Create an HTTP server instance using the Express app
 const httpServer = createServer(app);
 
+// Initialize Socket.IO with Cross-Origin Resource Sharing (CORS) rules
+// specifically allowing connections from the local React development environments
 const io = new Server(httpServer, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
-
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    credentials: true,
   },
 });
 
+// Attach the Socket.IO instance to the Express app object
+// This allows route controllers to emit real-time events (e.g., req.app.get('io').emit(...))
 app.set('io', io);
+
+// ==========================================
+// REAL-TIME EVENT LISTENERS (WebSockets)
+// ==========================================
 
 io.on('connection', (socket) => {
   console.log('🔗 [SOCKET.IO] New connection:', socket.id);
 
+  /**
+   * Canteen Rooms: Subscribes a canteen owner's client to real-time order updates.
+   */
   socket.on('join-canteen', (canteenId) => {
     socket.join(`canteen:${canteenId}`);
     console.log(`📡 [SOCKET.IO] Socket ${socket.id} joined room -> canteen:${canteenId}`);
@@ -35,6 +58,9 @@ io.on('connection', (socket) => {
     console.log(`🚪 [SOCKET.IO] Socket ${socket.id} left room -> canteen:${canteenId}`);
   });
 
+  /**
+   * Student Rooms: Subscribes a student's client to real-time order status and debt notifications.
+   */
   socket.on('join-student', (studentId) => {
     socket.join(`student:${studentId}`);
     console.log(`📡 [SOCKET.IO] Socket ${socket.id} joined room -> student:${studentId}`);
@@ -50,10 +76,15 @@ io.on('connection', (socket) => {
   });
 });
 
+// ==========================================
+// DATABASE CONNECTION & SERVER BOOTSTRAP
+// ==========================================
+
 mongoose.connect(DB_URL)
   .then(() => {
     console.log('✅ Successfully connected to MongoDB Database!');
 
+    // Only start listening for requests AFTER the database connection is secure
     httpServer.listen(PORT, () => {
       console.log(`🚀 Backend running on http://localhost:${PORT}`);
     });

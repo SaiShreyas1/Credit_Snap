@@ -5,12 +5,14 @@ import './Login.css'; // Reusing your existing styles!
 const VerifyEmailPending = () => {
   const navigate = useNavigate();
 
+  // Present a static informative screen instructing the user to check their external email inbox
   return (
     <div className="login-page">
       <div className="login-right-panel" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <div className="form-container" style={{ textAlign: 'center', maxWidth: '600px' }}>
           <h1 className="login-heading">Check Your Inbox! 📬</h1>
           
+          {/* Main instruction block rendered centrally with inline CSS spacing */}
           <div style={{ margin: '30px 0', fontSize: '1.2rem', color: '#4a5568', lineHeight: '1.6' }}>
             <p>We've sent a verification link to your email address.</p>
             <p>Please click the link in that email to verify your account and complete the signup process.</p>

@@ -17,6 +17,7 @@ export default function Owneranalytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // ⭐ NEW: Catches errors to prevent white screens!
 
+  // Retrieve grouped statistical metrics from backend to populate visual chart elements
   const fetchAnalytics = async () => {
     try {
       const token = sessionStorage.getItem('token');
@@ -37,6 +38,7 @@ export default function Owneranalytics() {
     }
   };
 
+  // Fire data retrieval on initial mount and setup corresponding socket listeners for live changes
   // Initial fetch
   useEffect(() => {
     fetchAnalytics();
@@ -72,6 +74,7 @@ export default function Owneranalytics() {
     );
   }
 
+  // Format numeric strings strictly into valid Indian Rupee representation
   // Safe Formatter to prevent `.toLocaleString()` from crashing on empty data
   const formatCurrency = (value) => value ? `₹${Number(value).toLocaleString()}` : '₹0';
 

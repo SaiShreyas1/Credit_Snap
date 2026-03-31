@@ -4,33 +4,39 @@ import './Login.css';
 import { useNavigate, Link } from 'react-router-dom';
 import studentLogo from '../assets/Student_without_bg_logo.png';
 import canteenLogo from '../assets/Canteen_without_bg_logo.png';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
 
   // --- STATES ---
+  // Define state variables to manage user input, role selection, and error messages
+  //--- STATES ---
   const [role, setRole] = useState('Student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [loginError, setLoginError] = useState('');
 
   // --- LOGIN LOGIC ---
+  // Function to authenticate the user and retrieve a session token from the backend
+  //--- LOGIN LOGIC ---
   const handleLogin = async (e) => {
     e.preventDefault();
     const isStudent = role === 'Student';
 
-    // 1. Frontend Validation Check for IITK Emails
+    //1.Frontend Validation Check for IITK Emails
     if (isStudent && !email.endsWith('@iitk.ac.in')) {
       setEmailError('Access restricted: Please use your @iitk.ac.in email.');
       return;
     }
 
-    // Clear any old errors before trying to log in
+    //Clear any old errors before trying to log in
     setEmailError('');
     setLoginError('');
 
-    // 2. THE MAGIC CONNECTION TO MONGODB
+    //2.CONNECTION TO MONGODB
     try {
       const response = await fetch(`${BASE_URL}/api/users/login`, {
         method: 'POST',
@@ -42,7 +48,7 @@ const Login = () => {
 
       const data = await response.json();
 
-      // 3. VALIDATE THE LOGIN
+      //3.VALIDATE THE LOGIN
       if (data.status === 'success') {
         console.log("Login successful! VIP Token Generated.");
 
@@ -62,11 +68,10 @@ const Login = () => {
         if (data.data.user.role === 'student') {
           navigate('/student/dashboard');
         } else if (data.data.user.role === 'owner') {
-          // 🏆 FIXED: Must route to dashboard first so Canteen ID is fetched and stored!
           navigate('/owner/dashboard');
         }
       } else {
-        // If the password was wrong, or email wasn't found, show the error!
+        //If the password was wrong, or email wasn't found, show the error!
         setLoginError(data.message);
       }
     } catch (error) {
@@ -76,6 +81,7 @@ const Login = () => {
 
   const isStudent = role === 'Student';
 
+  // Return the complete login UI including dynamic branding and form fields depending on role
   return (
     <div className="login-page">
       <div className={`login-left-panel ${isStudent ? 'bg-blue-theme' : 'bg-yellow-theme'}`}>
@@ -96,14 +102,28 @@ const Login = () => {
             <button
               type="button"
               className={`role-btn ${isStudent ? 'active-blue' : ''}`}
-              onClick={() => { setRole('Student'); setEmailError(''); setLoginError(''); }}
+              onClick={() => {
+                setRole('Student');
+                setEmailError('');
+                setLoginError('');
+                setEmail('');
+                setPassword('');
+                setShowPassword(false);
+              }}
             >
               Student
             </button>
             <button
               type="button"
               className={`role-btn ${!isStudent ? 'active-yellow' : ''}`}
-              onClick={() => { setRole('Canteen'); setEmailError(''); setLoginError(''); }}
+              onClick={() => {
+                setRole('Canteen');
+                setEmailError('');
+                setLoginError('');
+                setEmail('');
+                setPassword('');
+                setShowPassword(false);
+              }}
             >
               Canteen
             </button>
@@ -126,14 +146,23 @@ const Login = () => {
 
             {/* --- PASSWORD INPUT --- */}
             <div className="input-group">
-              <input
-                type="password"
-                placeholder="Enter your password"
-                className="custom-input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  className="custom-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={20} color="#777" /> : <Eye size={20} color="#777" />}
+                </button>
+              </div>
               {loginError && <span className="error-text" style={{ color: 'red', marginTop: '5px', display: 'block' }}>{loginError}</span>}
             </div>
 

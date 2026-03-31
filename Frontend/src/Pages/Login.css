@@ -15,9 +15,18 @@
   transition: background-color 0.4s ease;
 }
 
+/* Styling rules to switch application colors depending on the selected user role */
 /* --- THEME SWAP --- */
-.bg-yellow-theme { background-color: #FFFDE7; } /* Shopkeeper now Soft Yellow */
-.bg-blue-theme { background-color: #e5eff5; }   /* Student is Blue */
+.bg-yellow-theme {
+  background-color: #FFFDE7;
+}
+
+/* Shopkeeper now Soft Yellow */
+.bg-blue-theme {
+  background-color: #e5eff5;
+}
+
+/* Student is Blue */
 
 .brand-logo-wrap {
   width: min(82%, 420px);
@@ -28,7 +37,7 @@
 }
 
 .brand-logo {
- width: 100%;
+  width: 100%;
   height: 100%;
   object-fit: contain;
   object-position: center;
@@ -55,11 +64,12 @@
 }
 
 .login-heading {
-  color: #183B66; 
+  color: #183B66;
   font-size: 32px;
   margin-bottom: 35px;
 }
 
+/* Visual properties for the toggle slider that chooses between Student or Canteen roles */
 /* --- DYNAMIC SELECTOR --- */
 .role-selector {
   display: flex;
@@ -69,8 +79,13 @@
   overflow: hidden;
 }
 
-.selector-yellow { background-color: #FFFDE7; }
-.selector-blue { background-color: #e5eff5; }
+.selector-yellow {
+  background-color: #FFFDE7;
+}
+
+.selector-blue {
+  background-color: #e5eff5;
+}
 
 .role-btn {
   flex: 1;
@@ -83,7 +98,8 @@
 }
 
 .active-yellow {
-  background-color: #D4AC0D; /* Rich Golden Yellow */
+  background-color: #D4AC0D;
+  /* Rich Golden Yellow */
   color: #FFFFFF;
 }
 
@@ -92,16 +108,47 @@
   color: #FFFFFF;
 }
 
-.login-form { width: 100%; display: flex; flex-direction: column; }
-.input-group { margin-bottom: 20px; }
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
 
 .custom-input {
   width: 100%;
   padding: 14px;
   border: 1px solid #B0B0B0;
   border-radius: 4px;
+  box-sizing: border-box;
 }
 
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper .custom-input {
+  padding-right: 45px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+/* Button styling configuring backgrounds, hovers, and color transitions per theme */
 /* --- DYNAMIC BUTTONS --- */
 .primary-login-btn {
   color: #FFFFFF;
@@ -112,16 +159,29 @@
   font-weight: 500;
   cursor: pointer;
   width: 75%;
-  display: block; 
-  margin: 35px auto 0 auto; 
+  display: block;
+  margin: 35px auto 0 auto;
   transition: background-color 0.3s ease;
 }
 
-.btn-yellow { background-color: #D4AC0D; } /* Rich Golden Yellow */
-.btn-yellow:hover { background-color: #B8860B; } /* Slightly darker on hover */
+.btn-yellow {
+  background-color: #D4AC0D;
+}
 
-.btn-blue { background-color: #183B66; }
-.btn-blue:hover { background-color: #0F2540; }
+/* Rich Golden Yellow */
+.btn-yellow:hover {
+  background-color: #B8860B;
+}
+
+/* Slightly darker on hover */
+
+.btn-blue {
+  background-color: #183B66;
+}
+
+.btn-blue:hover {
+  background-color: #0F2540;
+}
 
 .signup-redirect {
   margin-top: 35px;
@@ -138,20 +198,25 @@
   .login-page {
     flex-direction: column;
   }
+
   .login-left-panel {
     padding: 40px 0;
   }
+
   .brand-logo-wrap {
     max-width: 250px;
     max-height: 250px;
   }
+
   .login-right-panel {
     padding: 40px 20px;
   }
+
   .form-container {
     min-height: auto;
   }
 }
+
 /* Error message styling */
 .error-text {
   color: #D32F2F;
