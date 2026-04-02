@@ -51,7 +51,7 @@ const DebtCard = ({ data, onPayDebt, isPaying }) => (
       <p className="font-bold text-gray-500 tracking-wide uppercase text-sm">
         Debt: <span className="text-black text-lg ml-1">₹{data.currentDebt} <span className="text-gray-400 font-medium normal-case text-base">/ ₹{data.limit}</span></span>
       </p>
-      
+
       {/* Dynamic Button: Changes based on debt balance and processing state */}
       {data.currentDebt > 0 ? (
         <button
@@ -77,11 +77,11 @@ const DebtCard = ({ data, onPayDebt, isPaying }) => (
 
 export default function ViewDebts() {
   const { showAlert } = useNotifications();
-  
+
   // Data State
   const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // UI & Search State
   const [searchTerm, setSearchTerm] = useState('');
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -240,7 +240,7 @@ export default function ViewDebts() {
       );
 
       const checkoutData = createOrderRes.data.data;
-      
+
       // 3. Initialize Razorpay Checkout window
       const razorpay = new window.Razorpay({
         key: checkoutData.keyId,
@@ -293,7 +293,7 @@ export default function ViewDebts() {
 
       // Open the UI
       razorpay.open();
-      
+
     } catch (error) {
       showAlert(
         'Unable To Start Payment',
@@ -341,10 +341,10 @@ export default function ViewDebts() {
 
   return (
     <main className="p-6 md:p-10 w-full min-h-screen bg-[#f8f9fa] relative">
-      
+
       {/* --- HEADER: SEARCH & SORT --- */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-5 relative z-20">
-        
+
         {/* Search Bar */}
         <div className="flex items-center bg-white border border-gray-200 rounded-full px-5 h-11 w-full max-w-[450px] shadow-sm focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition-all duration-300">
           <Search className="w-4 h-4 text-gray-400 mr-3" />
@@ -421,7 +421,7 @@ export default function ViewDebts() {
       {payModal.isOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
-            
+
             <button
               onClick={closePayModal}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition cursor-pointer"
@@ -451,18 +451,17 @@ export default function ViewDebts() {
                   type="number"
                   value={payModal.amount}
                   onChange={(e) => setPayModal({ ...payModal, amount: e.target.value })}
-                  className={`w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:border-[#6366f1] outline-none text-lg transition-colors ${
-                    !isPaymentAmountValid() && payModal.amount
-                      ? 'border-red-300 focus:ring-red-200 bg-red-50'
-                      : 'border-gray-300 focus:ring-[#6366f1]'
-                  }`}
+                  className={`w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:border-[#6366f1] outline-none text-lg transition-colors ${!isPaymentAmountValid() && payModal.amount
+                    ? 'border-red-300 focus:ring-red-200 bg-red-50'
+                    : 'border-gray-300 focus:ring-[#6366f1]'
+                    }`}
                   placeholder="Enter amount"
                   min="1"
                   max={payModal.debt?.currentDebt}
                   autoFocus
                 />
               </div>
-              
+
               {/* Validation Warning */}
               {!isPaymentAmountValid() && payModal.amount && (
                 <p className="text-xs text-red-600 mt-1">
@@ -482,11 +481,10 @@ export default function ViewDebts() {
               <button
                 onClick={confirmPayment}
                 disabled={!isPaymentAmountValid()}
-                className={`flex-1 font-medium py-3 rounded-lg transition ${
-                  isPaymentAmountValid()
-                    ? 'bg-[#f97316] hover:bg-[#ea580c] text-white cursor-pointer'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                className={`flex-1 font-medium py-3 rounded-lg transition ${isPaymentAmountValid()
+                  ? 'bg-[#f97316] hover:bg-[#ea580c] text-white cursor-pointer'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
               >
                 Pay Now
               </button>

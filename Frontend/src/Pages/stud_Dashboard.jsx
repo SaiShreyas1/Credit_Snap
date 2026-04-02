@@ -73,11 +73,10 @@ const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder }) => {
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
             {/* Dynamic Status Badge */}
-            <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
-              order.status === 'pending' ? 'bg-orange-100 text-orange-700' :
-              order.status === 'accepted' ? 'bg-green-100 text-green-700' :
-              'bg-red-100 text-red-700'
-            }`}>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${order.status === 'pending' ? 'bg-orange-100 text-orange-700' :
+                order.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                  'bg-red-100 text-red-700'
+              }`}>
               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
             </span>
             {/* Dropdown chevron only shows for pending orders */}
@@ -124,7 +123,7 @@ const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder }) => {
 export default function StudDashboard() {
   const { showAlert, showConfirm } = useNotifications();
   const navigate = useNavigate();
-  
+
   // View State
   const [totalDebt, setTotalDebt] = useState(0);
   const [alerts, setAlerts] = useState([]);
@@ -140,16 +139,16 @@ export default function StudDashboard() {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       if (!token) return;
-      
+
       const res = await axios.get(`${BASE_URL}/api/debts/my-debts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (res.data.status === 'success') {
         // Calculate total combined debt across all canteens
         const sum = res.data.data.reduce((total, d) => total + d.amountOwed, 0);
         setTotalDebt(sum);
-        
+
         // Generate alert notifications if any individual canteen debt approaches the limit
         const generatedAlerts = [];
         res.data.data.forEach(d => {
@@ -177,35 +176,35 @@ export default function StudDashboard() {
       try {
         const token = sessionStorage.getItem('token');
         if (!token) return;
-        
+
         const res = await axios.get(`${BASE_URL}/api/orders/my-active-orders`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
+
         if (res.data.status === 'success') {
           const now = new Date();
           const fortyEightHoursMs = 48 * 60 * 60 * 1000;
-          
+
           // Filter out system "payment" orders and orders older than 48 hours
           const recentActualOrders = res.data.data.filter(order => {
             // Because debt payments are logged as orders in the DB, we hide them from the dashboard list
-            const isPayment = order.items && order.items.length > 0 && 
-                              (order.items[0].name === 'Offline Debt Payment' || order.items[0].name === 'Online Debt Payment');
+            const isPayment = order.items && order.items.length > 0 &&
+              (order.items[0].name === 'Offline Debt Payment' || order.items[0].name === 'Online Debt Payment');
             if (isPayment) return false;
-            
+
             // Only show orders from the last 2 days
             const orderDate = new Date(order.createdAt);
             const isRecent = (now - orderDate) <= fortyEightHoursMs;
             return isRecent;
           });
-          
+
           setCurrentOrders(recentActualOrders);
         }
       } catch (err) {
         console.error('Failed to fetch orders:', err);
       }
     };
-    
+
     fetchOrders();
     fetchTotalDebt();
   }, []);
@@ -216,13 +215,13 @@ export default function StudDashboard() {
     if (!userStr) return;
     const user = JSON.parse(userStr);
     const userIdStr = user._id;
-    
+
     // Connect to the WebSocket server
     const socket = io(`${BASE_URL}`);
     socket.on('connect', () => {
       socket.emit('join-student', userIdStr); // Join user-specific room for targeted notifications
     });
-    
+
     // Listener: Updates the UI instantly when a canteen accepts/rejects an order
     socket.on('orderStatusUpdated', (updatedOrder) => {
       setCurrentOrders((prevOrders) =>
@@ -231,12 +230,12 @@ export default function StudDashboard() {
         )
       );
     });
-    
+
     // Listener: Refreshes the debt hero banner instantly if a payment is processed
     socket.on('debt-updated', () => {
       fetchTotalDebt();
     });
-    
+
     // Cleanup: Disconnect when the user leaves the dashboard
     return () => {
       socket.disconnect();
@@ -258,12 +257,12 @@ export default function StudDashboard() {
           await axios.patch(`${BASE_URL}/api/orders/${orderId}/cancel`, {}, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          
+
           // Update local state so UI updates without needing a full page refresh
           setCurrentOrders(prev => prev.map(o =>
             o._id === orderId ? { ...o, status: 'cancelled' } : o
           ));
-          
+
           showAlert("Order Cancelled", "Your order has been successfully cancelled.", "success");
         } catch (err) {
           showAlert("Error", err.response?.data?.message || "Error cancelling order", "error");
@@ -276,7 +275,7 @@ export default function StudDashboard() {
   const handleChangeOrder = async (order) => {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      
+
       // 1. Cancel the existing order on the backend so they aren't charged double
       await axios.patch(`${BASE_URL}/api/orders/${order._id}/cancel`, {}, {
         headers: { Authorization: `Bearer ${token}` }
@@ -293,7 +292,7 @@ export default function StudDashboard() {
           cartItems: order.items
         }
       });
-      
+
     } catch (err) {
       showAlert("Error", "Failed to change order. Please try again.", "error");
     }
@@ -305,10 +304,10 @@ export default function StudDashboard() {
 
   return (
     <main className="p-8 overflow-y-auto flex-1 bg-gray-50 min-h-screen">
-      
+
       {/* --- TOP ROW: DEBT WIDGET & ALERTS --- */}
       <div className="flex flex-col md:flex-row gap-6 mb-8">
-        
+
         {/* Total Debt Hero Card */}
         <div className="bg-gradient-to-r from-[#1e3a8a] to-[#3b82f6] rounded-2xl p-6 text-white flex-1 shadow-lg h-40 flex flex-col justify-between">
           <div>
@@ -323,7 +322,7 @@ export default function StudDashboard() {
             </div>
           )}
         </div>
-        
+
         {/* Debt Limits / Alerts Card */}
         <div className="bg-white rounded-2xl p-4 flex-1 shadow-sm border border-gray-100 max-w-md flex flex-col h-40">
           <div className="flex items-center gap-2 mb-3 shrink-0">
@@ -355,11 +354,11 @@ export default function StudDashboard() {
             </div>
           ) : (
             currentOrders.map((order) => (
-              <ActiveOrderCard 
-                key={order._id} 
-                order={order} 
-                onCancelOrder={handleCancelOrder} 
-                onChangeOrder={handleChangeOrder} 
+              <ActiveOrderCard
+                key={order._id}
+                order={order}
+                onCancelOrder={handleCancelOrder}
+                onChangeOrder={handleChangeOrder}
               />
             ))
           )}

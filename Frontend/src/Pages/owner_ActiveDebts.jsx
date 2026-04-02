@@ -10,7 +10,7 @@ export default function ActiveDebtsContent() {
   const [sortOpen, setSortOpen] = useState(false);
   const [filterBy, setFilterBy] = useState("all");
   const [sortBy, setSortBy] = useState("default");
-  
+
   // Setup primary states for filtering, sorting, debts tracking, and UI modals
   // 1. Swap hardcoded students for empty array & add loading state
   const [students, setStudents] = useState([]);
@@ -29,7 +29,7 @@ export default function ActiveDebtsContent() {
       const res = await axios.get(`${BASE_URL}/api/debts/active`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (res.data.status === "success") {
         // Map backend keys to match your exact UI keys!
         const mappedDebts = res.data.data.map(d => ({
@@ -75,18 +75,18 @@ export default function ActiveDebtsContent() {
     };
   }, []);
 
-  const showToast = (msg, type = 'success') => { 
-    setToast({ msg, type }); 
-    setTimeout(() => setToast(null), 3000); 
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
   // Trigger email notifications to students regarding their pending dues
   // 3. WIRE UP THE NOTIFY BUTTON
   const handleNotify = async (id) => {
     if (notifyingIds.has(id)) return; // Prevent double-clicks
-    
+
     setNotifyingIds(prev => new Set(prev).add(id));
-    
+
     try {
       const token = sessionStorage.getItem("token");
       await axios.post(`${BASE_URL}/api/debts/${id}/notify`, {}, {
@@ -130,13 +130,13 @@ export default function ActiveDebtsContent() {
     try {
       const token = sessionStorage.getItem("token");
       await axios.post(
-        `${BASE_URL}/api/debts/${targetStudent.id}/pay`, 
+        `${BASE_URL}/api/debts/${targetStudent.id}/pay`,
         { amountPaid: paymentAmount },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       showToast(`₹${paymentAmount} paid offline for ${targetStudent.name}.`, 'success');
-      fetchDebts(); 
+      fetchDebts();
       closePayModal();
     } catch (err) {
       showToast(err.response?.data?.message || "Payment failed", "error");
@@ -164,13 +164,13 @@ export default function ActiveDebtsContent() {
     try {
       const token = sessionStorage.getItem("token");
       await axios.patch(
-        `${BASE_URL}/api/debts/${targetStudent.id}/limit`, 
+        `${BASE_URL}/api/debts/${targetStudent.id}/limit`,
         { limit: newLimitNum },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       showToast(`Custom limit set to ₹${newLimitNum} for ${targetStudent.name}.`, 'success');
-      fetchDebts(); 
+      fetchDebts();
       closeLimitModal();
     } catch (err) {
       showToast(err.response?.data?.message || "Updating limit failed.", "error");
@@ -196,13 +196,13 @@ export default function ActiveDebtsContent() {
     try {
       const token = sessionStorage.getItem("token");
       await axios.patch(
-        `${BASE_URL}/api/canteens/my/default-limit`, 
+        `${BASE_URL}/api/canteens/my/default-limit`,
         { defaultLimit: newLimitNum },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       showToast(`Default limit updated to ₹${newLimitNum} globally.`, 'success');
-      fetchDebts(); 
+      fetchDebts();
       closeDefaultLimitModal();
     } catch (err) {
       showToast(err.response?.data?.message || "Updating default limit failed.", "error");
@@ -211,17 +211,17 @@ export default function ActiveDebtsContent() {
 
   // --- DERIVED STATE (Filters & Sorting) ---
   let list = students.filter(s => {
-    if (s.debt <= 0) return false; 
+    if (s.debt <= 0) return false;
     const q = search.toLowerCase();
     if (q && !s.name.toLowerCase().includes(q) && !s.email.toLowerCase().includes(q)) return false;
     if (filterBy === "critical" && s.debt / s.limit < 0.8) return false;
-    if (filterBy === "safe"     && s.debt / s.limit >= 0.8) return false;
+    if (filterBy === "safe" && s.debt / s.limit >= 0.8) return false;
     return true;
   });
-  
+
   if (sortBy === "debt_high") list = [...list].sort((a, b) => b.debt - a.debt);
-  if (sortBy === "debt_low")  list = [...list].sort((a, b) => a.debt - b.debt);
-  if (sortBy === "name")      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+  if (sortBy === "debt_low") list = [...list].sort((a, b) => a.debt - b.debt);
+  if (sortBy === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
 
   const hasAnyActiveDebts = students.some((student) => student.debt > 0);
   const hasFiltersApplied = Boolean(search || filterBy !== "all");
@@ -270,10 +270,10 @@ export default function ActiveDebtsContent() {
         <div className="fixed inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[450px] p-8 relative border border-gray-100">
             <X onClick={closePayModal} className="absolute top-5 right-5 w-5 h-5 text-gray-400 cursor-pointer hover:text-red-500 transition" />
-            
+
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Log Offline Payment</h2>
             <p className="text-sm text-gray-500 mb-6">Recording payment for <strong className="text-gray-800">{payModal.student?.name}</strong>.</p>
-            
+
             <div className="bg-gray-50 rounded-xl p-4 mb-6 flex justify-between items-center border border-gray-100">
               <span className="text-gray-600 font-medium">Current Debt:</span>
               <span className="text-xl font-bold text-red-600">₹{payModal.student?.debt}</span>
@@ -285,12 +285,12 @@ export default function ActiveDebtsContent() {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <IndianRupee className="h-5 w-5 text-gray-400" />
                 </div>
-                <input 
-                  type="number" 
-                  value={payModal.amount} 
-                  onChange={(e) => setPayModal({ ...payModal, amount: e.target.value })} 
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#eab308] focus:border-[#eab308] outline-none text-lg transition-colors" 
-                  placeholder="e.g. 500" 
+                <input
+                  type="number"
+                  value={payModal.amount}
+                  onChange={(e) => setPayModal({ ...payModal, amount: e.target.value })}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#eab308] focus:border-[#eab308] outline-none text-lg transition-colors"
+                  placeholder="e.g. 500"
                   autoFocus
                 />
               </div>
@@ -315,21 +315,21 @@ export default function ActiveDebtsContent() {
         <div className="fixed inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[450px] p-8 relative border border-gray-100">
             <X onClick={closeLimitModal} className="absolute top-5 right-5 w-5 h-5 text-gray-400 cursor-pointer hover:text-red-500 transition" />
-            
+
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Set Custom Debt Limit</h2>
             <p className="text-sm text-gray-500 mb-6">Changing credit limit for <strong className="text-gray-800">{limitModal.student?.name}</strong>.</p>
-            
+
             <div className="mb-8">
               <label className="block text-sm font-medium text-gray-700 mb-2">New Maximum Limit</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <IndianRupee className="h-5 w-5 text-gray-400" />
                 </div>
-                <input 
-                  type="number" 
-                  value={limitModal.newLimit} 
-                  onChange={(e) => setLimitModal({ ...limitModal, newLimit: e.target.value })} 
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#eab308] focus:border-[#eab308] outline-none text-lg transition-colors" 
+                <input
+                  type="number"
+                  value={limitModal.newLimit}
+                  onChange={(e) => setLimitModal({ ...limitModal, newLimit: e.target.value })}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#eab308] focus:border-[#eab308] outline-none text-lg transition-colors"
                   autoFocus
                 />
               </div>
@@ -350,21 +350,21 @@ export default function ActiveDebtsContent() {
         <div className="fixed inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[450px] p-8 relative border border-gray-100">
             <X onClick={closeDefaultLimitModal} className="absolute top-5 right-5 w-5 h-5 text-gray-400 cursor-pointer hover:text-red-500 transition" />
-            
+
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Set Default Limit</h2>
             <p className="text-sm text-gray-500 mb-6">This limit will apply to <strong>all current students</strong> and any future debts at this canteen.</p>
-            
+
             <div className="mb-8">
               <label className="block text-sm font-medium text-gray-700 mb-2">New Global Limit</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <IndianRupee className="h-5 w-5 text-gray-400" />
                 </div>
-                <input 
-                  type="number" 
-                  value={defaultLimitModal.newLimit} 
-                  onChange={(e) => setDefaultLimitModal({ ...defaultLimitModal, newLimit: e.target.value })} 
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#eab308] focus:border-[#eab308] outline-none text-lg transition-colors" 
+                <input
+                  type="number"
+                  value={defaultLimitModal.newLimit}
+                  onChange={(e) => setDefaultLimitModal({ ...defaultLimitModal, newLimit: e.target.value })}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#eab308] focus:border-[#eab308] outline-none text-lg transition-colors"
                   autoFocus
                 />
               </div>
@@ -382,14 +382,14 @@ export default function ActiveDebtsContent() {
       {/* MAIN CONTENT PAGE */}
       {/* ========================================================= */}
       <div className="p-8 pb-32">
-        
+
         {/* TOP ROW: Search & Filters */}
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center bg-white px-4 py-2.5 rounded-full shadow-sm w-[500px] border border-gray-100 focus-within:border-[#eab308] transition-colors">
             <Search className="w-5 h-5 text-gray-400 mr-2" />
-            <input 
-              type="text" 
-              placeholder="Search for Username or Email" 
+            <input
+              type="text"
+              placeholder="Search for Username or Email"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="bg-transparent outline-none w-full text-gray-700"
@@ -439,7 +439,7 @@ export default function ActiveDebtsContent() {
 
         {/* DYNAMIC CARDS LIST */}
         <div className="flex flex-col gap-5 relative">
-          
+
           {list.length === 0 && (
             <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-3">
               {emptyStateIcon}
@@ -453,10 +453,10 @@ export default function ActiveDebtsContent() {
 
           {list.map(s => {
             const isCritical = s.debt / s.limit >= 0.8;
-            
+
             return (
               <div key={s.id} className={`bg-white rounded-2xl p-6 shadow-sm border ${isCritical ? 'border-red-200' : 'border-gray-100'} flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition hover:shadow-md`}>
-                
+
                 <div>
                   <h3 className="text-xl font-medium text-gray-900 mb-1">{s.name}</h3>
                   <p className="text-sm text-gray-500">
@@ -471,25 +471,24 @@ export default function ActiveDebtsContent() {
                       <Edit3 className="w-4 h-4" />
                     </button>
                   </div>
-                  
+
                   <div className="flex gap-3">
                     {/* Opens the specific payment modal for this student */}
-                    <button 
-                      onClick={() => openPayModal(s)} 
+                    <button
+                      onClick={() => openPayModal(s)}
                       className="cursor-pointer font-semibold px-5 py-2 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md text-sm flex items-center gap-1.5 bg-[#eab308] hover:bg-yellow-500 text-[#1e293b]"
                     >
                       <IndianRupee className="w-4 h-4" /> Paid Offline
                     </button>
-                    <button 
-                      onClick={() => handleNotify(s.id)} 
+                    <button
+                      onClick={() => handleNotify(s.id)}
                       disabled={notifyingIds.has(s.id)}
-                      className={`font-semibold px-5 py-2 rounded-full transition-all duration-200 text-sm flex items-center gap-1.5 shadow-sm ${
-                        notifyingIds.has(s.id) 
-                          ? 'bg-slate-500 text-white cursor-wait opacity-80' 
+                      className={`font-semibold px-5 py-2 rounded-full transition-all duration-200 text-sm flex items-center gap-1.5 shadow-sm ${notifyingIds.has(s.id)
+                          ? 'bg-slate-500 text-white cursor-wait opacity-80'
                           : 'cursor-pointer hover:scale-105 active:scale-95 bg-[#1e293b] hover:bg-slate-800 text-white hover:shadow-md'
-                      }`}
+                        }`}
                     >
-                      <BellRing className={`w-4 h-4 ${notifyingIds.has(s.id) ? 'animate-pulse' : ''}`} /> 
+                      <BellRing className={`w-4 h-4 ${notifyingIds.has(s.id) ? 'animate-pulse' : ''}`} />
                       {notifyingIds.has(s.id) ? 'Sending...' : 'Notify Now'}
                     </button>
                   </div>

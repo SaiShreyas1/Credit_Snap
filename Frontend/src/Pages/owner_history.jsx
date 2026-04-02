@@ -14,13 +14,13 @@ export default function OwnerHistory() {
   // Maintain view context switching between processed orders and debt transaction history
   const [activeTab, setActiveTab] = useState('order'); // 'order' or 'debt'
   const [search, setSearch] = useState('');
-  
+
   // Dropdown toggles
   const [sortOpen, setSortOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
 
   // Sorting and Filtering States
-  const [sortConfig, setSortConfig] = useState('default'); 
+  const [sortConfig, setSortConfig] = useState('default');
   const [filterAmount, setFilterAmount] = useState({ min: '', max: '' });
   const [filterDate, setFilterDate] = useState({ start: '', end: '' });
 
@@ -32,7 +32,7 @@ export default function OwnerHistory() {
   const fetchHistory = async () => {
     try {
       const token = sessionStorage.getItem("token");
-      
+
       const [ordersRes, debtsRes] = await Promise.all([
         axios.get(`${BASE_URL}/api/orders/my-orders`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -59,11 +59,11 @@ export default function OwnerHistory() {
 
         completedOrders.forEach(order => {
           const dateObj = new Date(order.createdAt);
-          
+
           const day = String(dateObj.getDate()).padStart(2, '0');
           const month = String(dateObj.getMonth() + 1).padStart(2, '0');
           const year = dateObj.getFullYear();
-          
+
           const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
           const isDebtPayment = order.items && order.items.length > 0 && order.items[0].name === 'Offline Debt Payment';
@@ -94,8 +94,8 @@ export default function OwnerHistory() {
               paymentType: 'Online'
             });
           } else {
-            const itemsStr = order.items && order.items.length > 0 
-              ? order.items.map(i => `${i.name} x${i.quantity}`).join(', ') 
+            const itemsStr = order.items && order.items.length > 0
+              ? order.items.map(i => `${i.name} x${i.quantity}`).join(', ')
               : "Items";
             formattedOrders.push({ ...baseData, itemsStr });
           }
@@ -131,7 +131,7 @@ export default function OwnerHistory() {
 
   let list = activeData.filter(record => {
     const matchesSearch = record.name.toLowerCase().includes(search.toLowerCase());
-    
+
     const amount = record.amount;
     const min = filterAmount.min === '' ? 0 : parseFloat(filterAmount.min);
     const max = filterAmount.max === '' ? Infinity : parseFloat(filterAmount.max);
@@ -181,16 +181,16 @@ export default function OwnerHistory() {
 
   return (
     <div className="p-8 pb-32">
-      
+
       {/* TOP ROW: Search & Filters */}
       <div className="flex justify-between items-center mb-8">
-        
+
         {/* SEARCH BAR EXACTLY LIKE ACTIVEDEBTS */}
         <div className="flex items-center bg-white px-4 py-2.5 rounded-full shadow-sm w-[500px] border border-gray-100 focus-within:border-[#eab308] transition-colors">
           <Search className="w-5 h-5 text-gray-400 mr-2" />
-          <input 
-            type="text" 
-            placeholder={activeTab === 'order' ? "Search Orders by Name" : "Search Transactions by Name"} 
+          <input
+            type="text"
+            placeholder={activeTab === 'order' ? "Search Orders by Name" : "Search Transactions by Name"}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="bg-transparent outline-none w-full text-gray-700"
@@ -206,27 +206,27 @@ export default function OwnerHistory() {
             {filterOpen && (
               <div className="absolute right-0 mt-3 w-72 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden p-5">
                 <h4 className="font-semibold text-gray-800 mb-4 border-b pb-2">Filter Options</h4>
-                
+
                 <div className="mb-4">
                   <label className="text-xs text-gray-500 font-semibold mb-1.5 block">Amount Range (₹)</label>
                   <div className="flex gap-2">
-                    <input type="number" placeholder="Min" className="w-full border border-gray-200 rounded-md px-2 py-1.5 text-sm outline-none focus:border-[#eab308]" 
-                           value={filterAmount.min} onChange={(e)=>setFilterAmount({...filterAmount, min: e.target.value})} />
+                    <input type="number" placeholder="Min" className="w-full border border-gray-200 rounded-md px-2 py-1.5 text-sm outline-none focus:border-[#eab308]"
+                      value={filterAmount.min} onChange={(e) => setFilterAmount({ ...filterAmount, min: e.target.value })} />
                     <span className="text-gray-400 self-center">-</span>
                     <input type="number" placeholder="Max" className="w-full border border-gray-200 rounded-md px-2 py-1.5 text-sm outline-none focus:border-[#eab308]"
-                           value={filterAmount.max} onChange={(e)=>setFilterAmount({...filterAmount, max: e.target.value})} />
+                      value={filterAmount.max} onChange={(e) => setFilterAmount({ ...filterAmount, max: e.target.value })} />
                   </div>
                 </div>
 
                 <div className="mb-5">
                   <label className="text-xs text-gray-500 font-semibold mb-1.5 block">Date Range</label>
                   <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-sm"><span className="w-10 text-gray-500">From:</span> <input type="date" className="border border-gray-200 rounded-md px-2 py-1 flex-1 text-sm outline-none focus:border-[#eab308]" value={filterDate.start} onChange={(e)=>setFilterDate({...filterDate, start: e.target.value})} /></div>
-                    <div className="flex items-center gap-2 text-sm"><span className="w-10 text-gray-500">To:</span> <input type="date" className="border border-gray-200 rounded-md px-2 py-1 flex-1 text-sm outline-none focus:border-[#eab308]" value={filterDate.end} onChange={(e)=>setFilterDate({...filterDate, end: e.target.value})} /></div>
+                    <div className="flex items-center gap-2 text-sm"><span className="w-10 text-gray-500">From:</span> <input type="date" className="border border-gray-200 rounded-md px-2 py-1 flex-1 text-sm outline-none focus:border-[#eab308]" value={filterDate.start} onChange={(e) => setFilterDate({ ...filterDate, start: e.target.value })} /></div>
+                    <div className="flex items-center gap-2 text-sm"><span className="w-10 text-gray-500">To:</span> <input type="date" className="border border-gray-200 rounded-md px-2 py-1 flex-1 text-sm outline-none focus:border-[#eab308]" value={filterDate.end} onChange={(e) => setFilterDate({ ...filterDate, end: e.target.value })} /></div>
                   </div>
                 </div>
-                
-                <button onClick={() => {setFilterAmount({min:'', max:''}); setFilterDate({start:'', end:''});}} className="cursor-pointer text-sm font-semibold text-[#1e293b] bg-gray-100 hover:bg-gray-200 py-2 rounded-md w-full text-center transition">Clear Filters</button>
+
+                <button onClick={() => { setFilterAmount({ min: '', max: '' }); setFilterDate({ start: '', end: '' }); }} className="cursor-pointer text-sm font-semibold text-[#1e293b] bg-gray-100 hover:bg-gray-200 py-2 rounded-md w-full text-center transition">Clear Filters</button>
               </div>
             )}
           </div>
@@ -251,26 +251,24 @@ export default function OwnerHistory() {
       {/* HEADER ROW EXACTLY LIKE ACTIVEDEBTS */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-semibold text-gray-900">History</h1>
-        
+
         {/* TABS RIGHT NEXT TO HEADER OMEGA CLEAN */}
         <div className="flex bg-gray-100 border border-gray-200 rounded-xl p-1 shadow-inner relative z-10 w-[400px]">
           <button
             onClick={() => { setActiveTab('order'); }}
-            className={`cursor-pointer flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
-              activeTab === 'order' 
-                ? 'bg-white text-[#1e293b] shadow-[0_1px_3px_rgba(0,0,0,0.1)]' 
+            className={`cursor-pointer flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-300 ${activeTab === 'order'
+                ? 'bg-white text-[#1e293b] shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
                 : 'text-gray-500 hover:text-gray-800'
-            }`}
+              }`}
           >
             Order History
           </button>
           <button
             onClick={() => { setActiveTab('debt'); }}
-            className={`cursor-pointer flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
-              activeTab === 'debt' 
-                ? 'bg-white text-[#1e293b] shadow-[0_1px_3px_rgba(0,0,0,0.1)]' 
+            className={`cursor-pointer flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-300 ${activeTab === 'debt'
+                ? 'bg-white text-[#1e293b] shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
                 : 'text-gray-500 hover:text-gray-800'
-            }`}
+              }`}
           >
             Transaction History
           </button>
@@ -280,18 +278,18 @@ export default function OwnerHistory() {
       {/* DYNAMIC CARDS LIST EXACTLY LIKE ACTIVEDEBTS */}
       <div className="flex flex-col gap-5 relative">
         {list.length === 0 ? (
-           <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-3">
-             <History className="w-12 h-12 text-gray-300 mb-2" />
-             <p className="text-2xl font-semibold text-gray-800">No {activeTab === 'order' ? 'Orders' : 'Transactions'} Found</p>
-             <p className="text-gray-500">Try adjusting your filters or search term.</p>
-             {(search || filterAmount.min || filterAmount.max || filterDate.start || filterDate.end || sortConfig !== 'default') && (
-               <button onClick={() => { setSearch(''); setFilterAmount({min:'', max:''}); setFilterDate({start:'', end:''}); setSortConfig('default'); }} className="cursor-pointer mt-4 bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg transition text-sm">Clear Filters</button>
-             )}
-           </div>
+          <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-3">
+            <History className="w-12 h-12 text-gray-300 mb-2" />
+            <p className="text-2xl font-semibold text-gray-800">No {activeTab === 'order' ? 'Orders' : 'Transactions'} Found</p>
+            <p className="text-gray-500">Try adjusting your filters or search term.</p>
+            {(search || filterAmount.min || filterAmount.max || filterDate.start || filterDate.end || sortConfig !== 'default') && (
+              <button onClick={() => { setSearch(''); setFilterAmount({ min: '', max: '' }); setFilterDate({ start: '', end: '' }); setSortConfig('default'); }} className="cursor-pointer mt-4 bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg transition text-sm">Clear Filters</button>
+            )}
+          </div>
         ) : (
           list.map((record) => (
             <div key={record.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition hover:shadow-md">
-              
+
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-1">
                   <h3 className="text-xl font-medium text-gray-900">{record.name}</h3>
@@ -327,17 +325,17 @@ export default function OwnerHistory() {
                 <div className="text-[15px] font-medium text-gray-700">
                   {activeTab === 'order' ? 'Total:' : 'Paid Amount:'} <span className={`font-bold ${activeTab === 'debt' ? 'text-green-600' : 'text-[#1e293b]'}`}>₹{record.amount}</span>
                 </div>
-                
+
                 {activeTab === 'debt' && (
                   <div className="text-sm font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                     Remaining Debt: <span className="font-bold text-red-500">₹{record.remainingDebt}</span>
                   </div>
                 )}
-                
+
                 <div className="flex items-center gap-3 text-sm text-gray-500 mt-1 font-medium bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg">
-                  <span className="flex items-center"><Calendar className="w-4 h-4 mr-1.5 text-gray-400"/> {record.date}</span>
+                  <span className="flex items-center"><Calendar className="w-4 h-4 mr-1.5 text-gray-400" /> {record.date}</span>
                   <span className="text-gray-300">•</span>
-                  <span className="flex items-center"><Clock className="w-4 h-4 mr-1.5 text-gray-400"/> {record.time}</span>
+                  <span className="flex items-center"><Clock className="w-4 h-4 mr-1.5 text-gray-400" /> {record.time}</span>
                 </div>
               </div>
 
