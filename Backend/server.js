@@ -24,20 +24,18 @@ const DB_URL = process.env.MONGO_URI;
 const httpServer = createServer(app);
 
 // Initialize Socket.IO with Cross-Origin Resource Sharing (CORS) rules
-// specifically allowing connections from the local React development environments
 const io = new Server(httpServer, {
   cors: {
     origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
   },
-  // --- ADDED NETWORK TIMEOUT FIXES ---
-  pingTimeout: 60000,  // How many ms without a pong packet to consider the connection closed
-  pingInterval: 25000  // How many ms before sending a new ping packet
+  // Network timeout fixes for WebSockets
+  pingTimeout: 60000,  
+  pingInterval: 25000  
 });
 
 // Attach the Socket.IO instance to the Express app object
-// This allows route controllers to emit real-time events (e.g., req.app.get('io').emit(...))
 app.set('io', io);
 
 // ==========================================
@@ -53,7 +51,6 @@ io.on('connection', (socket) => {
   socket.on('join-canteen', (canteenId) => {
     socket.join(`canteen:${canteenId}`);
     console.log(`📡 [SOCKET.IO] Socket ${socket.id} joined room -> canteen:${canteenId}`);
-    console.log(`Current rooms for ${socket.id}:`, Array.from(socket.rooms));
   });
 
   socket.on('leave-canteen', (canteenId) => {
@@ -62,7 +59,7 @@ io.on('connection', (socket) => {
   });
 
   /**
-   * Student Rooms: Subscribes a student's client to real-time order status and debt notifications.
+   * Student Rooms: Subscribes a student's client to real-time order status and notifications.
    */
   socket.on('join-student', (studentId) => {
     socket.join(`student:${studentId}`);
@@ -83,16 +80,41 @@ io.on('connection', (socket) => {
 // DATABASE CONNECTION & SERVER BOOTSTRAP
 // ==========================================
 
-mongoose.connect(DB_URL)
-  .then(() => {
+// 1. Set up connection event listeners to monitor the wire
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️ [MongoDB] Connection lost. Driver is attempting to auto-reconnect...');
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('🔄 [MongoDB] Successfully reconnected to the database!');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ [MongoDB] Runtime connection error:', err);
+});
+
+// 2. Establish the resilient connection
+const startServer = async () => {
+  try {
+    await mongoose.connect(DB_URL, {
+      
+      // Connection timeouts (Treats the "hanging" symptoms)
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      serverSelectionTimeoutMS: 5000
+    });
+
     console.log('✅ Successfully connected to MongoDB Database!');
 
-    // Only start listening for requests AFTER the database connection is secure
+    // 3. Only start listening for requests AFTER the database connection is secure
     httpServer.listen(PORT, () => {
       console.log(`🚀 Backend running on http://localhost:${PORT}`);
     });
-  })
-  .catch((error) => {
-    console.log('❌ Error connecting to MongoDB:');
-    console.error(error);
-  });
+
+  } catch (error) {
+    console.error('❌ Error connecting to MongoDB on startup:', error);
+    process.exit(1); // Force the container to crash so the host restarts it cleanly
+  }
+};
+
+startServer();
