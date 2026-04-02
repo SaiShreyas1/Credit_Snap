@@ -66,6 +66,11 @@ export default function OwnerProfile() {
   };
 
   const handleSaveClick = async () => {
+    if (!editForm.adminName || editForm.adminName.trim() === '') {
+      showAlert("Validation Error", "name cannot be empty", "warning");
+      return;
+    }
+
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       const payload = {

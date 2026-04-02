@@ -282,6 +282,20 @@ exports.updateMyProfile = async (req, res) => {
   try {
     const user = req.user;
     
+    // Check if name is explicitly set to empty
+    const providedName = req.body.adminName !== undefined ? req.body.adminName : req.body.name;
+    if (providedName !== undefined && providedName.trim() === '') {
+      return res.status(400).json({ status: 'fail', message: 'name cannot be empty' });
+    }
+
+    // Check for duplicate phone number from other users
+    if (req.body.phone && req.body.phone !== user.phoneNo) {
+      const existingPhoneUser = await User.findOne({ phoneNo: req.body.phone, _id: { $ne: user._id } });
+      if (existingPhoneUser) {
+        return res.status(400).json({ status: 'fail', message: 'mobile number already exists' });
+      }
+    }
+    
     if (req.body.adminName) user.name = req.body.adminName;
     if (req.body.name) user.name = req.body.name;
     if (req.body.phone) user.phoneNo = req.body.phone;
