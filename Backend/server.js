@@ -31,6 +31,9 @@ const io = new Server(httpServer, {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
   },
+  // --- ADDED NETWORK TIMEOUT FIXES ---
+  pingTimeout: 60000,  // How many ms without a pong packet to consider the connection closed
+  pingInterval: 25000  // How many ms before sending a new ping packet
 });
 
 // Attach the Socket.IO instance to the Express app object
