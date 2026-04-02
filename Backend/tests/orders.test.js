@@ -151,6 +151,51 @@ describe('Order Processing API', () => {
       expect(res.statusCode).toBe(400);
       expect(res.body.message).toMatch(/exceed your ₹3000 debt/i);
     });
+
+    it('should refuse order if the total amount is negative (Exploit Attempt)', async () => {
+      const orderData = {
+        canteenId: canteen._id,
+        items: [{ name: 'Hacked Samosa', quantity: 1, price: -50 }],
+        totalAmount: -50
+      };
+
+      const res = await request(app)
+        .post('/api/orders/place')
+        .set('Authorization', studentToken)
+        .send(orderData);
+
+      // We expect the backend to block negative total amounts
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('should refuse order if items array is empty', async () => {
+      const orderData = {
+        canteenId: canteen._id,
+        items: [],
+        totalAmount: 50
+      };
+
+      const res = await request(app)
+        .post('/api/orders/place')
+        .set('Authorization', studentToken)
+        .send(orderData);
+
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('should refuse order if total amount is not provided', async () => {
+      const orderData = {
+        canteenId: canteen._id,
+        items: [{ name: 'Samosa', quantity: 1, price: 15 }]
+      };
+
+      const res = await request(app)
+        .post('/api/orders/place')
+        .set('Authorization', studentToken)
+        .send(orderData);
+
+      expect(res.statusCode).toBe(400);
+    });
   });
 
   describe('GET Order Retrievals', () => {
@@ -279,6 +324,26 @@ describe('Order Processing API', () => {
 
       expect(res.statusCode).toBe(400);
       expect(res.body.message).toMatch(/only cancel orders that are still pending/i);
+    });
+
+    it('should return 404/400 if trying to update an undefined/invalid order', async () => {
+      const res = await request(app)
+        .patch('/api/orders/update-status')
+        .set('Authorization', ownerToken)
+        .send({ orderId: new mongoose.Types.ObjectId(), status: 'accepted' });
+
+      expect(res.statusCode).toBe(404);
+      expect(res.body.message).toMatch(/Order not found/i);
+    });
+
+    it('should prevent setting an invalid/hacked status', async () => {
+      const res = await request(app)
+        .patch('/api/orders/update-status')
+        .set('Authorization', ownerToken)
+        .send({ orderId: order._id, status: 'hacked_status_123' });
+
+      // Mongoose should reject enums that are not pending/accepted/rejected/cancelled/archived
+      expect(res.statusCode).toBe(400);
     });
   });
 });

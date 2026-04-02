@@ -19,6 +19,14 @@ exports.createOrder = async (req, res) => {
     // Explicitly cast to Number to prevent Javascript string concatenation bugs
     const numTotalAmount = Number(totalAmount);
 
+    if (isNaN(numTotalAmount) || numTotalAmount <= 0) {
+      return res.status(400).json({ status: 'fail', message: 'Order total amount must be a valid number greater than zero.' });
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ status: 'fail', message: 'Order must contain at least one item.' });
+    }
+
     // 1. SAFETY CHECK: Enforce Per-Canteen Credit Limits before creating the order
     const student = await User.findById(req.user.id);
     const targetCanteen = await Canteen.findById(canteenId);

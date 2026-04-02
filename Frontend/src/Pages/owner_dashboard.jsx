@@ -167,6 +167,18 @@ export default function OwnerDashboard() {
   };
 
   // ==========================================
+  // SORTING LOGIC
+  // ==========================================
+  const sortedOrders = [...orders].sort((a, b) => {
+    // 1. Put pending orders at the top
+    if (a.status === 'pending' && b.status !== 'pending') return -1;
+    if (a.status !== 'pending' && b.status === 'pending') return 1;
+    
+    // 2. Sort by newest date
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+  // ==========================================
   //6. RENDER UI
   // ==========================================
   return (
@@ -406,7 +418,7 @@ export default function OwnerDashboard() {
             </p>
           </div>
         </div>
-      ) : orders.length === 0 ? (
+      ) : sortedOrders.length === 0 ? (
         <div className="empty-state-wrapper">
           <h2 className="empty-text">No Current Orders</h2>
         </div>
@@ -417,7 +429,7 @@ export default function OwnerDashboard() {
             <button className="clear-all-btn" onClick={clearAllOrders}>Clear All</button>
           </div>
 
-          {orders.map((order) => (
+          {sortedOrders.map((order) => (
             <div className="order-card" key={order._id}>
               {/*We shall show X button only if it's already processed (debt or rejected*/}
               {order.status !== 'pending' && (
