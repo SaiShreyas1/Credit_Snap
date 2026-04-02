@@ -95,6 +95,11 @@ export default function StudProfile() {
       return;
     }
 
+    if (editForm.phone && !/^\d{10}$/.test(editForm.phone)) {
+      showAlert("Validation Error", "number of digits in phone number is not equal to 10", "warning");
+      return;
+    }
+
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/api/users/update-my-profile`, {

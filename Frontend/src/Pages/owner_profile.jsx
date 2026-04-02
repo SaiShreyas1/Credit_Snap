@@ -71,6 +71,11 @@ export default function OwnerProfile() {
       return;
     }
 
+    if (editForm.phone && !/^\d{10}$/.test(editForm.phone)) {
+      showAlert("Validation Error", "number of digits in phone number is not equal to 10", "warning");
+      return;
+    }
+
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       const payload = {

@@ -288,6 +288,11 @@ exports.updateMyProfile = async (req, res) => {
       return res.status(400).json({ status: 'fail', message: 'name cannot be empty' });
     }
 
+    // Check if phone number has exactly 10 digits
+    if (req.body.phone && !/^\d{10}$/.test(req.body.phone)) {
+      return res.status(400).json({ status: 'fail', message: 'number of digits in phone number is not equal to 10' });
+    }
+
     // Check for duplicate phone number from other users
     if (req.body.phone && req.body.phone !== user.phoneNo) {
       const existingPhoneUser = await User.findOne({ phoneNo: req.body.phone, _id: { $ne: user._id } });
