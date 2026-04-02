@@ -1,9 +1,13 @@
+const mongoose = require('mongoose');
 const request = require('supertest');
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
 const app = require('../app');
-const setup = require('./setup');
 const User = require('../models/userModel');
 const Canteen = require('../models/canteenModel');
 const MenuItem = require('../models/menuItemModel');
+const Debt = require('../models/debtModel');
 const jwt = require('jsonwebtoken');
 
 // Setup environment variable for test
@@ -14,7 +18,14 @@ let ownerUser;
 let testCanteen;
 
 beforeAll(async () => {
-  await setup.connect();
+  // Connect to a specific test database using Atlas URI or local fallback
+  let dbUri = process.env.MONGO_URI_TEST;
+  if (!dbUri && process.env.MONGO_URI) {
+    dbUri = process.env.MONGO_URI.replace('CreditSnap?', 'CreditSnap_Test?');
+  } else if (!dbUri) {
+    dbUri = 'mongodb://127.0.0.1:27017/creditsnap_test_canteen';
+  }
+  await mongoose.connect(dbUri, { serverSelectionTimeoutMS: 5000 });
   
   // Create an owner user
   ownerUser = await User.create({
@@ -44,7 +55,11 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
-  await setup.closeDatabase();
+  // Drop the test database and close the connection
+  if (mongoose.connection.db) {
+    await mongoose.connection.db.dropDatabase();
+  }
+  await mongoose.connection.close();
 });
 
 describe('Canteen & Menu API Tests', () => {
@@ -181,6 +196,102 @@ describe('Canteen & Menu API Tests', () => {
       const checkItem = await MenuItem.findById(menuItem._id);
       expect(checkItem).toBeNull();
     });
+    
+    it('should return 404 for a non-existent menu item', async () => {
+      const fakeId = new mongoose.Types.ObjectId();
+      const res = await request(app)
+        .delete(`/api/canteens/menu/${fakeId}`)
+        .set('Authorization', `Bearer ${ownerToken}`);
+      expect(res.statusCode).toEqual(404);
+      expect(res.body.message).toMatch(/not found/i);
+    });
   });
 
+  describe('GET /api/canteens/:canteenId/menu', () => {
+    it('should fetch the menu for a given canteen successfully', async () => {
+      await MenuItem.create({
+        name: 'Cold Coffee',
+        price: 45,
+        category: 'Beverage',
+        canteenId: testCanteen._id
+      });
+      const res = await request(app).get(`/api/canteens/${testCanteen._id}/menu`);
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.status).toBe('success');
+      expect(res.body.data.menu.length).toBeGreaterThan(0);
+      expect(res.body.data.menu[0].name).toBe('Cold Coffee');
+    });
+  });
+
+  describe('GET /api/canteens/my', () => {
+    it("should fetch the owner's canteen profile", async () => {
+      const res = await request(app)
+        .get('/api/canteens/my')
+        .set('Authorization', `Bearer ${ownerToken}`);
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.data.canteen.name).toBe('Test Canteen');
+    });
+
+    it('should return 404 if the owner does not have a canteen', async () => {
+      // Create user without canteen
+      const newOwner = await User.create({
+        name: 'No Canteen Owner',
+        email: 'nocanteen@test.com',
+        password: 'password123',
+        role: 'owner',
+        isVerified: true,
+        phoneNo: '1111111111'
+      });
+      const newToken = jwt.sign({ id: newOwner._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      
+      const res = await request(app)
+        .get('/api/canteens/my')
+        .set('Authorization', `Bearer ${newToken}`);
+      expect(res.statusCode).toEqual(404);
+      expect(res.body.message).toMatch(/No canteen found/i);
+    });
+  });
+
+  describe('PATCH /api/canteens/my/default-limit', () => {
+    it('should successfully update the default limit', async () => {
+      const res = await request(app)
+        .patch('/api/canteens/my/default-limit')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ defaultLimit: 4000 });
+      
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.data.canteen.defaultLimit).toBe(4000);
+    });
+
+    it('should fail if limit is non-numeric or negative', async () => {
+      const res = await request(app)
+        .patch('/api/canteens/my/default-limit')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ defaultLimit: -500 });
+      
+      expect(res.statusCode).toEqual(400);
+      expect(res.body.message).toMatch(/valid numeric limit/i);
+    });
+
+    it('should fail if the limit is lower than an existing student debt', async () => {
+      // Insert a dummy debt that is higher than new limit
+      await Debt.create({
+        student: ownerUser._id, // Just using any valid object ID for student
+        canteen: testCanteen._id,
+        amountOwed: 3000,
+        limit: 5000
+      });
+
+      const res = await request(app)
+        .patch('/api/canteens/my/default-limit')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ defaultLimit: 2000 });
+
+      expect(res.statusCode).toEqual(400);
+      expect(res.body.message).toMatch(/Cannot set limit/i);
+      
+      // Cleanup for other tests if necessary
+      await Debt.deleteMany({});
+    });
+  });
 });
