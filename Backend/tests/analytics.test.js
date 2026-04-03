@@ -225,8 +225,6 @@ describe('Analytics Controller API', () => {
         totalAmount: 100,
         status: 'accepted'
       });
-
-      // Insert valid orders for canteen 2
       await Order.create({
         student: student._id,
         canteen: canteen2._id,
@@ -234,14 +232,10 @@ describe('Analytics Controller API', () => {
         totalAmount: 200,
         status: 'accepted'
       });
-
-      // Fetch Canteen 1 data
       const res1 = await request(app).get('/api/analytics/owner').set('Authorization', owner1Token);
       expect(res1.body.data.popularOrdersData[0].name).toBe('Canteen1 Burger');
       expect(res1.body.data.popularOrdersData).toHaveLength(1);
       expect(res1.body.data.earningsData.reduce((acc, d) => acc + d.earnings, 0)).toBe(100);
-
-      // Fetch Canteen 2 data
       const res2 = await request(app).get('/api/analytics/owner').set('Authorization', owner2Token);
       expect(res2.body.data.popularOrdersData[0].name).toBe('Canteen2 Pizza');
       expect(res2.body.data.popularOrdersData).toHaveLength(1);
