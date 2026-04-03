@@ -25,10 +25,10 @@ exports.settleDebtPayment = async ({ debt, amountPaid, receiptLabel }) => {
     throw new Error(`Amount exceeds current debt! The maximum deduction is ₹${hydratedDebt.amountOwed}.`);
   }
 
-  hydratedDebt.amountOwed -= numericAmount;
+  hydratedDebt.amountOwed = Math.round((hydratedDebt.amountOwed - numericAmount) * 100) / 100;
   await hydratedDebt.save();
 
-  student.totalDebt = Math.max(0, student.totalDebt - numericAmount);
+  student.totalDebt = Math.round(Math.max(0, student.totalDebt - numericAmount) * 100) / 100;
   await student.save();
 
   await Order.create({
@@ -41,7 +41,7 @@ exports.settleDebtPayment = async ({ debt, amountPaid, receiptLabel }) => {
     }],
     totalAmount: numericAmount,
     status: 'accepted',
-    balanceSnapshot: Math.max(0, hydratedDebt.amountOwed)
+    balanceSnapshot: Math.max(0, hydratedDebt.amountOwed) // already rounded properly above
   });
 
   return {

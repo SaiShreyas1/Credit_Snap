@@ -261,10 +261,15 @@ exports.getMyProfile = async (req, res) => {
       canteen = await Canteen.findOne({ ownerId: user._id }).select('+razorpayMerchantKeySecretEncrypted');
     }
 
+    let serializedUser = user.toObject ? user.toObject() : { ...user };
+    if (serializedUser.totalDebt !== undefined) {
+      serializedUser.totalDebt = Math.round(serializedUser.totalDebt * 100) / 100;
+    }
+
     res.status(200).json({
       status: 'success',
       data: {
-        user,
+        user: serializedUser,
         canteen: serializeOwnerCanteen(canteen)
       }
     });

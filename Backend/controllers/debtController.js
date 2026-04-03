@@ -25,7 +25,13 @@ exports.getActiveDebts = async (req, res) => {
       amountOwed: { $gt: 0 }
     }).populate('student', 'name rollNo phoneNo email limit');
 
-    res.status(200).json({ status: 'success', data: activeDebts });
+    const sanitizedDebts = activeDebts.map(d => {
+      const dict = d.toObject();
+      dict.amountOwed = Math.round(dict.amountOwed * 100) / 100;
+      return dict;
+    });
+
+    res.status(200).json({ status: 'success', data: sanitizedDebts });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
@@ -215,7 +221,13 @@ exports.getMyDebts = async (req, res) => {
       amountOwed: { $gt: 0 }
     }).populate('canteen', 'name');
 
-    res.status(200).json({ status: 'success', data: debts });
+    const sanitizedDebts = debts.map(d => {
+      const dict = d.toObject();
+      dict.amountOwed = Math.round(dict.amountOwed * 100) / 100;
+      return dict;
+    });
+
+    res.status(200).json({ status: 'success', data: sanitizedDebts });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }

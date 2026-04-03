@@ -333,7 +333,7 @@ export default function OwnerHistory() {
 
                 {activeTab === 'debt' && (
                   <div className="text-sm font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                    Remaining Debt: <span className="font-bold text-red-500">₹{record.remainingDebt}</span>
+                    Remaining Debt: <span className="font-bold text-red-500">₹{typeof record.remainingDebt === 'number' ? (Math.round(record.remainingDebt * 100) / 100) : record.remainingDebt}</span>
                   </div>
                 )}
 
