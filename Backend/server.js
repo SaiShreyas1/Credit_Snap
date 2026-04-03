@@ -30,7 +30,7 @@ const io = new Server(httpServer, {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
   },
-  // Network timeout fixes for WebSockets
+  // 🛡️ Network timeout fixes for WebSockets (Keeps connection alive when PC is closed)
   pingTimeout: 60000,  
   pingInterval: 25000  
 });
@@ -98,10 +98,14 @@ const startServer = async () => {
   try {
     await mongoose.connect(DB_URL, {
       
-      // Connection timeouts (Treats the "hanging" symptoms)
+      // Basic Connection timeouts
       connectTimeoutMS: 10000,
       socketTimeoutMS: 45000,
-      serverSelectionTimeoutMS: 5000
+      serverSelectionTimeoutMS: 5000,
+
+      // 🛡️ THE MODERN FIREWALL BYPASS FIXES (MongoDB Atlas vs IITK Network) 🛡️
+      heartbeatFrequencyMS: 10000, // Sends a ping every 10 seconds to keep the network path wide open
+      maxIdleTimeMS: 60000         // Destroys and recreates idle connections before the firewall can trap them
     });
 
     console.log('✅ Successfully connected to MongoDB Database!');
@@ -113,7 +117,7 @@ const startServer = async () => {
 
   } catch (error) {
     console.error('❌ Error connecting to MongoDB on startup:', error);
-    process.exit(1); // Force the container to crash so the host restarts it cleanly
+    process.exit(1); // Force the container to crash so the host restarts it cleanly via PM2
   }
 };
 
