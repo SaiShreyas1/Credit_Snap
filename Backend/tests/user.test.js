@@ -60,14 +60,14 @@ describe('User Authentication API', () => {
       expect(res.body.status).toBe('success');
       expect(res.body.message).toMatch(/verify your account/i);
 
-      // Verify user was saved in DB
+      //Verify user was saved in DB
       const user = await User.findOne({ email: baseStudent.email });
       expect(user).toBeTruthy();
       expect(user.isVerified).toBe(false);
       expect(user.role).toBe('student');
       expect(user.emailVerificationToken).toBeDefined();
 
-      // Ensure email utility was called
+      //Ensure email utility was called
       expect(sendEmail).toHaveBeenCalledTimes(1);
     });
 
@@ -125,7 +125,7 @@ describe('User Authentication API', () => {
 
   describe('GET /api/users/verifyEmail/:token', () => {
     it('should successfully verify a valid token', async () => {
-      // Create an unverified user
+      //Create an unverified user
       const token = 'valid-test-token';
       const user = await User.create({ 
         ...baseStudent, 
@@ -138,7 +138,7 @@ describe('User Authentication API', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.body.status).toBe('success');
-      expect(res.body.token).toBeDefined(); // JWT is returned
+      expect(res.body.token).toBeDefined(); //JWT is returned
       expect(res.body.data.user.isVerified).toBe(true);
 
       const verifiedUser = await User.findById(user._id);
@@ -160,7 +160,7 @@ describe('User Authentication API', () => {
     let mockUser;
 
     beforeEach(async () => {
-      // Create a verified user before each login test
+      //Create a verified user before each login test
       mockUser = await User.create({ ...baseStudent, isVerified: true });
     });
 
@@ -233,12 +233,12 @@ describe('User Authentication API', () => {
       expect(res.body.status).toBe('success');
       expect(res.body.message).toMatch(/Token sent to email/i);
 
-      // Verify user has the hashed token and expiry set
+      //Verify user has the hashed token and expiry set
       const updatedUser = await User.findById(mockUser._id);
       expect(updatedUser.passwordResetToken).toBeDefined();
       expect(updatedUser.passwordResetExpires).toBeDefined();
 
-      // Ensure mock email was triggered
+      //Ensure mock email was triggered
       expect(sendEmail).toHaveBeenCalledTimes(1);
     });
 

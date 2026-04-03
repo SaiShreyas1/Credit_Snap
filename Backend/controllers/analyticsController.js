@@ -122,7 +122,7 @@ exports.getOwnerAnalytics = async (req, res) => {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const earningsData = earningsRaw.map(record => ({
       month: monthNames[record._id - 1],
-      earnings: record.earnings
+      earnings: Math.round(record.earnings * 100) / 100
     }));
 
     // ==========================================

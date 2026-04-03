@@ -264,6 +264,9 @@ exports.updateOrderStatus = async (req, res) => {
         },
         { upsert: true, new: true }                         
       );
+
+      // 3. Freeze the remaining debt snapshot natively into the order itself
+      order.balanceSnapshot = currentCanteenDebt + order.totalAmount;
     }
 
     order.status = status;

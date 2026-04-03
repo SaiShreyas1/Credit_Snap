@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles --testTimeout=5000",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:payment": "cross-env NODE_ENV=test jest --runInBand --testTimeout=5000 tests/paymentController.test.js"
   },
   "keywords": [],
   "author": "",

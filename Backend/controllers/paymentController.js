@@ -4,6 +4,7 @@ const Razorpay = require('razorpay');
 const Canteen = require('../models/canteenModel');
 const Debt = require('../models/debtModel');
 const Payment = require('../models/paymentModel');
+const Order = require('../models/ordersModel');
 const { settleDebtPayment } = require('../utils/debtPayments');
 
 // ==========================================
@@ -337,5 +338,56 @@ exports.verifyDebtPayment = async (req, res) => {
 
     console.error('[Payment Controller] ❌ Razorpay verifyDebtPayment error:', error);
     res.status(400).json({ status: 'fail', message });
+  }
+};
+
+/**
+ * @desc    Records an incomplete transaction natively as a failed Order when the Razorpay widget aborts.
+ * @route   POST /api/payments/record-failure
+ * @access  Private (Student)
+ */
+exports.recordPaymentFailure = async (req, res) => {
+  try {
+    const { paymentRecordId, reason, error_description } = req.body;
+    
+    if (paymentRecordId) {
+      const payment = await Payment.findOneAndUpdate(
+        { _id: paymentRecordId, status: { $ne: 'paid' } },
+        { 
+          $set: { 
+            status: 'failed',
+            failureReason: reason || error_description || 'Payment cancelled or failed at gateway.' 
+          } 
+        },
+        { new: true }
+      ).catch(() => null);
+
+      // Create a matching 'rejected' Order document so history UIs catch it natively
+      if (payment && payment.providerOrderId) {
+        const orderExists = await Order.findOne({ transactionId: payment.providerOrderId });
+        if (!orderExists) {
+          await Order.create({
+            student: payment.student,
+            canteen: payment.canteen,
+            items: [{ name: 'Online Debt Payment', quantity: 1, price: payment.amount }],
+            totalAmount: payment.amount,
+            status: 'rejected',
+            failureReason: payment.failureReason,
+            transactionId: payment.providerOrderId
+          });
+          
+          const io = req.app.get('io');
+          if (io) {
+            io.to(`student:${payment.student}`).emit('orderStatusUpdated');
+            io.to(`canteen:${payment.canteen}`).emit('orderStatusUpdated');
+          }
+        }
+      }
+    }
+    
+    res.status(200).json({ status: 'success', message: 'Failure recorded successfully.' });
+  } catch (error) {
+    console.error('[Payment Controller] ❌ recordPaymentFailure error:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to record payment failure.' });
   }
 };

@@ -55,6 +55,16 @@ export default function StudHistory() {
   const [historyData, setHistoryData] = useState({ orders: [], debts: [] });
   const [loading, setLoading] = useState(true);
 
+  const [expandedRecords, setExpandedRecords] = useState(new Set());
+  const toggleRecord = (id) => {
+    setExpandedRecords(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
+      return newSet;
+    });
+  };
+
   // Refs for detecting clicks outside of dropdown menus
   const sortRef = useRef(null);
   const filterRef = useRef(null);
@@ -131,12 +141,18 @@ export default function StudHistory() {
             canteen: order.canteen?.name || 'Unknown Canteen',
             amount: order.totalAmount,
             date: `${day}-${month}-${year}`,
-            time: timeStr
+            time: timeStr,
+            status: order.status,
+            failureReason: order.failureReason || 'Verification failed.',
+            transactionId: order.transactionId || null
           };
 
           // Route to the "Transactions" array
           if (isDebtPayment) {
-            formattedDebts.push(baseData);
+            formattedDebts.push({
+              ...baseData,
+              paymentType: firstItemName === 'Offline Debt Payment' ? 'Offline' : 'Online'
+            });
             return;
           }
 
@@ -387,54 +403,94 @@ export default function StudHistory() {
           
           /* Data List */
           list.map((record) => (
-            <div key={record.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition hover:shadow-md">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-1">
-                  <h3 className="text-xl font-medium text-gray-900">{record.canteen}</h3>
+            <div key={record.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col transition hover:shadow-md">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-1">
+                    <h3 className="text-xl font-medium text-gray-900">{record.canteen}</h3>
+                    
+                    {/* Status Badges */}
+                    {activeTab === 'order' && record.status && (
+                      <span className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md uppercase tracking-wider border ${
+                        record.status === 'Accepted'
+                          ? 'bg-green-50 text-green-700 border-green-200'
+                          : record.status === 'Cancelled'
+                            ? 'bg-gray-100 text-gray-700 border-gray-200'
+                            : 'bg-red-50 text-red-700 border-red-200'
+                      }`}>
+                        {record.status}
+                      </span>
+                    )}
+                    {activeTab === 'debt' && (
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md uppercase tracking-wider border ${
+                          record.status === 'rejected'
+                            ? 'bg-red-50 text-red-700 border-red-200'
+                            : 'bg-green-50 text-green-700 border-green-200'
+                        }`}>
+                          {record.status === 'rejected' ? 'Payment Rejected' : 'Payment Received'}
+                        </span>
+                        {record.status !== 'rejected' && record.paymentType === 'Offline' && (
+                          <span className="px-2.5 py-0.5 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-md uppercase tracking-wider border border-slate-200">
+                            Offline
+                          </span>
+                        )}
+                        {record.status !== 'rejected' && record.paymentType === 'Online' && (
+                          <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-bold rounded-md uppercase tracking-wider border border-blue-200">
+                            Online
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sub-text (Items ordered OR Payment confirmation) */}
+                  {activeTab === 'order' ? (
+                    <p className="text-sm text-gray-600 font-medium mt-3 bg-gray-50 px-3 py-2 rounded-lg inline-flex items-center border border-gray-100">
+                      <ShoppingBag className="w-4 h-4 mr-2 text-gray-400" /> {record.items}
+                    </p>
+                  ) : (
+                    <p className={`text-sm font-medium mt-2 ${record.status === 'rejected' ? 'text-red-500' : 'text-gray-500'}`}>
+                      {record.status === 'rejected'
+                        ? `Transaction aborted: ${record.failureReason}`
+                        : `Payment successfully processed to ${record.canteen}`}
+                    </p>
+                  )}
+                </div>
+
+                {/* Amount and Timestamp */}
+                <div className="flex flex-col items-start md:items-end gap-2 w-full md:w-auto">
+                  <div className="text-[15px] font-medium text-gray-700">
+                    {activeTab === 'order' ? 'Total:' : (record.status === 'rejected' ? 'Amount Rejected:' : 'Amount Paid:')} <span className={`font-bold ${
+                      activeTab === 'debt'
+                        ? (record.status === 'rejected' ? 'text-red-600' : 'text-green-600')
+                        : 'text-blue-600'
+                    }`}>₹{record.amount}</span>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-sm text-gray-500 mt-1 font-medium bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg">
+                    <span className="flex items-center"><Calendar className="w-4 h-4 mr-1.5 text-gray-400" /> {record.date}</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="flex items-center"><Clock className="w-4 h-4 mr-1.5 text-gray-400" /> {record.time}</span>
+                  </div>
                   
-                  {/* Status Badges */}
-                  {activeTab === 'order' && record.status && (
-                    <span className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md uppercase tracking-wider border ${
-                      record.status === 'Accepted'
-                        ? 'bg-green-50 text-green-700 border-green-200'
-                        : record.status === 'Cancelled'
-                          ? 'bg-gray-100 text-gray-700 border-gray-200'
-                          : 'bg-red-50 text-red-700 border-red-200'
-                    }`}>
-                      {record.status}
-                    </span>
-                  )}
-                  {activeTab === 'debt' && (
-                    <span className="px-2.5 py-0.5 bg-green-50 text-green-700 text-[11px] font-bold rounded-md uppercase tracking-wider border border-green-200">
-                      Payment Received
-                    </span>
+                  {activeTab === 'debt' && record.paymentType === 'Online' && record.status !== 'rejected' && record.transactionId && (
+                    <button onClick={() => toggleRecord(record.id)} className="mt-2 text-gray-500 hover:text-gray-700 transition flex items-center text-sm font-medium">
+                      Transaction ID <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${expandedRecords.has(record.id) ? 'rotate-180' : ''}`} />
+                    </button>
                   )}
                 </div>
-
-                {/* Sub-text (Items ordered OR Payment confirmation) */}
-                {activeTab === 'order' ? (
-                  <p className="text-sm text-gray-600 font-medium mt-3 bg-gray-50 px-3 py-2 rounded-lg inline-flex items-center border border-gray-100">
-                    <ShoppingBag className="w-4 h-4 mr-2 text-gray-400" /> {record.items}
-                  </p>
-                ) : (
-                  <p className="text-sm text-gray-500 font-medium mt-2">
-                    Payment successfully processed to {record.canteen}
-                  </p>
-                )}
               </div>
-
-              {/* Amount and Timestamp */}
-              <div className="flex flex-col items-start md:items-end gap-2 w-full md:w-auto">
-                <div className="text-[15px] font-medium text-gray-700">
-                  {activeTab === 'order' ? 'Total:' : 'Amount Paid:'} <span className={`font-bold ${activeTab === 'debt' ? 'text-green-600' : 'text-blue-600'}`}>₹{record.amount}</span>
+              
+              {/* Expandable Section */}
+              {expandedRecords.has(record.id) && (
+                <div className="mt-4 pt-4 border-t border-gray-100 w-full animate-in fade-in slide-in-from-top-2 transition-all">
+                  <div className="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
+                     <span className="text-gray-500 text-sm font-medium">Razorpay Transaction ID</span>
+                     <span className="font-mono text-sm text-gray-800 bg-white px-3 py-1.5 rounded shadow-sm border border-gray-200">{record.transactionId}</span>
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-3 text-sm text-gray-500 mt-1 font-medium bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg">
-                  <span className="flex items-center"><Calendar className="w-4 h-4 mr-1.5 text-gray-400" /> {record.date}</span>
-                  <span className="text-gray-300">•</span>
-                  <span className="flex items-center"><Clock className="w-4 h-4 mr-1.5 text-gray-400" /> {record.time}</span>
-                </div>
-              </div>
+              )}
             </div>
           ))
         )}
