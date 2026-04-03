@@ -4,10 +4,18 @@ import axios from 'axios';
 import { History, Search, ChevronDown, CheckCircle, ArrowUpDown, ShoppingBag, Calendar, Clock } from 'lucide-react';
 import { io } from 'socket.io-client';
 
-// Helper to convert DD-MM-YYYY HH:MM PM to a sortable JS Date object
+// Helper to convert DD-MM-YYYY and hh:mm AM/PM to a sortable JS Date object
 const parseDateTime = (dateStr, timeStr) => {
   const [day, month, year] = dateStr.split('-');
-  return new Date(`${year}-${month}-${day} ${timeStr}`);
+  // Parse 12-hour time string manually to avoid cross-browser Date parsing issues
+  const timeParts = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!timeParts) return new Date(`${year}-${month}-${day}`);
+  let hours = parseInt(timeParts[1], 10);
+  const minutes = parseInt(timeParts[2], 10);
+  const period = timeParts[3].toUpperCase();
+  if (period === 'AM' && hours === 12) hours = 0;
+  if (period === 'PM' && hours !== 12) hours += 12;
+  return new Date(year, month - 1, day, hours, minutes);
 };
 
 export default function OwnerHistory() {
@@ -20,7 +28,7 @@ export default function OwnerHistory() {
   const [filterOpen, setFilterOpen] = useState(false);
 
   // Sorting and Filtering States
-  const [sortConfig, setSortConfig] = useState('default');
+  const [sortConfig, setSortConfig] = useState('date_desc');
   const [filterAmount, setFilterAmount] = useState({ min: '', max: '' });
   const [filterDate, setFilterDate] = useState({ start: '', end: '' });
 
@@ -156,22 +164,25 @@ export default function OwnerHistory() {
     return matchesSearch && matchesAmount && matchesDate;
   });
 
-  if (sortConfig !== 'default') {
-    list = [...list].sort((a, b) => {
-      if (sortConfig.includes('date')) {
-        const dateA = parseDateTime(a.date, a.time);
-        const dateB = parseDateTime(b.date, b.time);
-        return sortConfig === 'date_desc' ? dateB - dateA : dateA - dateB;
-      } else if (sortConfig.includes('amount')) {
-        return sortConfig === 'amount_desc' ? b.amount - a.amount : a.amount - b.amount;
-      }
-      return 0;
-    });
-  }
+  list = [...list].sort((a, b) => {
+    if (sortConfig === 'date_desc' || sortConfig === 'date_asc') {
+      const dateA = parseDateTime(a.date, a.time);
+      const dateB = parseDateTime(b.date, b.time);
+      return sortConfig === 'date_desc' ? dateB - dateA : dateA - dateB;
+    } else if (sortConfig === 'amount_desc') {
+      return b.amount - a.amount;
+    } else if (sortConfig === 'amount_asc') {
+      return a.amount - b.amount;
+    }
+    // fallback: newest first
+    const dateA = parseDateTime(a.date, a.time);
+    const dateB = parseDateTime(b.date, b.time);
+    return dateB - dateA;
+  });
 
   const getSortText = () => {
-    if (sortConfig === 'date_desc') return "Recent (Newest First)";
-    if (sortConfig === 'date_asc') return "Recent (Oldest First)";
+    if (sortConfig === 'date_desc') return "Newest First";
+    if (sortConfig === 'date_asc') return "Oldest First";
     if (sortConfig === 'amount_desc') return "Amount: High → Low";
     if (sortConfig === 'amount_asc') return "Amount: Low → High";
     return "Sort by";
@@ -242,9 +253,8 @@ export default function OwnerHistory() {
             </button>
             {sortOpen && (
               <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden py-2">
-                <div onClick={() => { setSortConfig('default'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'default' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Default</div>
-                <div onClick={() => { setSortConfig('date_desc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_desc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Recent (Newest First)</div>
-                <div onClick={() => { setSortConfig('date_asc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_asc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Recent (Oldest First)</div>
+                <div onClick={() => { setSortConfig('date_desc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_desc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Newest First</div>
+                <div onClick={() => { setSortConfig('date_asc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_asc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Oldest First</div>
                 <div onClick={() => { setSortConfig('amount_desc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'amount_desc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Amount: High → Low</div>
                 <div onClick={() => { setSortConfig('amount_asc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'amount_asc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Amount: Low → High</div>
               </div>
