@@ -1,591 +1,908 @@
-\documentclass[12pt,a4paper]{report}
+\documentclass[a4paper,12pt]{article}
 
-\usepackage{geometry}
-\geometry{a4paper, margin=1in}
-\usepackage{hyperref}
-\usepackage{graphicx}
-\usepackage{booktabs}
+\usepackage[utf8]{inputenc}
+\usepackage[top=1in,bottom=1in,left=1in,right=1in]{geometry}
+\usepackage{helvet}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref}
+\renewcommand{\familydefault}{\sfdefault}
 \usepackage{array}
-\usepackage{xcolor}
-\usepackage{titlesec}
-\usepackage{fancyhdr}
-\usepackage{tocloft}
 \usepackage{enumitem}
+\usepackage{tocloft}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage[table]{xcolor}
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{0pt}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{float}
 \usepackage{longtable}
-\usepackage[skins,breakable]{tcolorbox}
-\usepackage{mdframed}
+\usepackage{booktabs}
 
-\newtcolorbox{notebox}{colback=blue!5!white,colframe=blue!75!black,title=Note,fonttitle=\bfseries,arc=4pt,boxrule=1pt,width=\linewidth}
-\newtcolorbox{warningbox}{colback=red!5!white,colframe=red!75!black,title=Warning,fonttitle=\bfseries,arc=4pt,boxrule=1pt,width=\linewidth}
-\newtcolorbox{tipbox}{colback=green!5!white,colframe=green!50!black,title=Tip,fonttitle=\bfseries,arc=4pt,boxrule=1pt,width=\linewidth}
-
+% --- Header/Footer Setup ---
 \pagestyle{fancy}
 \fancyhf{}
-\fancyfoot[C]{\thepage}
-\fancyfoot[R]{CreditSnap User Manual v1.0}
-\renewcommand{\headrulewidth}{0.0pt}
-\renewcommand{\footrulewidth}{0.4pt}
+\setlength{\headheight}{15pt}
+\fancyhead[L]{\small\textit{User Manual for Credit Snap}}
+\fancyhead[R]{\small\textbf{Page-\thepage}}
+\renewcommand{\headrulewidth}{0.6pt}
 
+% --- Custom Colors ---
+\definecolor{headergray}{RGB}{80, 80, 80}
+\definecolor{linkblue}{RGB}{0, 0, 200}
+
+% --- Helper Commands ---
+\newcommand{\tocmain}[3]{%
+    \noindent
+    \textbf{\hyperref[#3]{\color{black} #1 \quad #2}} \dotfill \textbf{\pageref{#3}} \\[0.25cm]
+}
+\newcommand{\tocsub}[3]{%
+    \noindent\hspace*{0.8cm}\textbf{#1\ #2} \dotfill \textbf{\pageref{#3}} \\[0.2cm]
+}
+\newcommand{\tocsubsub}[3]{%
+    \noindent\hspace*{1.6cm}{#1\ #2} \dotfill {\pageref{#3}} \\[0.15cm]
+}
+
+% --- Gray Section Header ---
+\newcommand{\sectionbar}[1]{%
+    \colorbox{headergray}{%
+        \makebox[\dimexpr\textwidth-2\fboxsep][c]{%
+            \bfseries\textcolor{white}{\LARGE #1}%
+        }%
+    }%
+}
+
+\graphicspath{{./screenshots/}}
+
+% =============================================================
 \begin{document}
+\pagenumbering{roman}
+\thispagestyle{empty}
 
-\begin{titlepage}
-    \centering
-    \vspace*{2in}
-    {\Huge \bfseries CreditSnap User Manual \par}
-    \vspace{1.5in}
-    {\Large \bfseries Version 1.0 \par}
-    \vspace{0.5in}
-    {\large Date: April 2, 2026 \par}
-    \vspace{1.5in}
-    {\large \bfseries Group: Bug Dealers \par}
-    \vspace{0.25in}
-    {\large Course: CS253 \par}
-    \vspace{0.25in}
-    {\large IIT Kanpur \par}
-\end{titlepage}
+% ==================== COVER PAGE ====================
+\begin{flushright}
+    \noindent\rule{\linewidth}{4pt}\\[0.9cm]
+    {\Huge\bfseries User Manual}\\[1.1cm]
+    {\LARGE\bfseries for}\\[1.2cm]
+    {\Huge\bfseries Credit Snap}\\[1.2cm]
+    {\Large\bfseries Version 1.0}\\[1.6cm]
+    {\Large\bfseries Prepared by}
+\end{flushright}
 
-\tableofcontents
+\vspace{1.2cm}
+
+\noindent
+\begin{tabular*}{\textwidth}{@{} l @{\extracolsep{\fill}} r @{\hspace{1.2cm}} r @{}}
+\bfseries Group 6 : &
+\multicolumn{2}{r}{\bfseries\Large Group Name: \textit{Bug Dealers}} \\[1em]
+\textbf{Kasavajjala Sai Shreyas}        & \textbf{240530} & \href{mailto:ksshreyas24@iitk.ac.in}{ksshreyas24@iitk.ac.in} \\
+\textbf{Gade V S S R K Tejas Reddy}     & \textbf{240390} & \href{mailto:tejasreddy24@iitk.ac.in}{tejasreddy24@iitk.ac.in} \\
+\textbf{Palagiri Sathish Reddy}         & \textbf{240717} & \href{mailto:psreddy24@iitk.ac.in}{psreddy24@iitk.ac.in} \\
+\textbf{Kondreddy Sai Haneesh Reddy}    & \textbf{240551} & \href{mailto:haneesh24@iitk.ac.in}{haneesh24@iitk.ac.in} \\
+\textbf{Yerraiahgari Ram Charan Goud}   & \textbf{241212} & \href{mailto:ramcharang24@iitk.ac.in}{ramcharang24@iitk.ac.in} \\
+\textbf{Golla Lekha Harshaa}            & \textbf{240402} & \href{mailto:lekhahg24@iitk.ac.in}{lekhahg24@iitk.ac.in} \\
+\textbf{Yash Raj}                       & \textbf{241202} & \href{mailto:yashr24@iitk.ac.in}{yashr24@iitk.ac.in} \\
+\textbf{Korada Jayavardhan}             & \textbf{240554} & \href{mailto:jkorada24@iitk.ac.in}{jkorada24@iitk.ac.in} \\
+\textbf{Boppudi Sai Chaitanya}          & \textbf{240283} & \href{mailto:boppudis24@iitk.ac.in}{boppudis24@iitk.ac.in} \\
+\textbf{Panchaneni Ashwin Rao}          & \textbf{240727} & \href{mailto:ashwinr24@iitk.ac.in}{ashwinr24@iitk.ac.in} \\
+\end{tabular*}
+
+\vspace{2.5cm}
+
+\begin{center}
+\Large
+\begin{tabular}{r l}
+\bfseries Course:     & \bfseries CS253 \\[0.3cm]
+\bfseries Mentor TA:  & \bfseries George T L \\[0.3cm]
+\bfseries Date:       & \bfseries April 3, 2026
+\end{tabular}
+\end{center}
+
+\vfill
+\newpage
+\setcounter{page}{2}
+
+% ==================== TABLE OF CONTENTS ====================
+\phantomsection
+\label{toc}
+\vspace*{-1cm}
+\noindent
+\sectionbar{CONTENTS}
+
+\vspace{0.6cm}
+
+\noindent\textbf{\hyperref[toc]{\color{black}CONTENTS}} \dotfill \textbf{\textcolor{black}{\pageref{toc}}} \\[0.2cm]
+\noindent\textbf{\hyperref[rev]{\color{black}REVISIONS}} \dotfill \textbf{\textcolor{black}{\pageref{rev}}} \\[0.2cm]
+
+\tocmain{1}{INTRODUCTION}{sec:introduction}
+\tocsub{1.1}{PURPOSE}{sec:purpose}
+\tocsub{1.2}{SOFTWARE OVERVIEW}{sec:software}
+\tocsub{1.3}{PROJECT SCOPE}{sec:scope}
+\tocsub{1.4}{INTENDED AUDIENCE}{sec:audience}
+\tocsub{1.5}{DEFINITIONS AND ABBREVIATIONS}{sec:definitions}
+\tocsub{1.6}{SYSTEM REQUIREMENTS}{sec:sysreq}
+
+\tocmain{2}{LOGIN AND SIGNUP}{sec:login}
+\tocsub{2.1}{LOGIN}{sec:login-sub}
+\tocsub{2.2}{SIGN UP}{sec:signup}
+\tocsub{2.3}{FORGOT PASSWORD}{sec:forgotpw}
+
+\tocmain{3}{STUDENT MANUAL}{sec:student}
+\tocsub{3.1}{HOME PAGE}{sec:stud-home}
+\tocsub{3.2}{CANTEENS}{sec:stud-canteens}
+\tocsub{3.3}{MENU AND ORDERING}{sec:stud-menu}
+\tocsub{3.4}{VIEW DEBTS}{sec:stud-debts}
+\tocsub{3.5}{HISTORY}{sec:stud-history}
+\tocsub{3.6}{PROFILE}{sec:stud-profile}
+\tocsub{3.7}{HELP}{sec:stud-help}
+
+\tocmain{4}{CANTEEN OWNER MANUAL}{sec:owner}
+\tocsub{4.1}{ACTIVE ORDERS DASHBOARD}{sec:owner-orders}
+\tocsub{4.2}{EDIT MENU}{sec:owner-menu}
+\tocsub{4.3}{ACTIVE DEBTS}{sec:owner-debts}
+\tocsub{4.4}{ANALYTICS}{sec:owner-analytics}
+\tocsub{4.5}{HISTORY}{sec:owner-history}
+\tocsub{4.6}{PROFILE}{sec:owner-profile}
+
+\tocmain{5}{NOTIFICATIONS}{sec:notifications}
+
+\vspace{0.2cm}
+\noindent\hyperref[app:group_log]{\color{black}\textbf{APPENDIX A --- GROUP LOG}} \dotfill \textbf{\pageref{app:group_log}} \\[0.2cm]
+
 \newpage
 
-\chapter{Introduction}
+% ==================== REVISIONS ====================
+\phantomsection
+\label{rev}
+\vspace*{-1cm}
+\noindent
+\sectionbar{REVISIONS}
 
-\section{Purpose of this Manual}
-This manual teaches students and canteen owners how to use every feature of CreditSnap. No technical knowledge is required to read it. The text explains each button and menu on the platform.
+\vspace{0.6cm}
 
-\section{Intended Audience}
-This document serves two groups:
+\begin{center}
+\setlength{\arrayrulewidth}{1.2pt}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{|p{1.3cm}|p{5.7cm}|p{4.1cm}|p{3.2cm}|}
+\hline
+\rowcolor{gray!20}
+\textbf{Version} & \textbf{Primary Author(s)} & \textbf{Description of Version} & \textbf{Date Completed} \\ \hline
+v1.0 &
+Kasavajjala Sai Shreyas \newline
+Gade V S S R K Tejas Reddy \newline
+Palagiri Sathish Reddy \newline
+Kondreddy Sai Haneesh Reddy \newline
+Yerraiahgari Ram Charan Goud \newline
+Golla Lekha Harshaa \newline
+Yash Raj \newline
+Korada Jayavardhan \newline
+Boppudi Sai Chaitanya \newline
+Panchaneni Ashwin Rao
+& First version of the User Manual & 03/04/26 \\ \hline
+\end{tabular}
+\end{center}
+
+\newpage
+\pagenumbering{arabic}
+
+% =============================================================
+%  SECTION 1 — INTRODUCTION
+% =============================================================
+\phantomsection\label{sec:introduction}
+\sectionbar{1 INTRODUCTION}
+
+\vspace{0.6cm}
+
+\subsection*{1.1 PURPOSE}
+\phantomsection\label{sec:purpose}
+
+The aim of this guide is to inform the users of CreditSnap about the full functionality of the platform, detailing the operations that can be performed by each user type. By going through this guide, you will be adequately prepared to harness the entire potential of the website. The guide discusses every feature provided by the platform, describing the steps involved to perform a particular action. It also addresses common user challenges and provides clear solutions to overcome them.
+
+\subsection*{1.2 SOFTWARE OVERVIEW}
+\phantomsection\label{sec:software}
+
+CreditSnap is a specialized MERN-stack (MongoDB, Express.js, React, Node.js) web application developed to modernize the manual operations of campus hall canteens at IIT Kanpur. Traditionally, canteens rely on paper-based registers to track student credit, which often leads to calculation errors, misplaced records, and a lack of transparency.
+
+CreditSnap solves these issues by providing a centralized digital ecosystem with the following features:
+
 \begin{itemize}
-    \item \textbf{Students:} Users with an @iitk.ac.in email who want to order food and manage their credit.
-    \item \textbf{Canteen Owners:} Shopkeepers who manage orders, menus, and student debts.
+    \item \textbf{Dual-Interface Portal:} Custom-tailored dashboards for Students (ordering/tracking) and Canteen Owners (management/analytics).
+    \item \textbf{Automated Credit Ledger:} A robust backend system that enforces credit limits and provides an immutable record of all debts and repayments.
+    \item \textbf{Real-Time Communication:} Integration with Socket.io for instant order updates, ensuring students are notified the moment their meal is accepted, ready, or rejected.
+    \item \textbf{Integrated Payments:} Razorpay gateway integration enables students to clear outstanding debts online (UPI, card, net banking) in real time.
+    \item \textbf{Data Analytics:} An administrative suite that transforms raw transaction data into visual revenue reports and demand forecasts for canteen owners.
+    \item \textbf{Institutional Security:} Secure authentication restricted to IITK credentials, ensuring the platform remains an exclusive and safe environment for campus residents.
 \end{itemize}
 
-\section{Scope of CreditSnap}
-CreditSnap is built for the IITK campus. It digitizes the paper khata system. Students can order food to arrive later or dine-in right away. Payment options include immediate payment via Razorpay or adding the total to a local limit. Owners accept or reject incoming orders and manage a live digital ledger.
+\subsection*{1.3 PROJECT SCOPE}
+\phantomsection\label{sec:scope}
 
-\section{Definitions and Abbreviations Table}
-\begin{longtable}{|>{\bfseries}p{0.25\textwidth}|p{0.7\textwidth}|}
-\hline
-Term & Definition \\
-\hline
-\endfirsthead
-\hline
-Term & Definition \\
-\hline
-\endhead
-API & Application Programming Interface connecting the website to the server. \\
-\hline
-Billing Cycle & A time limit set by an owner for debts to be paid. \\
-\hline
-Debt Ceiling & The maximum credit limit for a student at a canteen. Default is ₹2500. \\
-\hline
-HTTPS & Secure web communication. \\
-\hline
-IITK & Indian Institute of Technology Kanpur. \\
-\hline
-JWT & JSON Web Token. A digital key verifying user login. \\
-\hline
-On-spot Event & An order placed when you are already at the counter. \\
-\hline
-Pre-order & An order placed 10 to 40 minutes before arriving. \\
-\hline
-QR Code & A visual square code used for digital actions. \\
-\hline
-SRS & Software Requirements Specification. \\
-\hline
-UI & User Interface. The screens and buttons you see. \\
-\hline
-Khata & Traditional term for a credit ledger. \\
-\hline
-\end{longtable}
+The scope of CreditSnap encompasses the complete digitization of the food ordering and credit lifecycle within the IITK hall canteen system. The project aims to:
 
-\section{System Requirements}
-Users must have:
 \begin{itemize}
-    \item Any modern browser (Chrome, Firefox, Edge, Safari).
-    \item Any device: phone, tablet, laptop, desktop.
-    \item Any OS: Windows, macOS, Linux, Android, iOS.
-    \item Stable internet connection.
+    \item \textbf{Minimize Operational Friction:} Reduce peak-hour counter congestion by allowing students to pre-order meals digitally.
+    \item \textbf{Ensure Financial Integrity:} Eliminate the ``trust gap'' between owners and students by providing real-time visibility into credit balances.
+    \item \textbf{Scalability:} Support the high-traffic demands of the campus, with a system design capable of handling thousands of concurrent users and daily transactions.
+    \item \textbf{Error Reduction:} Automate the calculation of daily totals and outstanding balances, which were previously prone to human error in physical ledgers.
 \end{itemize}
-No software installation is needed.
 
-\section{How to Access the Website}
-Open a browser and go to the CreditSnap URL provided by the campus. You will land on the Login/Signup page. Make sure your internet is working before you start.
+\subsection*{1.4 INTENDED AUDIENCE}
+\phantomsection\label{sec:audience}
 
-\chapter{Getting Started}
+This manual is intended for two primary user groups within the IIT Kanpur community:
 
-\section{The Two User Roles}
-The main screen has two tabs. Students use the "Student" tab to log in. Canteen owners use the "Shopkeeper" tab to access their controls. These two roles show completely different dashboards and tools.
-
-\section{Student Registration}
-To create a new account:
 \begin{enumerate}
-    \item \textbf{Step 1:} Go to the CreditSnap URL.
-    \item \textbf{Step 2:} Click "Sign Up" on the login page.
-    \item \textbf{Step 3:} Fill in the form. Provide your Full Name (cannot be blank), IITK Email (must end in @iitk.ac.in), Hall Number, Roll Number, Phone Number (10 digits), Password, and Confirm Password.
-    \item \textbf{Step 4:} Click the "Sign Up" button.
-    \item \textbf{Step 5:} A verification email is sent to your IITK email address.
-    \item \textbf{Step 6:} Open the email and click "Verify Account".
-    \item \textbf{Step 7:} Your account is now active. You can log in.
+    \item \textbf{Students:} Campus residents who wish to purchase food on credit or via pre-orders. They will use this guide to manage their profiles, track their spending, and check order statuses.
+    \item \textbf{Canteen Owners:} Administrative users responsible for updating menu items, accepting or rejecting orders, managing student credit limits, and maintaining the financial health of their canteen through the digital ledger.
 \end{enumerate}
 
-\section{Email Verification}
-\begin{notebox}
-If the email does not arrive within 5 minutes, check the spam folder. To resend it: go to the login page, try to log in, and click "Resend Verification Email" when prompted.
-\end{notebox}
+No advanced technical background is required to use CreditSnap; however, a basic familiarity with web browsers and institutional email login processes is assumed.
 
-\section{Student Login}
-\begin{enumerate}
-    \item \textbf{Step 1:} Go to the CreditSnap URL.
-    \item \textbf{Step 2:} Click the "Student" tab.
-    \item \textbf{Step 3:} Enter your @iitk.ac.in email and password.
-    \item \textbf{Step 4:} Click "Login". You are taken to the Student Home Dashboard.
-\end{enumerate}
+\subsection*{1.5 DEFINITIONS AND ABBREVIATIONS}
+\phantomsection\label{sec:definitions}
 
-\section{Canteen Owner Login}
-\begin{enumerate}
-    \item \textbf{Step 1:} Go to the CreditSnap URL.
-    \item \textbf{Step 2:} Click the "Shopkeeper" tab.
-    \item \textbf{Step 3:} Enter the email and password given to you by the platform administrator.
-    \item \textbf{Step 4:} Click "Login". You are taken to the Active Orders Dashboard.
-\end{enumerate}
-\begin{notebox}
-Canteen owner accounts are created by the system administrator. There is no public sign-up option for owners.
-\end{notebox}
+\vspace{0.3cm}
+\renewcommand{\arraystretch}{1.4}
+\setlength{\arrayrulewidth}{1pt}
+\begin{tabular}{|p{3.5cm}|p{10.5cm}|}
+\hline
+\rowcolor{gray!20}\textbf{Term} & \textbf{Definition} \\ \hline
+API & Application Programming Interface: the connection layer between the browser and the server. \\ \hline
+Billing Cycle & A time period defined by a canteen owner within which outstanding student debts are expected to be cleared. \\ \hline
+Debt Ceiling & The maximum credit a student may carry at a single canteen. The default value is Rs. 2500. \\ \hline
+Dine-In & An order placed when the student is already present at the canteen counter. \\ \hline
+HTTPS & Hypertext Transfer Protocol Secure. All data is encrypted during transmission. \\ \hline
+IITK & Indian Institute of Technology Kanpur. \\ \hline
+JWT & JSON Web Token: a secure short-lived digital key that confirms a user is logged in. \\ \hline
+Khata & The traditional Hindi term for a credit ledger or debt book. \\ \hline
+MERN & MongoDB, Express.js, React, Node.js --- the technology stack used to build CreditSnap. \\ \hline
+Pre-Order & An order placed 10--40 minutes before arriving at the canteen. \\ \hline
+Razorpay & The payment gateway used for online debt payments within CreditSnap. \\ \hline
+SRS & Software Requirements Specification document. \\ \hline
+UI & User Interface: the visual screens and controls the user interacts with. \\ \hline
+\end{tabular}
 
-\section{Forgot Password}
-To reset a lost password:
-\begin{enumerate}
-    \item \textbf{Step 1:} On the login page, click "Forgot Password?".
-    \item \textbf{Step 2:} Enter your registered email address.
-    \item \textbf{Step 3:} Click "Send Reset Link".
-    \item \textbf{Step 4:} Open the email and click the reset link.
-    \item \textbf{Step 5:} Enter your new password and confirm it.
-    \item \textbf{Step 6:} Click "Confirm". Your password is updated. You can now log in with the new password.
-\end{enumerate}
+\subsection*{1.6 SYSTEM REQUIREMENTS}
+\phantomsection\label{sec:sysreq}
 
-\section{Session Timeout}
-If you do not interact with the website for 30 minutes, you are automatically logged out. This protects your account on shared or public computers. You will be taken back to the login page and asked to log in again.
+CreditSnap is a browser-based application. Users need:
 
-\section{How to Log Out}
-For students: click your name or avatar in the top-right corner of the page, then click "Logout".
-For canteen owners: click the profile icon next to your canteen name in the header, then click "Logout".
+\begin{itemize}
+    \item A modern web browser: Google Chrome, Mozilla Firefox, Microsoft Edge, or Apple Safari.
+    \item Any device: smartphone, tablet, laptop, or desktop computer.
+    \item Any operating system: Windows, macOS, Linux, Android, or iOS.
+    \item A stable internet connection (mobile data or Wi-Fi).
+\end{itemize}
 
-\chapter{Student Portal: Complete Guide}
+No software installation, no app download, and no disk space reservation is required.
 
-\section{Navigation Overview}
-The sidebar menu contains Home, Canteens, View Debts, History, and About Us. The top header shows the CreditSnap logo, your name and avatar, and a notification bell icon.
+\newpage
 
-\section{Student Home Dashboard}
+% =============================================================
+%  SECTION 2 — LOGIN AND SIGNUP
+% =============================================================
+\phantomsection\label{sec:login}
+\sectionbar{2 LOGIN AND SIGNUP}
 
-\subsection{Total Debt Card}
-This card at the top shows the total amount you owe across all canteens. It has a "Pay Now" button that takes you to the View Debts page.
+\vspace{0.6cm}
 
-\begin{figure}[h]
+When the user visits the CreditSnap website, they are presented with multiple options to navigate through the platform:\\
+
+\textbf{Sign Up:} New users can create an account to access the platform.\\
+
+\textbf{Login:} Existing users (students or canteen owners) can enter their registered credentials to access their accounts.\\
+
+\textbf{Forgot Password:} If a user forgets their password, they can recover their account through the password reset process.
+
+\subsection*{2.1 Login}
+\phantomsection\label{sec:login-sub}
+
+The Login page is designed to be intuitive, allowing users to quickly access their specific dashboards. Whether you are a student looking to order a meal or a canteen owner managing daily sales, the login process is unified.
+
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{placeholder.png}
-    \caption{Student Home Dashboard showing Total Debt and Alerts.}
+    \includegraphics[width=1\textwidth]{Stud_Login.png}
+    \label{fig:stud_login}
 \end{figure}
 
-\subsection{Alert Panel}
-If your debt at any canteen reaches 95\% of the allowed credit limit, a warning appears here showing which canteen and how close you are to the limit.
-
-\subsection{Current Orders Section}
-This shows all your active orders. Each order card shows: the items you ordered, the quantities, the total price, the canteen name, and a status badge (Pending, Accepted, Rejected, or Ready). The status updates automatically without refreshing the page.
-
-\subsection{Notification Bell}
-Click the bell icon in the header to see your recent alerts, such as order accepted, order rejected, or credit limit warnings.
-
-\section{Canteen Selection Page}
-Click "Canteens" in the sidebar. You will see a list of all campus canteens. Each canteen card shows the canteen name, operating hours, how much you currently owe that canteen, and an Open/Closed badge. Click a canteen card to open its menu.
-
-\section{Menu Page and Ordering}
-
-\subsection{Browsing the Menu}
-Items are organized into Veg, Non-Veg, and Beverages. Each item shows its name, price in ₹, and category. Items that are out of stock are grayed out and cannot be added to the cart.
-
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{placeholder.png}
-    \caption{Canteen Menu interface with Add to Cart functionality.}
+    \includegraphics[width=1\textwidth]{Owner_Login.png}
+    \label{fig:owner_login}
 \end{figure}
 
-\subsection{Adding Items to Cart}
-Click "+" next to any available item to add it. Click "+" again to increase the quantity. Click "−" to reduce it. The cart summary on the side updates the total price as you add or remove items.
-
-\subsection{Special Instructions}
-Before placing the order, you can type a short note in the "Special Instructions" box (for example, "No onions" or "Extra spicy"). This note is sent to the canteen owner with your order.
-
-\subsection{Choosing Order Mode}
-Select one:
-\begin{itemize}
-    \item \textbf{Pre-Order:} You are placing the order in advance and will arrive at the canteen in 10 to 40 minutes.
-    \item \textbf{Dine-In:} You are already at the canteen or arriving immediately.
-\end{itemize}
-
-\subsection{Choosing Payment Method}
-Select one:
-\begin{itemize}
-    \item \textbf{Pay Now:} You will pay immediately through the Razorpay payment gateway. The payment is processed and the order goes to the owner without any credit involvement.
-    \item \textbf{Add to Credit:} The amount is added to your khata at this canteen.
-\end{itemize}
-
-\begin{warningbox}
-The system first checks if your current debt plus this order total exceeds your credit limit. If it does, the "Add to Credit" option is disabled and a warning message is shown. You must clear some of your existing debt before you can use credit again.
-\end{warningbox}
-
-\subsection{Placing the Order}
-Click "Confirm Order". The order is sent to the canteen owner and appears in your Current Orders with a "Pending" status.
-
-\section{Order Tracking}
-After placing an order, go to the Home Dashboard to track it.
-\begin{itemize}
-    \item \textbf{Pending:} The owner has not acted on the order yet.
-    \item \textbf{Accepted:} The owner accepted the order. Your debt is updated. The canteen prepares your food.
-    \item \textbf{Rejected:} The owner rejected the order. You are not charged. You can place a new order.
-    \item \textbf{Ready:} Your food is ready for pickup at the counter.
-\end{itemize}
-
-\begin{tipbox}
-You will receive a notification every time your order status changes, so you do not need to keep checking manually.
-\end{tipbox}
-
-\section{View Debts Page}
-Click "View Debts" in the sidebar. This page shows how much you owe each canteen. It provides a breakdown per canteen and a total at the top.
-
-\subsection{Paying a Debt}
-
-\begin{notebox}
-Note for Evaluators: The Razorpay payment gateway is currently running in Test Mode for this project submission. Please do not use real credit card or bank details. A standard Razorpay test card can be used to simulate a successful transaction.
-\end{notebox}
+\subsubsection*{2.1.1 Steps to Login}
 
 \begin{enumerate}
-    \item \textbf{Step 1:} Find the canteen card for the debt you want to pay.
-    \item \textbf{Step 2:} Click "Pay Now" on that card.
-    \item \textbf{Step 3:} The Razorpay payment window opens. Complete the payment using UPI, card, or net banking.
-    \item \textbf{Step 4:} Once the payment is successful, your debt for that canteen is reduced or cleared.
-    \item \textbf{Step 5:} A record of this payment is added to your History page.
+    \item \textbf{Access the Portal:} Navigate to the CreditSnap URL. The landing page defaults to the login interface.
+    \item \textbf{Select Role:} Click either the \textbf{Student} tab or the \textbf{Shopkeeper} tab depending on your account type.
+    \item \textbf{Enter Credentials:} Input your registered email address (e.g., \texttt{username@iitk.ac.in} for students) and your password.
+    \item \textbf{Authentication:} Click the \textbf{Login} button. The system validates your credentials against the encrypted database.
+    \item \textbf{Redirection:} Upon successful validation, students are taken to the Student Home Dashboard; canteen owners are taken to the Active Orders Dashboard.
 \end{enumerate}
 
-\begin{figure}[h]
+\subsection*{2.2 Sign Up}
+\phantomsection\label{sec:signup}
+
+Registration is restricted to verified members of the IIT Kanpur community. For students, this process establishes their digital identity and initial credit profile.
+
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{placeholder.png}
-    \caption{Razorpay checkout interface for debt payment.}
+    \includegraphics[width=1\textwidth]{Stud_signup.png}
+    \label{fig:stud_signup}
 \end{figure}
 
-\subsection{Partial Payment}
-You do not have to pay the full amount at once. Change the amount in the payment box to pay a partial amount. Your debt will be reduced by however much you pay.
+\subsubsection*{2.2.1 Creating a New Account}
 
-\subsection{No Debts}
-If you have no outstanding debts, the page shows "No Debts Found" and the Pay Now buttons are disabled.
+To register a new student account, click the \textbf{Sign Up} link on the login page and fill in the following mandatory fields:
 
-\subsection{Payment Failure}
-If the payment gateway fails, an error message is shown. Your debt is not affected. You can try again.
-
-\section{Order History Page}
-Click "History" in the sidebar. This page shows all your past completed orders and cleared debts. For each entry you can see: the date, item names and quantities, total amount, payment method, and canteen name.
-
-\section{Student Profile Management}
-
-\subsection{Viewing Profile}
-Click your name or avatar in the header to open your profile.
-
-\subsection{Editing Profile}
-Click "Edit". You can change your Name and Phone Number. Click "Save" to save the changes.
-\begin{warningbox}
-Your email address and roll number cannot be changed. If you try to save with a blank name or a phone number that is not exactly 10 digits, the system will block the save and show an error.
-\end{warningbox}
-
-\subsection{Logging Out from Profile}
-Click "Logout" from the profile menu to log out.
-
-\chapter{Canteen Owner Portal: Complete Guide}
-
-\section{Navigation Overview}
-The sidebar has: Home (Active Orders), Edit Menu, Active Debts, Analytics, History, About Us. The header shows the canteen name, a notification bell, and the profile icon.
-
-\section{Active Orders Dashboard (Home Page)}
-This is the main page you will use during operating hours. Every time a student places an order, it appears here automatically. Each order card shows:
 \begin{itemize}
-    \item Items ordered and quantities
-    \item Total cost
-    \item Payment method badge: "Added to Debt" or "Pay Now"
-    \item Status badge: "Order Pending"
+    \item \textbf{Full Name:} Enter your name as it appears on your IITK Identity Card.
+    \item \textbf{Institutional Email:} You must use your \texttt{@iitk.ac.in} email address. This is used for verification and official notifications.
+    \item \textbf{Roll Number:} Your unique campus identifier (e.g., 240717).
+    \item \textbf{Hall Number:} Select your current Hall of Residence to help canteens identify your location.
+    \item \textbf{Contact Number:} A valid 10-digit mobile number for order-related updates.
+    \item \textbf{Password:} Create a strong password. You will be required to enter it twice to confirm accuracy.
 \end{itemize}
 
-\begin{figure}[h]
+\subsubsection*{2.2.2 Email Verification}
+
+After clicking \textbf{Sign Up}, the system initiates an email verification sequence:
+
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{placeholder.png}
-    \caption{Canteen Owner Dashboard showing incoming Active Orders.}
+    \includegraphics[width=1\textwidth]{Verification.png}
+    \label{fig:verification}
 \end{figure}
 
-\subsection{Accepting an Order}
-Click "Accept". The student is notified. If the order was a credit order, the student's debt for your canteen is increased by the order total.
-
-\subsection{Rejecting an Order}
-Click "Reject". The student is notified. No debt is recorded. The order is removed from the active list.
-
-\section{Manage Menu (Edit Menu Page)}
-Click "Edit Menu" in the sidebar. You will see all your menu items displayed in a grid. Each item shows its name, price, an availability toggle, and an "Edit" button.
-
-\subsection{Toggling Availability}
-Use the toggle switch on any item to mark it as available or unavailable. When you turn it off, that item disappears from the student menu. Students can no longer order it until you turn it back on.
-
-\subsection{Editing an Item}
-Click "Edit" on any item card. A popup appears where you can change the item name and price. Click "Save".
-\begin{notebox}
-If the save fails due to a network error, try again. Changes are only applied when the save is successful.
-\end{notebox}
-
-\subsection{Adding a New Item}
 \begin{enumerate}
-    \item \textbf{Step 1:} Click "+ Add New Item" at the top of the page.
-    \item \textbf{Step 2:} Enter the item name.
-    \item \textbf{Step 3:} Enter the price in ₹.
-    \item \textbf{Step 4:} Select the category: Veg, Non-Veg, or Beverages.
-    \item \textbf{Step 5:} Set availability (on or off).
-    \item \textbf{Step 6:} Click "Save". The item is added to your menu and students can see it immediately.
+    \item \textbf{Verification Email:} A secure link is automatically dispatched to your IITK inbox via the Nodemailer service.
+    \item \textbf{Account Activation:} You must click the link within the specified timeframe to activate your account.
+    \item \textbf{Final Access:} Once verified, you will be redirected to the login page and may log in immediately.
 \end{enumerate}
 
-\section{Active Debts Management}
-Click "Active Debts" in the sidebar. This page shows a list of all students who owe you money. Each student card shows: the student's name, roll number, current debt amount, and their credit limit.
+\subsection*{2.3 Forgot Password}
+\phantomsection\label{sec:forgotpw}
 
-\subsection{Searching for a Student}
-Type a student's name or roll number in the search box to find them quickly. If no student matches your search, the message "No matching student found" appears.
+If you are unable to recall your credentials, CreditSnap provides a secure password recovery workflow.
 
-\subsection{Changing a Student's Credit Limit}
-Click on a student card. In the detail panel, find the "Debt Ceiling" field and change the value. Click "Save". This changes how much credit that student can use at your canteen.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Forgot_Password.png}
+    \label{fig:forgot_password}
+\end{figure}
 
-\subsection{Sending a Payment Reminder}
-Click the "Notify" button on a student's card. The system sends an email or SMS to that student reminding them to clear their outstanding balance.
+Follow these steps to reset your password:
 
-\subsection{Manually Clearing a Debt}
-If a student pays you in cash, record it manually in the system.
 \begin{enumerate}
-    \item \textbf{Step 1:} Find the student in the Active Debts list.
-    \item \textbf{Step 2:} Click on their card.
-    \item \textbf{Step 3:} Mark the debt as cleared (fully or partially).
-    \item \textbf{Step 4:} Click "Save". The debt is updated in the system and the record moves to your History page.
+    \item Click the \textbf{Forgot Password?} link on the login screen.
+    \item Enter your registered \texttt{@iitk.ac.in} email address and click \textbf{Send Reset Link}.
+    \item Check your email inbox for the password reset link sent by CreditSnap.
+    \item Click the link, enter your new password, and confirm it.
+    \item You will be redirected to the login page. Log in with your new credentials.
 \end{enumerate}
 
-\section{Analytics Page}
-Click "Analytics" in the sidebar. This page shows charts of your canteen's financial activity. You can see: monthly revenue, number of orders per month, and a breakdown of credit orders versus cash payments. Use this to understand your busiest periods and credit extension.
+\newpage
 
-\section{History Page}
-Click "History" in the sidebar. This page shows a log of all completed transactions (online payments and manually cleared debts). You can sort the records by: student name, date, or payment amount. Each record shows the student name, amount, date, and payment method.
+% =============================================================
+%  SECTION 3 — STUDENT MANUAL
+% =============================================================
+\phantomsection\label{sec:student}
+\sectionbar{3 STUDENT MANUAL}
 
-\section{Owner Profile Management}
-Click the profile icon in the header. You can view and edit your name and phone number. Click "Save" to save changes.
-\begin{warningbox}
-If you leave a required field blank or enter an invalid phone number, the save will be blocked.
-\end{warningbox}
+\vspace{0.6cm}
 
-\chapter{Notifications System}
+Upon a successful login, students are directed to the primary dashboard. This page serves as the central hub for discovering campus canteens, managing personal profiles, and tracking ongoing orders. The interface is divided into a persistent navigation sidebar and a dynamic content area.
 
-\section{Student Notifications}
-You receive notifications for: order accepted, order rejected, order ready for pickup, credit limit warning (when 95\% of your limit is reached), and payment confirmation.
+\subsection*{3.1 Home Page}
+\phantomsection\label{sec:stud-home}
 
-\section{Owner Notifications}
-You receive a notification every time a student places a new order at your canteen.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Stud_Home.png}
+    \label{fig:stud_home}
+\end{figure}
 
-\section{The Notification Bell}
-The bell icon shows a badge when you have unread notifications. Click it to see all recent alerts. Notifications disappear once viewed.
+\subsubsection*{Sidebar Navigation}
 
-\section{Email Notifications}
-The following events trigger an email to your address: account verification (when you first sign up), password reset link, and debt payment reminders (when an owner sends you a notify).
+The sidebar on the left provides quick access to the core modules of the CreditSnap platform:
 
-\chapter{Credit Ledger System}
+\begin{itemize}
+    \item \textbf{Home:} The default view showing total active debt, any important credit-limit alerts, and current active orders.
+    \item \textbf{Canteens:} Displays all campus canteens with their current status (Open / Closed) and the amount you owe each one.
+    \item \textbf{View Debts:} Shows a canteen-wise breakdown of your active outstanding balances, with options to pay.
+    \item \textbf{History:} A complete log of all past orders and payment transactions made by the user.
+    \item \textbf{Help:} Provides customer support guidelines and frequently asked questions.
+\end{itemize}
 
-\section{What is the Credit Ledger System}
-The traditional system used physical paper notebooks to record debts. CreditSnap replaces this with a digital record. Every student has a separate balance at each canteen.
+\subsubsection*{Top Navigation}
 
-\section{How the Debt Ceiling Works}
-Each owner restricts total credit through a limit. The default limit is ₹2500. If current debt plus a new order costs more than this limit, the "Add to Credit" option is blocked. A message explains that the limit is reached and partial payment is required.
+On the top-right corner of the page, users can access:
 
-\section{How Debt is Updated}
-A student's debt reaches a higher number only when the canteen owner clicks "Accept" on a new purchase. If the order is rejected, no debt is added. Debts are never changed without owner action.
+\begin{itemize}
+    \item \textbf{Profile:} Displays user details including Name, Roll Number, Hall, and Contact Information.
+    \item \textbf{Notifications:} A bell icon that shows a badge count for unread alerts. Clicking it reveals a dropdown list of recent notifications in chronological order.
+\end{itemize}
 
-\section{The Immutable Ledger Policy}
-Once an order is accepted, the transaction record is permanent. No user can delete or modify a completed transaction. This blocks disputes and ensures exact accuracy across the system.
+\subsubsection*{Home Dashboard Cards}
 
-\section{What Happens When the Limit is Exceeded}
-The "Add to Credit" option turns gray. A warning message tells the student their current debt. It directs them to reduce the balance before ordering more.
+\begin{itemize}
+    \item \textbf{Total Debt Card:} A prominent card at the top showing the total amount owed across all canteens, with a \textbf{Pay Now} shortcut button.
+    \item \textbf{Credit Limit Alert:} A warning panel that appears when your debt at any canteen reaches 95\% or more of the allowed credit limit, naming the specific canteen.
+    \item \textbf{Current Orders:} A list of all your active (non-completed) orders. Each card shows the canteen name, items ordered, quantities, total amount, payment method, order mode, and a real-time status badge (Pending / Accepted / Rejected / Ready).
+\end{itemize}
 
-\section{Billing Cycle}
-A billing cycle is the time period set by the canteen owner. Debts are cleared at the end of this cycle. Owners inspect outstanding amounts and send reminders to the students holding balances.
+\subsection*{3.2 Canteens}
+\phantomsection\label{sec:stud-canteens}
 
-\section{Partial Payments}
-Students can pay any amount toward their debt. They do not have to pay the full balance at once. For example, if a student owes ₹1200, they can pay ₹500 now. Their debt becomes ₹700, which stays active until cleared.
+Click \textbf{Canteens} in the sidebar. A list of all campus canteens is displayed, each shown as a card.
 
-\chapter{Security and Account Safety}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Stud_Canteens.png}
+    \label{fig:stud_canteens}
+\end{figure}
 
-\section{IITK Email Restriction}
-Only @iitk.ac.in email addresses can register as students. This ensures that only verified campus members can access the credit system. External domains are rejected completely.
+Each canteen card shows:
 
-\section{Email Verification}
-New student accounts are inactive until the verification link is clicked. This verification process prevents fake accounts from passing through the system.
+\begin{itemize}
+    \item Canteen name and operating hours.
+    \item Your current outstanding debt at that canteen.
+    \item An \textbf{Open} or \textbf{Closed} status badge indicating whether orders are currently being accepted.
+\end{itemize}
 
-\section{Password Hashing}
-Passwords are never stored as plain text. They are scrambled using bcrypt before being saved to the database. Even if the database were accessed by an outsider, the actual passwords cannot be read.
+Click any open canteen card to proceed to its menu.
 
-\section{JWT Session Tokens}
-After you log in, the system gives your browser a token (JWT). This token verifies your identity on every page you visit. It expires automatically, leading to logout after 30 minutes of inactivity.
+\subsection*{3.3 Menu and Ordering}
+\phantomsection\label{sec:stud-menu}
 
-\section{HTTPS Encryption}
-All data sent between your browser and the CreditSnap server is encrypted. No one on the local Wi-Fi network can see your web traffic or your payment details.
+After selecting a canteen, the Menu Page opens.
 
-\section{Role-Based Access Control}
-Students cannot open any owner features. Trying to load owner pages as a student will be blocked by the server. Students can only see their own records.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Stud_Menu.png}
+    \label{fig:stud_menu}
+\end{figure}
 
-\section{Payment Security}
-CreditSnap never keeps banking details on its disks. Personal bank data bypasses the database completely. All payment processing runs through the secure Razorpay pipeline.
+\subsubsection*{3.3.1 Browsing the Menu}
 
-\section{Session Timeout}
-After 30 minutes of no activity, your session drops. You are logged out automatically on the screen.
+Menu items are organized into categories: \textbf{Veg}, \textbf{Non-Veg}, and \textbf{Beverages}. Each item card displays the item name, price, and category. Items marked as unavailable by the owner are grayed out and cannot be added to the cart.
 
-\chapter{Troubleshooting and FAQs}
+\subsubsection*{3.3.2 Adding Items to Cart}
 
-\noindent \textbf{I did not receive the verification email.} \\
-Check your spam folder. If not there, go to the login page and click "Resend Verification Email".
-
-\vspace{0.2cm}
-\noindent \textbf{I forgot my password.} \\
-Click "Forgot Password?" on the login page and follow the steps to reset it via email.
-
-\vspace{0.2cm}
-\noindent \textbf{The "Add to Credit" option is grayed out.} \\
-Your debt at this canteen has reached or exceeded the credit limit. Go to "View Debts" and pay off some of your balance before trying again.
-
-\vspace{0.2cm}
-\noindent \textbf{My order has been on "Pending" for a long time.} \\
-The canteen owner has not accepted or rejected it yet. You will be notified as soon as they act on it.
-
-\vspace{0.2cm}
-\noindent \textbf{The payment gateway shows an error.} \\
-The payment service may be temporarily unavailable. Wait a few minutes and try again. Your debt is not affected.
-
-\vspace{0.2cm}
-\noindent \textbf{Some menu items are grayed out.} \\
-Those items have been marked as unavailable by the canteen owner. They are currently out of stock.
-
-\vspace{0.2cm}
-\noindent \textbf{I cannot save my profile changes.} \\
-Make sure your name is not blank and your phone number is exactly 10 digits. Correct any errors and try again.
-
-\vspace{0.2cm}
-\noindent \textbf{A completed order is not appearing in my History.} \\
-Only fully completed and paid or settled orders appear in History. Active or pending orders appear on the Home Dashboard.
-
-\vspace{0.2cm}
-\noindent \textbf{Owner: I searched for a student in Active Debts but got no results.} \\
-Either the student has no outstanding balance at your canteen, or you may have typed their name or roll number incorrectly.
-
-\vspace{0.2cm}
-\noindent \textbf{Owner: The save failed when editing the menu.} \\
-This is usually a temporary network issue. Try again. If it keeps failing, reload the page.
-
-\chapter{System Requirements and Technical Notes}
-
-Supported browsers include Chrome, Firefox, Edge, and Safari on any modern setup. Supported devices reach from early smartphones and heavy tablet screens to deep laptop layouts and static desktop stations. Supported operating systems cover Windows, macOS, Linux, Android, and iOS formats uniformly.
-
-A working web connection remains required. Fast broadband or a standard 3G mobile signal handles the connection speeds without issue. No installation process requires disk space on your local computer. The application matches Progressive Web App standards for clear reading.
-
-\appendix
-\chapter{Glossary / Data Dictionary}
-
-\begin{table}[h]
-\centering
-\caption{User Fields}
-\begin{tabular}{|l|l|l|}
-\hline
-\textbf{Field} & \textbf{Type} & \textbf{Description} \\
-\hline
-User ID & Text & Primary numerical link. \\
-Full Name & Text & User display name. \\
-Email & Text & Login string. \\
-Role & Text & Student or Owner marker. \\
-Phone Number & Numeric & Exactly 10 digits format. \\
-Current Debt & Decimal & Total owed standing. \\
-Debt Limit & Decimal (2500) & Top stop mark. \\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{table}[h]
-\centering
-\caption{Menu Item Fields}
-\begin{tabular}{|l|l|l|}
-\hline
-\textbf{Field} & \textbf{Type} & \textbf{Description} \\
-\hline
-Item ID & Text & Dish specific link. \\
-Canteen ID & Text & Connects item to shop. \\
-Item Name & Text & Menu label text. \\
-Price & Numeric & Rupee number value. \\
-Category & Text & Veg, Non-Veg, Beverages. \\
-Availability & True/False & Toggle state. \\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{table}[h]
-\centering
-\caption{Order Fields}
-\begin{tabular}{|l|l|l|}
-\hline
-\textbf{Field} & \textbf{Type} & \textbf{Description} \\
-\hline
-Order ID & Text & Transaction tag string. \\
-Student ID & Text & Linked purchaser. \\
-Items Ordered & Array & List of mapped dishes. \\
-Total Amount & Numeric & Final price total. \\
-Payment Mode & Text & Online or Credit tag. \\
-Order Status & Text & Pending, Accepted, Rejected, Ready. \\
-Timestamp & Time & Creation metric. \\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{table}[h]
-\centering
-\caption{Transaction Fields}
-\begin{tabular}{|l|l|l|}
-\hline
-\textbf{Field} & \textbf{Type} & \textbf{Description} \\
-\hline
-Transaction ID & Text & Individual tag. \\
-Payment Mode & Text & Online or Credit. \\
-Payment Status & Text & Success, Pending, Failed. \\
-Amount & Numeric & Transferred cash value. \\
-Canteen ID & Text & Receiving target. \\
-Timestamp & Time & Processing metric. \\
-\hline
-\end{tabular}
-\end{table}
-
-\chapter{Quick Reference Card}
-
-\section*{Student Quick Steps}
 \begin{enumerate}
-    \item \textbf{Step 1:} Register with your @iitk.ac.in email
-    \item \textbf{Step 2:} Verify your email by clicking the link sent to your inbox
-    \item \textbf{Step 3:} Log in using the Student tab
-    \item \textbf{Step 4:} Click "Canteens" and select a canteen
-    \item \textbf{Step 5:} Browse the menu and add items to your cart
-    \item \textbf{Step 6:} Choose Pre-Order or Dine-In, then choose Pay Now or Add to Credit
-    \item \textbf{Step 7:} Click "Confirm Order"
-    \item \textbf{Step 8:} Track your order status on the Home Dashboard
-    \item \textbf{Step 9:} Pay your debts from the "View Debts" page
+    \item Click \textbf{+} next to any available item to add it to the cart.
+    \item Click \textbf{+} again to increase the quantity; click \textbf{---} to decrease it.
+    \item The cart summary panel updates automatically with a running total.
 \end{enumerate}
 
-\section*{Owner Quick Steps}
+\subsubsection*{3.3.3 Selecting Order Mode and Payment Method}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Stud_Cart.png}
+    \label{fig:stud_cart}
+\end{figure}
+
+Before confirming, fill in the following:
+
+\begin{itemize}
+    \item \textbf{Special Instructions:} Type any note (e.g., ``No onions'', ``Extra spicy''). This is forwarded to the canteen owner.
+    \item \textbf{Order Mode:}
+    \begin{itemize}
+        \item \textbf{Pre-Order} --- Placing the order 10--40 minutes before arriving.
+        \item \textbf{Dine-In} --- You are already at the counter or arriving immediately.
+    \end{itemize}
+    \item \textbf{Payment Method:}
+    \begin{itemize}
+        \item \textbf{Pay Now} --- Launches the Razorpay payment gateway. You pay the full amount immediately. The order is dispatched to the owner after payment is confirmed.
+        \item \textbf{Add to Credit} --- The order total is added to your khata (debt) at this canteen. This option is disabled if your current debt plus the new order total would exceed your credit limit.
+    \end{itemize}
+\end{itemize}
+
+Click \textbf{Confirm Order} to submit. The order appears in your Current Orders section with a \textbf{Pending} status.
+
+\subsubsection*{3.3.4 Order Status Tracking}
+
+The status badge on each order card updates automatically in real time:
+
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{3cm}|p{11cm}|}
+\hline
+\rowcolor{gray!20}\textbf{Status} & \textbf{Meaning} \\ \hline
+\textbf{Pending}  & The owner has not yet acted on the order. \\ \hline
+\textbf{Accepted} & The owner accepted the order. For credit orders, your debt is immediately updated. \\ \hline
+\textbf{Rejected} & The owner rejected the order. No debt is recorded. You may place a new order. \\ \hline
+\textbf{Ready}    & Your food is prepared and ready for pickup at the counter. \\ \hline
+\end{tabular}
+
+\vspace{0.4cm}
+
+\subsection*{3.4 View Debts}
+\phantomsection\label{sec:stud-debts}
+
+Click \textbf{View Debts} in the sidebar. This page lists every canteen where you have an outstanding balance, with a total debt figure shown prominently at the top.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Stud_ViewDebts.png}
+    \label{fig:stud_viewdebts}
+\end{figure}
+
+\subsubsection*{3.4.1 Paying a Debt via Razorpay}
+
 \begin{enumerate}
-    \item \textbf{Step 1:} Log in using the Shopkeeper tab
-    \item \textbf{Step 2:} View incoming orders on the Home Dashboard
-    \item \textbf{Step 3:} Click Accept or Reject for each order
-    \item \textbf{Step 4:} Manage your menu from "Edit Menu"
-    \item \textbf{Step 5:} View and manage student debts from "Active Debts"
-    \item \textbf{Step 6:} View financial charts from "Analytics"
-    \item \textbf{Step 7:} View transaction history from "History"
+    \item Find the canteen card for the debt you wish to pay.
+    \item Click \textbf{Pay Now} on that card.
+    \item The Razorpay payment window opens. Enter the amount (full or partial) and complete payment via UPI, card, or net banking.
+    \item Once the payment is confirmed, your debt at that canteen is reduced and a record is added to your History page.
 \end{enumerate}
+
+\textit{Note for Evaluators: Razorpay is running in \textbf{Test Mode}. Do not use real banking details. Use a standard Razorpay test card to simulate a successful transaction.}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Razorpay.png}
+    \label{fig:razorpay}
+\end{figure}
+
+\subsubsection*{3.4.2 Partial Payment}
+
+You do not need to pay the full outstanding balance at once. Before confirming in Razorpay, modify the amount to any value less than or equal to your total debt. Your balance is reduced by however much you pay.
+
+\subsubsection*{3.4.3 No Outstanding Debts}
+
+If you owe nothing to any canteen, the page shows a ``No dues found'' message and the Pay Now options are not displayed.
+
+\subsection*{3.5 History}
+\phantomsection\label{sec:stud-history}
+
+Click \textbf{History} in the sidebar. This page provides a chronological log of all your past completed orders and debt payment records.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Stud_History.png}
+    \label{fig:stud_history}
+\end{figure}
+
+For each entry you can see:
+
+\begin{itemize}
+    \item Date and time of the transaction.
+    \item Item names and quantities (for food orders).
+    \item Total amount in Rs.
+    \item Payment method (Online / Credit).
+    \item Canteen name.
+\end{itemize}
+
+\subsection*{3.6 Profile}
+\phantomsection\label{sec:stud-profile}
+
+Click your name or avatar in the top-right header to open the Profile page.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Stud_Profile.png}
+    \label{fig:stud_profile}
+\end{figure}
+
+The profile page displays your Full Name, Email, Hall Number, Roll Number, and Phone Number.
+
+\subsubsection*{3.6.1 Editing Profile Information}
+
+\begin{enumerate}
+    \item Click \textbf{Edit}.
+    \item Modify your \textbf{Full Name} or \textbf{Phone Number} as required.
+    \item Click \textbf{Save} to apply changes.
+\end{enumerate}
+
+Note: Your email address and roll number are permanently fixed and cannot be changed. Saving will fail if the name field is left blank or the phone number is not exactly 10 digits.
+
+\subsection*{3.7 Help}
+\phantomsection\label{sec:stud-help}
+
+Click \textbf{Help} in the sidebar. This page provides answers to frequently asked questions and guidance for common issues faced by students.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Stud_Help.png}
+    \label{fig:stud_help}
+\end{figure}
+
+Common issues addressed include: verification email not received, Add to Credit option grayed out, order stuck on Pending, Razorpay payment errors, and profile save failures.
+
+\newpage
+
+% =============================================================
+%  SECTION 4 — CANTEEN OWNER MANUAL
+% =============================================================
+\phantomsection\label{sec:owner}
+\sectionbar{4 CANTEEN OWNER MANUAL}
+
+\vspace{0.6cm}
+
+Upon a successful login, canteen owners are directed to the Active Orders Dashboard. The interface provides a persistent sidebar and header navigation identical in layout to the student portal, but with owner-specific modules.
+
+\subsubsection*{Sidebar Navigation}
+
+\begin{itemize}
+    \item \textbf{Home (Active Orders):} Real-time feed of all incoming student orders awaiting action.
+    \item \textbf{Edit Menu:} Add, edit, or toggle the availability of menu items.
+    \item \textbf{Active Debts:} View and manage outstanding balances of all students at your canteen.
+    \item \textbf{Analytics:} Visual charts of revenue, order volume, and credit vs.\ cash breakdown.
+    \item \textbf{History:} Log of all completed payment transactions.
+    \item \textbf{Help:} Owner-specific support and FAQs.
+\end{itemize}
+
+\subsection*{4.1 Active Orders Dashboard}
+\phantomsection\label{sec:owner-orders}
+
+This is the primary working screen during operating hours. Every time a student places an order at your canteen, it appears here automatically in real time --- no page refresh required.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Owner_Home.png}
+    \label{fig:owner_home}
+\end{figure}
+
+Each order card displays:
+
+\begin{itemize}
+    \item Student name.
+    \item Items ordered and their quantities.
+    \item Total cost in Rs.
+    \item Payment method badge: \textbf{Added to Debt} or \textbf{Paid Online}.
+    \item Order mode badge: \textbf{Pre-Order} or \textbf{Dine-In}.
+    \item Two action buttons: \textbf{Accept} and \textbf{Reject}.
+\end{itemize}
+
+\subsubsection*{4.1.1 Accepting an Order}
+
+Click \textbf{Accept} on an order card. The student receives an instant in-app notification. If the order was a credit order, the student's debt at your canteen is increased by the order total immediately. The order is removed from the Pending list.
+
+\subsubsection*{4.1.2 Rejecting an Order}
+
+Click \textbf{Reject} on an order card. The student receives a rejection notification. No debt is recorded regardless of the payment method. The order is removed from the active list.
+
+\subsubsection*{4.1.3 Marking an Order as Ready}
+
+After accepting an order and preparing the food, click \textbf{Mark as Ready}. The student receives a notification: ``Your order is ready for pickup.''
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Owner_Order_Ready.png}
+    \label{fig:owner_order_ready}
+\end{figure}
+
+\subsection*{4.2 Edit Menu}
+\phantomsection\label{sec:owner-menu}
+
+Click \textbf{Edit Menu} in the sidebar. All your current menu items are displayed in a grid of cards.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Owner_EditMenu.png}
+    \label{fig:owner_editmenu}
+\end{figure}
+
+Each item card shows the item name, price, category, an availability toggle switch, and an \textbf{Edit} button.
+
+\subsubsection*{4.2.1 Toggling Item Availability}
+
+Click the toggle switch on any item:
+\begin{itemize}
+    \item \textbf{Toggle ON (active)} --- Item is live and visible to students.
+    \item \textbf{Toggle OFF (inactive)} --- Item is hidden from the student menu immediately.
+\end{itemize}
+
+\subsubsection*{4.2.2 Editing an Existing Item}
+
+\begin{enumerate}
+    \item Click \textbf{Edit} on an item card. A popup form appears with the current details pre-filled.
+    \item Modify the item name, price, or category.
+    \item Click \textbf{Save}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{Owner_EditMenu_Modal.png}
+    \label{fig:owner_editmenu_modal}
+\end{figure}
+
+\subsubsection*{4.2.3 Adding a New Item}
+
+\begin{enumerate}
+    \item Click \textbf{+ Add New Item} at the top of the Edit Menu page.
+    \item A form appears with blank fields.
+    \item Enter the \textbf{Item Name}, \textbf{Price} (in Rs.), and select the \textbf{Category} (Veg / Non-Veg / Beverages).
+    \item Set the \textbf{Availability} toggle (typically ON for a new item).
+    \item Click \textbf{Save}. The item is added to your menu immediately and is visible to students.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{Owner_AddItem.png}
+    \label{fig:owner_additem}
+\end{figure}
+
+\subsection*{4.3 Active Debts}
+\phantomsection\label{sec:owner-debts}
+
+Click \textbf{Active Debts} in the sidebar. This page lists every student who currently has an outstanding balance at your canteen.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Owner_ActiveDebts.png}
+    \label{fig:owner_activedebts}
+\end{figure}
+
+Each student card shows the student's name, roll number, current outstanding debt (in Rs.), and their credit limit.
+
+\subsubsection*{4.3.1 Searching for a Student}
+
+Type a student's name or roll number in the search box at the top of the page. The list filters in real time. If no match is found, the message ``No matching student found'' is displayed.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Owner_ActiveDebts_Search.png}
+    \label{fig:owner_debt_search}
+\end{figure}
+
+\subsubsection*{4.3.2 Changing a Student's Credit Limit}
+
+\begin{enumerate}
+    \item Click on a student's card to expand the detail panel.
+    \item Find the \textbf{Debt Ceiling} field and enter the new limit in Rs.
+    \item Click \textbf{Save}. The new limit takes effect immediately.
+\end{enumerate}
+
+Note: The new limit cannot be set below the student's current outstanding debt.
+
+\subsubsection*{4.3.3 Setting a Default Credit Limit}
+
+At the top of the Active Debts page there is a \textbf{Set Default Limit} field. Any new student who places their first order at your canteen automatically receives this limit.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Owner_DefaultLimit.png}
+    \label{fig:owner_defaultlimit}
+\end{figure}
+
+\subsubsection*{4.3.4 Sending a Payment Reminder}
+
+Click the \textbf{Notify} button on a student card. The system sends an email to that student reminding them to clear their outstanding balance.
+
+\subsubsection*{4.3.5 Manually Recording a Cash Payment}
+
+If a student pays you in cash, record it in the system:
+
+\begin{enumerate}
+    \item Find the student in the Active Debts list and click on their card.
+    \item Enter the cash amount in the \textbf{Clear Debt / Paid Amount} field.
+    \item Click \textbf{Save}. The debt is reduced and the transaction is logged in History.
+\end{enumerate}
+
+\subsection*{4.4 Analytics}
+\phantomsection\label{sec:owner-analytics}
+
+Click \textbf{Analytics} in the sidebar. This page presents visual charts summarizing your canteen's financial performance.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Owner_Analytics.png}
+    \label{fig:owner_analytics}
+\end{figure}
+
+Charts include:
+
+\begin{itemize}
+    \item \textbf{Monthly Revenue:} Total revenue earned per month shown as a bar chart.
+    \item \textbf{Orders per Month:} Number of orders processed per month.
+    \item \textbf{Credit vs.\ Cash Breakdown:} Proportion of credit orders versus online payment orders.
+\end{itemize}
+
+\subsection*{4.5 History}
+\phantomsection\label{sec:owner-history}
+
+Click \textbf{History} in the sidebar. This is a chronological log of all completed transactions at your canteen --- both online payments and manually cleared cash debts.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Owner_History.png}
+    \label{fig:owner_history}
+\end{figure}
+
+Each record displays: student name, amount paid, date and time, and payment method (Online / Cash). Records can be sorted by date, student name, or amount.
+
+\subsection*{4.6 Profile}
+\phantomsection\label{sec:owner-profile}
+
+Click the profile icon in the header. The profile page shows your canteen name (read-only), owner name, email (read-only), and phone number.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Owner_Profile.png}
+    \label{fig:owner_profile}
+\end{figure}
+
+Click \textbf{Edit} to modify your name or phone number, then click \textbf{Save}. Saving will fail if any required field is left blank or the phone number is not exactly 10 digits.
+
+\newpage
+
+% =============================================================
+%  SECTION 5 — NOTIFICATIONS
+% =============================================================
+\phantomsection\label{sec:notifications}
+\sectionbar{5 NOTIFICATIONS}
+
+\vspace{0.6cm}
+
+CreditSnap uses a real-time notification system to keep both students and owners informed without requiring page refreshes.
+
+\subsection*{5.1 Student Notifications}
+
+Students receive notifications for the following events:
+
+\begin{itemize}
+    \item Order accepted by the canteen owner.
+    \item Order rejected by the canteen owner.
+    \item Order is ready for pickup.
+    \item Credit limit warning (when debt reaches 95\% of the allowed limit).
+    \item Payment confirmation after a successful Razorpay transaction.
+\end{itemize}
+
+\subsection*{5.2 Owner Notifications}
+
+Owners receive a notification every time a student places a new order at their canteen.
+
+\subsection*{5.3 The Notification Bell}
+
+The bell icon in the header shows a badge count of unread notifications. Clicking the bell opens a dropdown list of recent alerts in chronological order.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth]{Notification_Bell.png}
+    \label{fig:notification_bell}
+\end{figure}
+
+\subsection*{5.4 Email Notifications}
+
+The following events trigger an email to the user's registered address:
+
+\begin{itemize}
+    \item \textbf{Account Verification} --- sent immediately after a new student registers.
+    \item \textbf{Password Reset} --- sent when ``Forgot Password?'' is triggered.
+    \item \textbf{Debt Payment Reminder} --- sent when an owner clicks the \textbf{Notify} button on a student's debt card.
+\end{itemize}
+
+\newpage
+
+% =============================================================
+%  APPENDIX A — GROUP LOG
+% =============================================================
+\phantomsection\label{app:group_log}
+\sectionbar{APPENDIX A --- GROUP LOG}
+
+\vspace{0.6cm}
+
+\renewcommand{\arraystretch}{1.5}
+\setlength{\arrayrulewidth}{1pt}
+
+\begin{center}
+\begin{tabular}{|p{3.5cm}|p{3.5cm}|p{7.3cm}|}
+\hline
+\rowcolor{gray!20}\textbf{Name} & \textbf{Roll Number} & \textbf{Contribution} \\ \hline
+Kasavajjala Sai Shreyas     & 240530 & Project lead, backend, documentation coordinator \\ \hline
+Gade V S S R K Tejas Reddy  & 240390 & Backend API development, Socket.io integration \\ \hline
+Palagiri Sathish Reddy      & 240717 & Database design, MongoDB schema \\ \hline
+Kondreddy Sai Haneesh Reddy & 240551 & Frontend --- Student portal \\ \hline
+Yerraiahgari Ram Charan Goud & 241212 & Frontend --- Owner portal \\ \hline
+Golla Lekha Harshaa          & 240402 & UI/UX design, CSS styling \\ \hline
+Yash Raj                     & 241202 & Razorpay integration, payment flow \\ \hline
+Korada Jayavardhan           & 240554 & Analytics page, charts \\ \hline
+Boppudi Sai Chaitanya        & 240283 & Testing, bug fixes \\ \hline
+Panchaneni Ashwin Rao        & 240727 & User Manual, SRS/SDS documentation \\ \hline
+\end{tabular}
+\end{center}
 
 \end{document}
