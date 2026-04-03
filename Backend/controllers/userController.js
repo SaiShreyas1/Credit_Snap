@@ -261,10 +261,15 @@ exports.getMyProfile = async (req, res) => {
       canteen = await Canteen.findOne({ ownerId: user._id }).select('+razorpayMerchantKeySecretEncrypted');
     }
 
+    let serializedUser = user.toObject ? user.toObject() : { ...user };
+    if (serializedUser.totalDebt !== undefined) {
+      serializedUser.totalDebt = Math.round(serializedUser.totalDebt * 100) / 100;
+    }
+
     res.status(200).json({
       status: 'success',
       data: {
-        user,
+        user: serializedUser,
         canteen: serializeOwnerCanteen(canteen)
       }
     });
@@ -281,6 +286,25 @@ exports.getMyProfile = async (req, res) => {
 exports.updateMyProfile = async (req, res) => {
   try {
     const user = req.user;
+    
+    // Check if name is explicitly set to empty
+    const providedName = req.body.adminName !== undefined ? req.body.adminName : req.body.name;
+    if (providedName !== undefined && providedName.trim() === '') {
+      return res.status(400).json({ status: 'fail', message: 'name cannot be empty' });
+    }
+
+    // Check if phone number has exactly 10 digits
+    if (req.body.phone && !/^\d{10}$/.test(req.body.phone)) {
+      return res.status(400).json({ status: 'fail', message: 'number of digits in phone number is not equal to 10' });
+    }
+
+    // Check for duplicate phone number from other users
+    if (req.body.phone && req.body.phone !== user.phoneNo) {
+      const existingPhoneUser = await User.findOne({ phoneNo: req.body.phone, _id: { $ne: user._id } });
+      if (existingPhoneUser) {
+        return res.status(400).json({ status: 'fail', message: 'mobile number already exists' });
+      }
+    }
     
     if (req.body.adminName) user.name = req.body.adminName;
     if (req.body.name) user.name = req.body.name;

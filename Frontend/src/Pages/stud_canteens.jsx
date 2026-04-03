@@ -28,8 +28,21 @@ const StudentCanteens = () => {
   // STATE MANAGEMENT
   // ==========================================
 
-  // View State: Controls which screen the user is currently seeing
-  const [step, setStep] = useState('list'); // 'list' | 'menu' | 'checkout'
+  // View State: Controls which screen the user is currently seeing via URL params
+  const basePath = '/student/canteens';
+  const path = location.pathname.replace(basePath, '');
+  const segments = path.split('/').filter(Boolean); // e.g. ['Hall%203', 'checkout']
+  
+  let step = 'list';
+  let urlCanteenName = null;
+  if (segments.length > 0) {
+    urlCanteenName = decodeURIComponent(segments[0]);
+    if (segments.length > 1 && segments[1] === 'checkout') {
+      step = 'checkout';
+    } else {
+      step = 'menu';
+    }
+  }
 
   // Data State: Holds data fetched from the API
   const [canteensData, setCanteensData] = useState([]);
@@ -84,7 +97,7 @@ const StudentCanteens = () => {
 
         // Scenario A: User navigated here to explicitly reset their view
         if (navState && navState.reset) {
-          setStep('list');
+          navigate('/student/canteens', { replace: true, state: null });
           setSelectedCanteen(null);
           setCart({});
           return;
@@ -125,13 +138,41 @@ const StudentCanteens = () => {
 
                 // Auto-navigate user directly to the checkout review step
                 setSelectedCanteen(canteenToOpen);
-                setStep('checkout');
+                const slug = canteenToOpen.name.toLowerCase().replace(/\s+/g, '-');
+                navigate(`/student/canteens/${slug}/checkout`, { replace: true, state: null });
               }
             }
           }
+          return; // Skip reading initialURLParams because we handled Edit Order
+        }
 
-          // Clear the router state so refreshing the page doesn't trigger this again
-          navigate(location.pathname, { replace: true, state: null });
+        // Scenario C: User refreshed the page or directly navigated via URL params
+        const currentPath = window.location.pathname.replace(basePath, '');
+        const currentSegments = currentPath.split('/').filter(Boolean);
+        let initialCanteenName = null;
+        if (currentSegments.length > 0) {
+           initialCanteenName = decodeURIComponent(currentSegments[0]);
+        }
+        
+        if (initialCanteenName && canteens.length > 0) {
+          const formatToSlug = (name) => name.toLowerCase().replace(/\s+/g, '-');
+          const canteenToOpen = canteens.find(c => formatToSlug(c.name) === initialCanteenName.toLowerCase());
+          if (canteenToOpen) {
+            setSelectedCanteen(canteenToOpen);
+            // fetch menu to restore state for 'menu' or 'checkout' step
+            try {
+              const menuRes = await axios.get(`${BASE_URL}/api/canteens/${canteenToOpen._id}/menu`);
+              if (menuRes.data.status === 'success') {
+                const availableMenu = menuRes.data.data.menu.filter(item => item.isAvailable);
+                setMenuData(availableMenu);
+              }
+            } catch(e) {
+              console.error("Failed to fetch menu on load", e);
+            }
+          } else {
+             // Invalid canteen ID in URL, fallback to list
+             navigate('/student/canteens', { replace: true });
+          }
         }
       } catch (err) {
         console.error("Initialization error:", err);
@@ -214,7 +255,8 @@ const StudentCanteens = () => {
   // ORDER SUBMISSION
   // ==========================================
   const handlePlaceDebtRequest = async () => {
-    if (Object.keys(cart).length === 0) {
+    const validItems = Object.values(cart).filter(qty => qty !== '' && qty > 0);
+    if (validItems.length === 0) {
       showAlert("Cart Empty", "Your cart is empty! Please add some items before ordering.", "warning");
       return;
     }
@@ -252,15 +294,22 @@ const StudentCanteens = () => {
   // ==========================================
   const goToMenu = async (canteen) => {
     if (canteen.status === "Closed") return;
+    
+    // Clear cart if switching to a different canteen
+    if (selectedCanteen?._id !== canteen._id) {
+      setCart({});
+    }
+
     await fetchMenu(canteen._id);
     setSelectedCanteen(canteen);
     setSearchQuery("");
     setCurrentSort("name-az");
-    setStep('menu');
+    const slug = canteen.name.toLowerCase().replace(/\s+/g, '-');
+    navigate(`/student/canteens/${slug}`);
   };
 
   const goToList = () => {
-    setStep('list');
+    navigate('/student/canteens'); // Remove URL params to go back to list
     setCart({}); // Clear cart when leaving the canteen
     setSelectedCanteen(null);
     setMenuData([]);
@@ -389,7 +438,7 @@ const StudentCanteens = () => {
         <h1 className="text-3xl font-medium text-black mb-10 flex items-center gap-4">
           <ArrowLeft
             className="w-7 h-7 cursor-pointer text-gray-500 hover:text-black transition"
-            onClick={step === 'menu' ? goToList : () => setStep('menu')}
+            onClick={step === 'menu' ? goToList : () => navigate(`/student/canteens/${selectedCanteen?.name.toLowerCase().replace(/\s+/g, '-')}`)}
           />
           {selectedCanteen?.name}
         </h1>
@@ -525,7 +574,7 @@ const StudentCanteens = () => {
               </div>
 
               {/* Add to Cart button OR +/- Controls */}
-              {!cart[item._id] ? (
+              {cart[item._id] === undefined ? (
                 <button
                   className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white px-6 py-2.5 rounded-xl font-medium transition text-base shadow-sm"
                   onClick={() => updateQuantity(item._id, 1)}
@@ -571,7 +620,7 @@ const StudentCanteens = () => {
           <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
             <h2 className="text-2xl font-medium text-black">Review Your Order</h2>
             <button
-              onClick={() => setStep('menu')}
+              onClick={() => navigate(`/student/canteens/${selectedCanteen?.name.toLowerCase().replace(/\s+/g, '-')}`)}
               className="text-[#f97316] hover:text-[#ea580c] font-semibold text-sm underline cursor-pointer"
             >
               + Add more items
@@ -637,7 +686,7 @@ const StudentCanteens = () => {
           <button
             className="cursor-pointer w-full bg-[#1e293b] hover:bg-slate-800 text-white py-4 rounded-xl font-medium text-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"
             onClick={handlePlaceDebtRequest}
-            disabled={Object.keys(cart).length === 0}
+            disabled={Object.values(cart).every(qty => qty === '' || qty <= 0)}
           >
             Confirm & Place Request
           </button>
@@ -645,7 +694,7 @@ const StudentCanteens = () => {
       )}
 
       {/* --- CART FOOTER (Floating Bar) --- */}
-      {step === 'menu' && Object.keys(cart).length > 0 && (
+      {step === 'menu' && Object.values(cart).some(qty => qty !== '' && qty > 0) && (
         <div className="fixed bottom-0 right-0 w-[calc(100%-192px)] bg-white border-t border-gray-200 px-10 py-5 flex justify-between items-center shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40">
           <div className="flex items-center gap-4">
             <div className="bg-[#f97316]/10 p-3 rounded-full">
@@ -658,7 +707,7 @@ const StudentCanteens = () => {
           </div>
           <button
             className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white px-8 py-3 rounded-xl font-medium text-lg transition shadow-md"
-            onClick={() => setStep('checkout')}
+            onClick={() => navigate(`/student/canteens/${selectedCanteen?.name.toLowerCase().replace(/\s+/g, '-')}/checkout`)}
           >
             Review Order
           </button>

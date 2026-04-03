@@ -66,6 +66,16 @@ export default function OwnerProfile() {
   };
 
   const handleSaveClick = async () => {
+    if (!editForm.adminName || editForm.adminName.trim() === '') {
+      showAlert("Validation Error", "name cannot be empty", "warning");
+      return;
+    }
+
+    if (editForm.phone && !/^\d{10}$/.test(editForm.phone)) {
+      showAlert("Validation Error", "number of digits in phone number is not equal to 10", "warning");
+      return;
+    }
+
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       const payload = {

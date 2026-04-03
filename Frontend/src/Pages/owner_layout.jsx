@@ -1,9 +1,9 @@
 import { BASE_URL } from '../config';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Home, Edit, Wallet, BarChart2, History, HelpCircle, Bell, UserCircle, Settings, LogOut, ShoppingBag, CheckCircle, AlertTriangle, IndianRupee, X, IndianRupee as RupeeIcon } from 'lucide-react';
+import { Menu, Home, Edit, Wallet, BarChart2, History, HelpCircle, Bell, UserCircle, Settings, LogOut, ShoppingBag, CheckCircle, AlertTriangle, IndianRupee, X } from 'lucide-react';
 import canteenLogo from '../assets/Canteen_without_bg_logo.png';
-import { io } from 'socket.io-client';
+import { socket } from '../socket';
 
 const NOTIFICATION_STORAGE_PREFIX = 'creditsnap:notifications';
 const MAX_NOTIFICATIONS = 20;
@@ -80,11 +80,31 @@ const clearStoredNotifications = () => {
 
 export default function OwnerLayout() {
   const navigate = useNavigate();
-  const location = useLocation(); 
+  const location = useLocation();
 
   const [userProfile, setUserProfile] = useState({ name: "Loading...", role: "Canteen Owner" });
   const [notifications, setNotifications] = useState(() => loadStoredNotifications());
-  const [paymentToast, setPaymentToast] = useState(null); // { studentName, amount }
+
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // --- ORDER TOAST STATES ---
+  const [orderToast, setOrderToast] = useState(null); // { title, message }
+  const orderToastTimer = useRef(null);
+  
+  // Track current path for conditional popups
+  const pathRef = useRef(location.pathname);
+  useEffect(() => {
+    pathRef.current = location.pathname;
+  }, [location.pathname]);
+
+  const showOrderToast = useCallback((title, message) => {
+    if (orderToastTimer.current) clearTimeout(orderToastTimer.current);
+    setOrderToast({ title, message });
+    orderToastTimer.current = setTimeout(() => setOrderToast(null), 6000);
+  }, []);
+
+  // --- PAYMENT TOAST STATES ---
+  const [paymentToast, setPaymentToast] = useState(null);
   const paymentToastTimer = useRef(null);
   const recentNotificationKeysRef = useRef(new Map());
 
@@ -95,7 +115,6 @@ export default function OwnerLayout() {
   }, []);
 
   // Manage array of short-lived notification objects for displaying real-time UI alerts
-  // Helper to push a new notification
   const addNotification = useCallback((type, title, message) => {
     setNotifications(prev => [{
       id: Date.now(),
@@ -107,7 +126,6 @@ export default function OwnerLayout() {
     }, ...prev].slice(0, 20));
   }, []);
 
-  // Initialize and synchronize websocket connections to dispatch background events dynamically
   const shouldSkipDuplicateNotification = useCallback((key, ttlMs = 5000) => {
     const now = Date.now();
     const recentNotificationKeys = recentNotificationKeysRef.current;
@@ -128,7 +146,6 @@ export default function OwnerLayout() {
 
   // Socket.IO: Live owner notifications
   useEffect(() => {
-    let socket;
     let isCancelled = false;
 
     const fetchProfileAndJoinSocket = async () => {
@@ -142,28 +159,35 @@ export default function OwnerLayout() {
         const data = await response.json();
 
         if (isCancelled) return;
-        
+
         if (data.status === 'success') {
           const user = data.data.user;
           const canteen = data.data.canteen;
-          
+
           setUserProfile({
             name: canteen?.name || user.name || "Admin",
             role: "Canteen Owner",
             profilePhoto: user.profilePhoto || null
           });
 
-          // Always persist canteenId so other pages can use it
           if (canteen?._id) {
             sessionStorage.setItem('canteenId', canteen._id);
             localStorage.setItem('canteenId', canteen._id);
           }
 
-          // Join socket room using the canteenId from the API (not sessionStorage)
           const canteenId = canteen?._id;
           if (canteenId) {
-            socket = io(`${BASE_URL}`);
-            socket.on('connect', () => socket.emit('join-canteen', canteenId));
+            socket.connect();
+
+            // Clear any old listeners before attaching new ones to prevent duplicates across hot-reloads
+            socket.off('connect');
+            socket.off('newOrder');
+            socket.off('debt-threshold');
+            socket.off('payment-received');
+
+            const handleConnect = () => socket.emit('join-canteen', canteenId);
+            socket.on('connect', handleConnect);
+            if (socket.connected) handleConnect();
 
             socket.on('newOrder', (order) => {
               const firstItemName = order.items?.[0]?.name;
@@ -175,7 +199,16 @@ export default function OwnerLayout() {
 
               const studentName = order.student?.name || 'A student';
               const items = order.items?.map(i => `${i.quantity}x ${i.name}`).join(', ') || 'an order';
-              addNotification('info', `New Order 🛍️`, `${studentName} placed: ${items} (₹${order.totalAmount})`);
+
+              const title = `New Order 🛍️`;
+              const message = `${studentName} placed: ${items} (₹${order.totalAmount})`;
+
+              addNotification('info', title, message);
+              
+              // Only drop down the toast if they are NOT actively looking at the dashboard
+              if (!pathRef.current.includes('/dashboard')) {
+                showOrderToast(title, message);
+              }
             });
 
             socket.on('debt-threshold', ({ studentName, pct, amountOwed, limit }) => {
@@ -184,10 +217,6 @@ export default function OwnerLayout() {
               } else if (pct >= 80) {
                 addNotification('warning', 'Debt Warning (80%+)', `${studentName} is at ₹${amountOwed} — ${Math.round(pct)}% of the ₹${limit} limit.`);
               }
-            });
-
-            socket.on('debt-updated', () => {
-              // Generic refresh hint; specific events come via debt-threshold
             });
 
             socket.on('payment-received', (data) => {
@@ -200,20 +229,20 @@ export default function OwnerLayout() {
         console.error('Failed to fetch profile for layout:', error);
       }
     };
-    
+
     fetchProfileAndJoinSocket();
 
     return () => {
       isCancelled = true;
-      if (socket) socket.disconnect();
+      socket.off('connect');
+      socket.off('newOrder');
+      socket.off('debt-threshold');
+      socket.off('payment-received');
+      socket.disconnect();
     };
-  }, [location.pathname, addNotification, showPaymentToast, shouldSkipDuplicateNotification]);
+  }, [location.pathname, addNotification, showPaymentToast, showOrderToast, shouldSkipDuplicateNotification]);
 
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-  // Control visual expansion layout for the primary navigation side panel
-  // --- NEW: Sidebar Toggle State ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const notificationRef = useRef(null);
@@ -242,7 +271,7 @@ export default function OwnerLayout() {
 
   const notifIcon = (type) => {
     if (type === 'success') return <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />;
-    if (type === 'error')   return <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />;
+    if (type === 'error') return <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />;
     if (type === 'warning') return <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />;
     return <ShoppingBag className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />;
   };
@@ -256,19 +285,19 @@ export default function OwnerLayout() {
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
-      
+
       {/* --- COLLAPSIBLE SIDEBAR --- */}
       <aside className={`${isSidebarOpen ? 'w-48' : 'w-20'} bg-[#1e293b] text-white flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
         <div>
           <div className={`p-4 flex transition-all duration-300 ${isSidebarOpen ? 'justify-start ml-2' : 'justify-center'}`}>
-            <Menu 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-              className="w-8 h-8 cursor-pointer hover:text-[#eab308] transition" 
+            <Menu
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="w-8 h-8 cursor-pointer hover:text-[#eab308] transition"
             />
           </div>
 
           <nav className="mt-4 flex flex-col gap-2">
-            
+
             <div onClick={() => navigate('/owner/dashboard')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('dashboard') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <Home className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Home</span>}
@@ -278,7 +307,7 @@ export default function OwnerLayout() {
               <Edit className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Edit Menu</span>}
             </div>
-            
+
             <div onClick={() => navigate('/owner/debts')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('debts') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <Wallet className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Active Debts</span>}
@@ -288,22 +317,21 @@ export default function OwnerLayout() {
               <BarChart2 className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Analytics</span>}
             </div>
-    
+
             <div onClick={() => navigate('/owner/history')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('history') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <History className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm whitespace-nowrap">History</span>}
             </div>
 
             <div onClick={() => navigate('/owner/help')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('help') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
-            <HelpCircle className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
-            {isSidebarOpen && <span className="text-sm whitespace-nowrap">Help</span>}
+              <HelpCircle className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
+              {isSidebarOpen && <span className="text-sm whitespace-nowrap">Help</span>}
             </div>
           </nav>
         </div>
-        
-        {/*About us button keeps navigation, active state styling, AND collapsible sidebar logic --- */}
-        <div 
-          onClick={() => navigate('/owner/about')} 
+
+        <div
+          onClick={() => navigate('/owner/about')}
           className={`p-4 border-t border-slate-700 flex justify-center items-center cursor-pointer transition-all duration-300 ${isActive('about') ? 'bg-[#eab308] text-[#1e293b]' : 'hover:bg-slate-700 text-gray-300'}`}
         >
           {isSidebarOpen ? (
@@ -316,24 +344,23 @@ export default function OwnerLayout() {
 
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 flex flex-col overflow-hidden relative transition-all duration-300">
-        
+
         <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-50 shrink-0">
           <div className="flex items-center h-full">
-             <img src={canteenLogo} alt="CreditSnap Logo" 
-               onClick={() => navigate('/owner/dashboard')}
-               className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2 cursor-pointer hover:opacity-80 transition" 
-               onError={(e) => e.target.src = "https://via.placeholder.com/150x50?text=Logo+Here"} 
-             />
+            <img src={canteenLogo} alt="CreditSnap Logo"
+              onClick={() => navigate('/owner/dashboard')}
+              className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2 cursor-pointer hover:opacity-80 transition"
+              onError={(e) => e.target.src = "https://via.placeholder.com/150x50?text=Logo+Here"}
+            />
           </div>
 
           {/* ── PAYMENT TOAST ── centered between logo and bell ── */}
           <div className="flex-1 flex justify-center items-center pointer-events-none">
             <div
-              className={`pointer-events-auto flex items-center gap-3 bg-[#1e293b] border border-[#eab308]/50 shadow-lg rounded-2xl px-4 py-2.5 transition-all duration-500 ${
-                paymentToast
+              className={`pointer-events-auto flex items-center gap-3 bg-[#1e293b] border border-[#eab308]/50 shadow-lg rounded-2xl px-4 py-2.5 transition-all duration-500 ${paymentToast
                   ? 'opacity-100 translate-y-0 scale-100'
                   : 'opacity-0 -translate-y-3 scale-95 pointer-events-none'
-              }`}
+                }`}
               style={{ minWidth: '260px', maxWidth: '380px' }}
             >
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#eab308]/20 shrink-0">
@@ -355,7 +382,7 @@ export default function OwnerLayout() {
           </div>
 
           <div className="flex items-center gap-6 pr-2">
-            
+
             <div className="relative" ref={notificationRef}>
               <Bell onClick={toggleNotifications} className="w-6 h-6 text-gray-700 cursor-pointer hover:text-[#eab308] transition" />
               {unreadCount > 0 && (
@@ -363,9 +390,34 @@ export default function OwnerLayout() {
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
+
+              {/* --- NEW ORDER TOAST POPUP (Low Opacity, Anchored) --- */}
+              <div
+                className={`absolute top-full mt-3 right-0 z-[60] pointer-events-auto flex items-start gap-3 bg-white/95 backdrop-blur-md border border-gray-200/50 shadow-2xl rounded-2xl p-4 transition-all duration-500 ease-out ${
+                  orderToast
+                    ? 'opacity-100 translate-y-0 scale-100'
+                    : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
+                }`}
+                style={{ width: '320px' }}
+              >
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#fefce8] shrink-0 mt-0.5">
+                  <ShoppingBag className="w-5 h-5 text-[#eab308]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-800">{orderToast?.title}</p>
+                  <p className="text-xs text-gray-600 mt-1 leading-relaxed line-clamp-2">{orderToast?.message}</p>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setOrderToast(null); clearTimeout(orderToastTimer.current); }}
+                  className="text-gray-400 hover:text-gray-700 transition shrink-0 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {/* ------------------------------------------------ */}
+
               {isNotificationsOpen && (
                 <div className="absolute right-0 mt-4 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
-                  {/* Header */}
                   <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4 text-gray-600" />
@@ -381,7 +433,6 @@ export default function OwnerLayout() {
                       )}
                     </div>
                   </div>
-                  {/* Notification List */}
                   <div className="max-h-[380px] overflow-y-auto divide-y divide-gray-50">
                     {notifications.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -394,9 +445,8 @@ export default function OwnerLayout() {
                         <div
                           key={notif.id}
                           onClick={() => setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n))}
-                          className={`flex gap-3 px-5 py-4 cursor-pointer transition-colors ${
-                            notif.read ? 'bg-white hover:bg-gray-50' : 'bg-yellow-50/60 hover:bg-yellow-50'
-                          }`}
+                          className={`flex gap-3 px-5 py-4 cursor-pointer transition-colors ${notif.read ? 'bg-white hover:bg-gray-50' : 'bg-yellow-50/60 hover:bg-yellow-50'
+                            }`}
                         >
                           {notifIcon(notif.type)}
                           <div className="flex-1 min-w-0">
@@ -449,6 +499,7 @@ export default function OwnerLayout() {
 
           </div>
         </header>
+
 
         <div className="flex-1 overflow-y-auto bg-[#f4f7f6] relative">
           <Outlet />

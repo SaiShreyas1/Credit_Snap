@@ -25,6 +25,18 @@ const orderSchema = new mongoose.Schema({
     enum: ['pending', 'accepted', 'rejected', 'cancelled', 'archived'],
     default: 'pending'
   },
+  failureReason: {
+    type: String,
+    default: ''
+  },
+  balanceSnapshot: {
+    type: Number,
+    default: null
+  },
+  transactionId: {
+    type: String,
+    default: null
+  },
   isCleared: {
     type: Boolean,
     default: false

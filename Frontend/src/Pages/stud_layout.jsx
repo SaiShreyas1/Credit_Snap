@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Home, Utensils, Wallet, History, HelpCircle, Bell, UserCircle, Settings, LogOut, CheckCircle, XCircle, AlertTriangle, IndianRupee, X } from 'lucide-react';
 import studentLogo from '../assets/Student_without_bg_logo.png';
-import { io } from 'socket.io-client';
+import { socket } from '../socket';
 
 const NOTIFICATION_STORAGE_PREFIX = 'creditsnap:notifications';
 const MAX_NOTIFICATIONS = 20;
@@ -159,9 +159,17 @@ export default function StudLayout() {
     const user = JSON.parse(userStr);
 
     // Connect to the global WebSocket server
-    const socket = io(`${BASE_URL}`);
+    socket.connect();
 
-    socket.on('connect', () => socket.emit('join-student', user._id));
+    socket.off('connect');
+    socket.off('orderStatusUpdated');
+    socket.off('debt-updated');
+    socket.off('notify-student');
+    socket.off('payment-successful');
+
+    const handleConnect = () => socket.emit('join-student', user._id);
+    socket.on('connect', handleConnect);
+    if (socket.connected) handleConnect();
 
     // EVENT 1: Canteen owner accepts/rejects a food order
     socket.on('orderStatusUpdated', (order) => {
@@ -209,7 +217,14 @@ export default function StudLayout() {
     });
 
     // Cleanup: Disconnect when user logs out or leaves the layout entirely
-    return () => socket.disconnect();
+    return () => {
+      socket.off('connect');
+      socket.off('orderStatusUpdated');
+      socket.off('debt-updated');
+      socket.off('notify-student');
+      socket.off('payment-successful');
+      socket.disconnect();
+    };
   }, [addNotification]);
 
 

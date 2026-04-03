@@ -90,6 +90,16 @@ export default function StudProfile() {
 
   // Submits the draft changes to the backend API
   const handleSaveClick = async () => {
+    if (!editForm.name || editForm.name.trim() === '') {
+      showAlert("Validation Error", "name cannot be empty", "warning");
+      return;
+    }
+
+    if (editForm.phone && !/^\d{10}$/.test(editForm.phone)) {
+      showAlert("Validation Error", "number of digits in phone number is not equal to 10", "warning");
+      return;
+    }
+
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/api/users/update-my-profile`, {

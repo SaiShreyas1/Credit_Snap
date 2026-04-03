@@ -30,4 +30,11 @@ router.post('/debts/:debtId/create-order', paymentController.createDebtOrder);
  */
 router.post('/verify', paymentController.verifyDebtPayment);
 
+/**
+ * @route   POST /api/payments/record-failure
+ * @desc    Records an incomplete transaction natively as a failed Order when the Razorpay widget aborts.
+ * @access  Private (Student)
+ */
+router.post('/record-failure', paymentController.recordPaymentFailure);
+
 module.exports = router;

@@ -241,6 +241,19 @@ export default function ViewDebts() {
 
       const checkoutData = createOrderRes.data.data;
 
+      // Helper to definitively record a checkout cancellation so the DB writes it as a failed history Order
+      const recordFailureInHistory = async () => {
+        try {
+          await axios.post(
+            `${BASE_URL}/api/payments/record-failure`,
+            { paymentRecordId: checkoutData.paymentRecordId },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        } catch (err) {
+          console.error('Failed to notify backend of payment abort', err);
+        }
+      };
+
       // 3. Initialize Razorpay Checkout window
       const razorpay = new window.Razorpay({
         key: checkoutData.keyId,
@@ -280,13 +293,17 @@ export default function ViewDebts() {
         },
         modal: {
           // Handle user closing the popup manually
-          ondismiss: () => setPayingDebtId(null)
+          ondismiss: async () => {
+             await recordFailureInHistory();
+             setPayingDebtId(null);
+          }
         }
       });
 
       // Handle payment failure from within Razorpay (e.g., card declined)
-      razorpay.on('payment.failed', (response) => {
+      razorpay.on('payment.failed', async (response) => {
         const failureMessage = response.error?.description || 'Payment failed. Please try again.';
+        await recordFailureInHistory();
         showAlert('Payment Failed', failureMessage, 'error');
         setPayingDebtId(null);
       });

@@ -14,7 +14,7 @@ import VerifyEmailPending from './Pages/VerifyEmailPending';
 //--Student Pages ---
 import StudLayout from './Pages/stud_layout';
 import StudDashboard from './Pages/stud_Dashboard';
-import StudCanteens from './Pages/stud_canteens';
+import StudCanteens from './Pages/stud_Canteens';
 import StudProfile from './Pages/stud_profile';
 import StudHistory from './Pages/stud_history';
 import ChangePassword from './Pages/ChangePassword';
@@ -107,7 +107,7 @@ export default function App() {
           <Route path="/student" element={<RoleProtectedRoute allowedRole="student"><StudLayout /></RoleProtectedRoute>}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<StudDashboard />} />
-            <Route path="canteens" element={<StudCanteens />} />
+            <Route path="canteens/*" element={<StudCanteens />} />
             <Route path="profile" element={<StudProfile />} />
             <Route path="history" element={<StudHistory />} />
             <Route path="help" element={<StudentHelp />} />

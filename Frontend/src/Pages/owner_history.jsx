@@ -81,16 +81,21 @@ export default function OwnerHistory() {
             time: timeStr
           };
 
+          // Handle specific assignment for Debt records
           if (isDebtPayment) {
             formattedDebts.push({
               ...baseData,
-              remainingDebt: debtMap[studentId] || 0,
+              remainingDebt: order.balanceSnapshot !== undefined && order.balanceSnapshot !== null 
+                               ? order.balanceSnapshot 
+                               : (debtMap[studentId] || 0),
               paymentType: 'Offline' // item name 'Offline Debt Payment' identifies this
             });
           } else if (order.items && order.items.length > 0 && order.items[0].name === 'Online Debt Payment') {
             formattedDebts.push({
               ...baseData,
-              remainingDebt: debtMap[studentId] || 0,
+              remainingDebt: order.balanceSnapshot !== undefined && order.balanceSnapshot !== null 
+                               ? order.balanceSnapshot 
+                               : (debtMap[studentId] || 0),
               paymentType: 'Online'
             });
           } else {
@@ -328,7 +333,7 @@ export default function OwnerHistory() {
 
                 {activeTab === 'debt' && (
                   <div className="text-sm font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                    Remaining Debt: <span className="font-bold text-red-500">₹{record.remainingDebt}</span>
+                    Remaining Debt: <span className="font-bold text-red-500">₹{typeof record.remainingDebt === 'number' ? (Math.round(record.remainingDebt * 100) / 100) : record.remainingDebt}</span>
                   </div>
                 )}
 
@@ -350,3 +355,4 @@ export default function OwnerHistory() {
     </div>
   );
 }
+
