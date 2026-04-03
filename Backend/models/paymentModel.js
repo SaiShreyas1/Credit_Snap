@@ -51,7 +51,7 @@ const paymentSchema = new mongoose.Schema({
   // ==========================================
   provider: {
     type: String,
-    enum: ['razorpay'],
+    enum: ['razorpay', 'offline'],
     default: 'razorpay'
   },
   receipt: {
@@ -61,7 +61,8 @@ const paymentSchema = new mongoose.Schema({
   },
   providerOrderId: {
     type: String,
-    required: [true, 'Provider Order ID is required.'],
+    required: [function() { return this.provider === 'razorpay'; }, 'Provider Order ID is required for online payments.'],
+    sparse: true,
     unique: true
   },
   providerPaymentId: {
