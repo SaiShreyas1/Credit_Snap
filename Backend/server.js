@@ -13,7 +13,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const app = require('./app');
 
-const PORT = process.env.PORT || 5000;
+const PORT = 5005; // Force 5005 aggressively to bypass the university server block
 const DB_URL = process.env.MONGO_URI;
 
 // ==========================================
