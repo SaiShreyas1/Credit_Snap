@@ -96,7 +96,7 @@ export default function StudLayout() {
   const [userProfile, setUserProfile] = useState(null);
 
   // UI Toggles
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -304,14 +304,27 @@ export default function StudLayout() {
   return (
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
 
+      {/* --- MOBILE OVERLAY BACKDROP --- */}
+      {isSidebarOpen && (
+        <div 
+          className="absolute inset-0 bg-black/50 z-[60] md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* --- COLLAPSIBLE SIDEBAR --- */}
-      <aside className={`${isSidebarOpen ? 'w-48' : 'w-20'} bg-linear-to-b from-[#0f172a] to-[#334f90] text-white flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
+      <aside className={`absolute top-0 left-0 md:relative z-[70] h-full ${isSidebarOpen ? 'w-48 translate-x-0' : '-translate-x-full md:translate-x-0 w-20'} bg-linear-to-b from-[#0f172a] to-[#334f90] text-white flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
         <div>
           {/* Hamburger Menu Icon */}
           <div className={`p-4 flex transition-all duration-300 ${isSidebarOpen ? 'justify-start ml-2' : 'justify-center'}`}>
             <Menu
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="w-8 h-8 cursor-pointer hover:text-orange-400 transition"
+              className="w-8 h-8 cursor-pointer hover:text-orange-400 transition hidden md:block"
+            />
+            {/* Close button for mobile */}
+            <X 
+              onClick={() => setIsSidebarOpen(false)}
+              className="w-8 h-8 cursor-pointer hover:text-orange-400 transition md:hidden"
             />
           </div>
 
@@ -364,7 +377,8 @@ export default function StudLayout() {
         <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-50 shrink-0">
 
           {/* Top Left Logo */}
-          <div className="flex items-center h-full">
+          <div className="flex items-center h-full gap-2">
+            <Menu className="w-6 h-6 md:hidden cursor-pointer text-slate-800" onClick={() => setIsSidebarOpen(true)} />
             <img src={studentLogo} alt="CreditSnap Logo"
               onClick={() => navigate('/student/dashboard')}
               className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2 cursor-pointer hover:opacity-80 transition"
