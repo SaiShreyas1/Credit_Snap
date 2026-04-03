@@ -51,6 +51,7 @@ function createIoRecorder() {
 function loadPaymentController({
   Canteen = {},
   Debt = {},
+  Order = {},
   Payment = {},
   settleDebtPayment = jest.fn(),
   Razorpay = class {}
@@ -59,6 +60,7 @@ function loadPaymentController({
 
   jest.doMock('../models/canteenModel', () => Canteen);
   jest.doMock('../models/debtModel', () => Debt);
+  jest.doMock('../models/ordersModel', () => Order);
   jest.doMock('../models/paymentModel', () => Payment);
   jest.doMock('../utils/debtPayments', () => ({ settleDebtPayment }));
   jest.doMock('razorpay', () => Razorpay);
@@ -421,6 +423,78 @@ describe('paymentController.verifyDebtPayment', () => {
       studentName: 'Ada',
       amount: 230,
       canteenName: 'Campus Cafe'
+    });
+  });
+});
+
+describe('paymentController.recordPaymentFailure', () => {
+  test('records failed online payments such as invalid UPI attempts', async () => {
+    const paymentRecord = {
+      _id: 'payment_1',
+      student: 'student_1',
+      canteen: 'canteen_1',
+      amount: 300,
+      providerOrderId: 'order_1',
+      failureReason: 'Payment failed due to invalid UPI ID.'
+    };
+    const paymentUpdate = jest.fn().mockResolvedValue(paymentRecord);
+    const findOrder = jest.fn().mockResolvedValue(null);
+    const createOrder = jest.fn().mockResolvedValue({ _id: 'history_order_1' });
+    const { io, events } = createIoRecorder();
+
+    const { controller } = loadPaymentController({
+      Payment: {
+        findOneAndUpdate: paymentUpdate
+      },
+      Order: {
+        findOne: findOrder,
+        create: createOrder
+      }
+    });
+
+    const req = {
+      body: {
+        paymentRecordId: 'payment_1',
+        error_description: 'Payment failed due to invalid UPI ID.'
+      },
+      app: {
+        get(key) {
+          return key === 'io' ? io : undefined;
+        }
+      }
+    };
+    const res = createResponse();
+
+    await controller.recordPaymentFailure(req, res);
+
+    expect(paymentUpdate).toHaveBeenCalledWith(
+      { _id: 'payment_1', status: { $ne: 'paid' } },
+      {
+        $set: {
+          status: 'failed',
+          failureReason: 'Payment failed due to invalid UPI ID.'
+        }
+      },
+      { new: true }
+    );
+    expect(findOrder).toHaveBeenCalledWith({ transactionId: 'order_1' });
+    expect(createOrder).toHaveBeenCalledWith({
+      student: 'student_1',
+      canteen: 'canteen_1',
+      items: [{ name: 'Online Debt Payment', quantity: 1, price: 300 }],
+      totalAmount: 300,
+      status: 'rejected',
+      failureReason: 'Payment failed due to invalid UPI ID.',
+      transactionId: 'order_1'
+    });
+    expect(events.map(({ room, event }) => ({ room, event }))).toEqual([
+      { room: 'student:student_1', event: 'orderStatusUpdated' },
+      { room: 'canteen:canteen_1', event: 'orderStatusUpdated' }
+    ]);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({
+      status: 'success',
+      message: 'Failure recorded successfully.'
     });
   });
 });

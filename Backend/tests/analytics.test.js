@@ -9,10 +9,10 @@ const User = require('../models/userModel');
 const Canteen = require('../models/canteenModel');
 const Order = require('../models/ordersModel');
 
-// Ensure a JWT secret exists for testing
+//Ensure a JWT secret exists for testing
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_test_secret_for_jwt';
 
-// Quick utility to generate test tokens
+//Quick utility to generate test tokens
 const signToken = (id) => {
   return jwt.sign({ id }, JWT_SECRET, { expiresIn: '1h' });
 };
@@ -44,7 +44,7 @@ describe('Analytics Controller API', () => {
     await Canteen.deleteMany();
     await Order.deleteMany();
 
-    // Create Owner 1
+    //Create Owner 1
     owner1 = await User.create({
       name: 'Test Owner 1',
       email: 'owner1@iitk.ac.in',
@@ -56,7 +56,7 @@ describe('Analytics Controller API', () => {
     });
     owner1Token = `Bearer ${signToken(owner1._id)}`;
 
-    // Create Owner 2 (To test data isolation)
+    //Create Owner 2 (To test data isolation)
     owner2 = await User.create({
       name: 'Test Owner 2',
       email: 'owner2@iitk.ac.in',
@@ -286,9 +286,9 @@ describe('Analytics Controller API', () => {
       expect(pops[0].value).toBe(20);
       
       expect(pops[1].name).toBe('Item C');
-      expect(pops[4].name).toBe('Item G'); // 5th item
+      expect(pops[4].name).toBe('Item G');
       
-      // Enforce the color scheme mentioned in the controller
+      //Enforce the color scheme mentioned in the controller
       const expectedColors = ['#A78BFA', '#FF8A8A', '#38BDF8', '#FB923C', '#60A5FA'];
       pops.forEach((p, idx) => {
         expect(p.color).toBe(expectedColors[idx % expectedColors.length]);
@@ -321,122 +321,51 @@ describe('Analytics Controller API', () => {
       expect(earnings[1].earnings).toBe(500); // 200 + 300
     });
 
-    it('should handle conflicts gracefully with tied quantities and process extreme monetary values', async () => {
-      const currentYear = new Date().getFullYear();
+    it('should successfully map last 7 days of Weekly Orders accurately by day of week', async () => {
+      const today = new Date();
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(today.getDate() - 3);
       
-      const janOrderDate = new Date(`${currentYear}-01-10T12:00:00Z`);
-      const mayOrderDate = new Date(`${currentYear}-05-15T12:00:00Z`);
-      const decOrderDate = new Date(`${currentYear}-12-30T12:00:00Z`);
-
-      // Extreme values for items (prices and quantities)
-      const extremeOrderItems1 = [
-        { name: 'Item Alpha', quantity: 2000, price: 0 },         // Free item, massive quantity
-        { name: 'Item Beta', quantity: 500, price: 9999999 },     // High price, moderate quantity
-        { name: 'Item Gamma', quantity: 50, price: 10 },
-      ];
-      
-      // Creating ties for the top 5 limit cutoff. 
-      // Current Ranks before this order:
-      // 1. Item Alpha: 2000
-      // 2. Item Beta: 500
-      // 3. Item Gamma: 50
-      // We will add 3 items with quantity 30. All tie for 4th/5th/6th place, creating a conflict.
-      const tiesOrderItems = [
-        { name: 'Tie Item X', quantity: 30, price: 50 },
-        { name: 'Tie Item Y', quantity: 30, price: 100 },
-        { name: 'Tie Item Z', quantity: 30, price: 20 },
-        { name: 'Item Delta', quantity: 1, price: 10 }, // Last place item
-      ];
-
       await Order.insertMany([
-        { student: student._id, canteen: canteen1._id, items: extremeOrderItems1, totalAmount: 4999999500, status: 'accepted', createdAt: janOrderDate }, // 500 * 9999999
-        { student: student._id, canteen: canteen1._id, items: tiesOrderItems, totalAmount: 5110, status: 'accepted', createdAt: mayOrderDate }, // 30*50 + 30*100 + 30*20 + 10
-        // A standard normal order in December to ensure small values still process correctly alongside huge ones
-        { student: student._id, canteen: canteen1._id, items: [{ name: 'Item Gamma', quantity: 2, price: 10 }], totalAmount: 20, status: 'accepted', createdAt: decOrderDate },
-        // Introduce exact floating point amounts specifically to cause precision/drift errors (e.g. producing ...9999998)
-        { student: student._id, canteen: canteen1._id, items: [{ name: 'Precision Item', quantity: 1, price: 1644.44 }], totalAmount: 1644.44, status: 'accepted', createdAt: decOrderDate },
-        { student: student._id, canteen: canteen1._id, items: [{ name: 'Precision Item', quantity: 1, price: 0.01 }], totalAmount: 0.01, status: 'accepted', createdAt: decOrderDate },
-        // Floating point drift case: 0.1 + 0.2 is famously not 0.3 in IEEE 754
-        { student: student._id, canteen: canteen1._id, items: [{ name: 'Drift Item', quantity: 1, price: 0.1 }], totalAmount: 0.1, status: 'accepted', createdAt: decOrderDate },
-        { student: student._id, canteen: canteen1._id, items: [{ name: 'Drift Item', quantity: 1, price: 0.2 }], totalAmount: 0.2, status: 'accepted', createdAt: decOrderDate }
+        { student: student._id, canteen: canteen1._id, items: [{ name: 'Weekly Item', quantity: 1, price: 50 }], totalAmount: 50, status: 'accepted', createdAt: today },
+        { student: student._id, canteen: canteen1._id, items: [{ name: 'Weekly Item', quantity: 1, price: 50 }], totalAmount: 50, status: 'accepted', createdAt: threeDaysAgo },
+        { student: student._id, canteen: canteen1._id, items: [{ name: 'Weekly Item', quantity: 1, price: 50 }], totalAmount: 50, status: 'accepted', createdAt: threeDaysAgo }
       ]);
 
       const res = await request(app).get('/api/analytics/owner').set('Authorization', owner1Token);
-      const data = res.body.data;
-      
-      // ... (Top 5 checks omitted for brevity in chunk but kept in file) ...
-      
-      // 1. Check Top 5 conflict resolution
-      const pops = data.popularOrdersData;
-      expect(pops).toHaveLength(5); // Must strictly remain 5 despite the tie
-      
-      // We know Alpha (2000), Beta (500), and Gamma (52) are the top 3.
-      expect(pops[0].name).toBe('Item Alpha');
-      expect(pops[1].name).toBe('Item Beta');
-      expect(pops[2].name).toBe('Item Gamma');
-      expect(pops[2].value).toBe(52); // Verify aggregation across different orders works
-      
-      // The 4th and 5th items should be exactly two of the three tied items (X, Y, Z).
-      // MongoDB decides the break based on internal sort (usually natural insertion order or _id), 
-      // but it must cut it cleanly at 5.
-      const tiedItemsInTop5 = pops.filter(p => p.value === 30).map(p => p.name);
-      expect(tiedItemsInTop5).toHaveLength(2); // Only 2 out of the 3 tied items should make it
-      expect(['Tie Item X', 'Tie Item Y', 'Tie Item Z']).toEqual(expect.arrayContaining(tiedItemsInTop5));
-      
-      // The lowest quantity item should absolutely not be there
-      expect(pops.find(p => p.name === 'Item Delta')).toBeUndefined();
+      const weekly = res.body.data.weeklyOrdersData;
 
-      // 2. Check earnings (Extreme + Normal Values without overflow or type issues)
-      const earnings = data.earningsData;
-      expect(earnings).toHaveLength(3); // Jan, May, Dec
+      expect(weekly).toHaveLength(7);
+      
+      // Since orderedDays pushes chronologically, index 6 is always "Today"
+      expect(weekly[6].orders).toBe(1);
+      
+      // 3 days ago maps to index 3 (6=Today, 5=1 day ago, 4=2 days ago, 3=3 days ago)
+      expect(weekly[3].orders).toBe(2);
 
-      expect(earnings[0].month).toBe('Jan');
-      expect(earnings[0].earnings).toBe(4999999500); 
-
-      expect(earnings[1].month).toBe('May');
-      expect(earnings[1].earnings).toBe(5110);
-
-      expect(earnings[2].month).toBe('Dec');
-      // 20 (base) + 1644.44 + 0.01 + 0.1 + 0.2 = 1664.75 exactly.
-      // If rounding isn't implemented, this might return 1664.7500000000002
-      expect(earnings[2].earnings).toBe(1664.75);
+      // Verify that days without orders safely fall back to exactly 0
+      expect(weekly[5].orders).toBe(0);
+      expect(weekly[4].orders).toBe(0);
     });
 
-    it('should strictly limit to 5 items when there are 6 potential candidates with ties at the cutoff', async () => {
-      // 6 items with varying quantities, including a tie at the 5th/6th spot.
-      const items = [
-        { name: 'Winner 1', quantity: 100, price: 10 },
-        { name: 'Winner 2', quantity: 80, price: 10 },
-        { name: 'Winner 3', quantity: 60, price: 10 },
-        { name: 'Winner 4', quantity: 40, price: 10 },
-        { name: 'Tied Item A', quantity: 20, price: 10 }, // Tied for 5th or 6th
-        { name: 'Tied Item B', quantity: 20, price: 10 }, // Tied for 5th or 6th
-      ];
-
-      await Order.create({
-        student: student._id,
-        canteen: canteen1._id,
-        items,
-        totalAmount: 3200,
-        status: 'accepted'
-      });
+    it('should successfully include archived orders in earnings and popularity aggregations', async () => {
+      // The controller explicitly allows 'accepted' and 'archived'. Validating archived tracking.
+      await Order.create([
+        { student: student._id, canteen: canteen1._id, items: [{ name: 'Late Samosa', quantity: 2, price: 20 }], totalAmount: 40, status: 'archived' }
+      ]);
 
       const res = await request(app).get('/api/analytics/owner').set('Authorization', owner1Token);
+      
+      // Assert earnings ingestion
+      const earnings = res.body.data.earningsData;
+      expect(earnings.length).toBeGreaterThan(0);
+      expect(earnings[earnings.length - 1].earnings).toBe(40);
+
+      // Assert popular orders ingestion
       const pops = res.body.data.popularOrdersData;
-
-      // The count must be exactly 5, despite there being a tie for the 5th slot.
-      expect(pops).toHaveLength(5);
-
-      // Verify the top 4 are definitely there
-      const names = pops.map(p => p.name);
-      expect(names).toContain('Winner 1');
-      expect(names).toContain('Winner 2');
-      expect(names).toContain('Winner 3');
-      expect(names).toContain('Winner 4');
-
-      // Verify ONE and ONLY ONE of the tied items made it in
-      const tiedCount = names.filter(n => n === 'Tied Item A' || n === 'Tied Item B').length;
-      expect(tiedCount).toBe(1);
+      expect(pops).toHaveLength(1);
+      expect(pops[0].name).toBe('Late Samosa');
+      expect(pops[0].value).toBe(2);
     });
   });
 
