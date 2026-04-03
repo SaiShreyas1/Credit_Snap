@@ -112,8 +112,6 @@ export default function Owneranalytics() {
                     tickLine={false} 
                     tick={{fill: '#9CA3AF', fontSize: 12}} 
                     tickFormatter={formatCurrency}
-                    domain={[0, 400000]}
-                    ticks={[0, 100000, 200000, 300000, 400000]}
                   />
                   <Tooltip formatter={formatCurrency} />
                   <Area type="linear" dataKey="earnings" stroke="#8B5CF6" strokeWidth={2} fillOpacity={1} fill="url(#colorEarnings)" />

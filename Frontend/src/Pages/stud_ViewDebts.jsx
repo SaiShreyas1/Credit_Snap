@@ -216,6 +216,7 @@ export default function ViewDebts() {
    * Step 3: Send Razorpay's success response back to the backend for cryptographic verification.
    */
   const handlePayDebt = async (debt, amount = null) => {
+    if (payingDebtId) return; // STRICT LOCK: Prevents double-clicking the payment button while Razorpay SDK or API is loading
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
     if (!token) {

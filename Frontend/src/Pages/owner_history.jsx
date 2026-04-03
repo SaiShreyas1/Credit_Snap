@@ -4,10 +4,28 @@ import axios from 'axios';
 import { History, Search, ChevronDown, CheckCircle, ArrowUpDown, ShoppingBag, Calendar, Clock } from 'lucide-react';
 import { io } from 'socket.io-client';
 
-// Helper to convert DD-MM-YYYY HH:MM PM to a sortable JS Date object
+// Helper to robustly convert DD-MM-YYYY + HH:MM PM into a JS Date object safely across all browsers
 const parseDateTime = (dateStr, timeStr) => {
-  const [day, month, year] = dateStr.split('-');
-  return new Date(`${year}-${month}-${day} ${timeStr}`);
+  if (!dateStr || !timeStr) return new Date();
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const [day, month, year] = parts;
+    const dateObj = new Date(year, parseInt(month) - 1, parseInt(day));
+    
+    const timeMatch = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1], 10);
+      const minutes = parseInt(timeMatch[2], 10);
+      const ampm = timeMatch[3].toUpperCase();
+      
+      if (ampm === 'PM' && hours < 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+      
+      dateObj.setHours(hours, minutes, 0, 0);
+    }
+    return dateObj;
+  }
+  return new Date();
 };
 
 export default function OwnerHistory() {

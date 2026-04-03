@@ -14,6 +14,8 @@ import { io } from 'socket.io-client';
  * This is strictly used so the sorting function can mathematically compare dates (e.g., Newest vs Oldest).
  */
 const parseDateTime = (dateStr, timeStr) => {
+  if (!dateStr || !timeStr) return new Date();
+  
   if (dateStr.toLowerCase().includes('today')) return new Date();
   if (dateStr.toLowerCase().includes('yesterday')) {
     const d = new Date();
@@ -25,7 +27,21 @@ const parseDateTime = (dateStr, timeStr) => {
   const parts = dateStr.split('-');
   if (parts.length === 3) {
     const [day, month, year] = parts;
-    return new Date(`${year}-${month}-${day} ${timeStr}`);
+    const dateObj = new Date(year, parseInt(month) - 1, parseInt(day));
+    
+    // Parse time
+    const timeMatch = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1], 10);
+      const minutes = parseInt(timeMatch[2], 10);
+      const ampm = timeMatch[3].toUpperCase();
+      
+      if (ampm === 'PM' && hours < 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+      
+      dateObj.setHours(hours, minutes, 0, 0);
+    }
+    return dateObj;
   }
   return new Date();
 };

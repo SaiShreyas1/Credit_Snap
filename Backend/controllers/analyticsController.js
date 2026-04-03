@@ -43,20 +43,28 @@ exports.getOwnerAnalytics = async (req, res) => {
     };
 
     // ==========================================
-    // 3. PIE CHART: Most Ordered Items (Top 5)
+    // 3. PIE CHART: Most Ordered Items (Top 5+ Others)
     // ==========================================
     // Unwinds the items array to count every individual item sold, then ranks them.
-    const popularOrdersRaw = await Order.aggregate([
+    const allOrdersRaw = await Order.aggregate([
       { $match: baseMatchCondition },
       { $unwind: '$items' },
       { $group: { _id: '$items.name', value: { $sum: '$items.quantity' } } },
-      { $sort: { value: -1 } },
-      { $limit: 5 }
+      { $sort: { value: -1 } }
     ]);
 
-    // Map specific colors to the top 5 items for consistent UI styling
-    const colors = ['#A78BFA', '#FF8A8A', '#38BDF8', '#FB923C', '#60A5FA'];
-    const popularOrdersData = popularOrdersRaw.map((item, index) => ({
+    // Pick top 5, bucket the rest into "Others"
+    const topItems = allOrdersRaw.slice(0, 5);
+    const others = allOrdersRaw.slice(5);
+    
+    const othersTotal = others.length > 0 ? others.reduce((acc, curr) => acc + curr.value, 0) : 0;
+    
+    // Always push 'Others' so the legend strictly displays a Grey category for consistency
+    topItems.push({ _id: 'Others', value: othersTotal });
+
+    // Map specific colors to the top 5 items + "Others"
+    const colors = ['#A78BFA', '#FF8A8A', '#38BDF8', '#FB923C', '#60A5FA', '#9CA3AF']; // 6th color gray for 'Others'
+    const popularOrdersData = topItems.map((item, index) => ({
       name: item._id,
       value: item.value,
       color: colors[index % colors.length]
