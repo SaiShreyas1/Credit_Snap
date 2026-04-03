@@ -9,6 +9,10 @@ const User = require('../models/userModel');
 const Canteen = require('../models/canteenModel');
 const Debt = require('../models/debtModel');
 
+// Mock email utility for Debt Notifications
+jest.mock('../utils/sendEmail');
+const sendEmail = require('../utils/sendEmail');
+
 // Ensure a JWT secret exists for testing
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_test_secret_for_jwt';
 
@@ -36,8 +40,10 @@ afterAll(async () => {
 
 describe('Debt & Credit Tracking API', () => {
   let student, owner, canteen, debt, studentToken, ownerToken;
+  let owner2, owner2Token;
 
   beforeEach(async () => {
+    jest.clearAllMocks(); // Clear mock tracking for sendEmail
     await User.deleteMany();
     await Canteen.deleteMany();
     await Debt.deleteMany();
@@ -68,6 +74,18 @@ describe('Debt & Credit Tracking API', () => {
       rollNo: 'N/A', hallNo: 'N/A', roomNo: 'N/A'
     });
     ownerToken = `Bearer ${signToken(owner._id)}`;
+
+    // 2.5 Create a secondary Owner (for cross-canteen security tests)
+    owner2 = await User.create({
+      name: 'Test Owner 2',
+      email: 'owner2@iitk.ac.in',
+      password: 'password123',
+      phoneNo: '8887776666',
+      role: 'owner',
+      isVerified: true,
+      rollNo: 'N/A2', hallNo: 'N/A2', roomNo: 'N/A2'
+    });
+    owner2Token = `Bearer ${signToken(owner2._id)}`;
 
     // 3. Create a Canteen
     canteen = await Canteen.create({
@@ -159,6 +177,48 @@ describe('Debt & Credit Tracking API', () => {
       expect(res.body.status).toBe('fail');
       expect(res.body.message).toMatch(/greater than zero/i);
     });
+
+    it('should fail with 404 if debt record not found', async () => {
+      const res = await request(app)
+        .post(`/api/debts/${new mongoose.Types.ObjectId()}/pay`)
+        .set('Authorization', ownerToken)
+        .send({ amountPaid: 100 });
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
+  describe('POST /api/debts/:id/notify (Student Notifications)', () => {
+    it('should successfully dispatch a notification email for pending debt', async () => {
+      sendEmail.mockResolvedValue();
+      const res = await request(app)
+        .post(`/api/debts/${debt._id}/notify`)
+        .set('Authorization', ownerToken);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.status).toBe('success');
+      expect(res.body.message).toMatch(/Notification sent/i);
+      expect(sendEmail).toHaveBeenCalledTimes(1);
+    });
+
+    it('should fail to notify if debt is 0', async () => {
+      debt.amountOwed = 0;
+      await debt.save();
+
+      const res = await request(app)
+        .post(`/api/debts/${debt._id}/notify`)
+        .set('Authorization', ownerToken);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toMatch(/no pending debt/i);
+    });
+
+    it('should safely bounce gracefully if debt does not exist', async () => {
+      const res = await request(app)
+        .post(`/api/debts/${new mongoose.Types.ObjectId()}/notify`)
+        .set('Authorization', ownerToken);
+
+      expect(res.statusCode).toBe(404);
+    });
   });
 
   describe('PATCH /api/debts/:id/limit (Credit Tracking)', () => {
@@ -185,6 +245,24 @@ describe('Debt & Credit Tracking API', () => {
       expect(res.statusCode).toBe(400);
       expect(res.body.status).toBe('fail');
       expect(res.body.message).toMatch(/Cannot set limit/i);
+    });
+
+    it('should actively block other canteen owners from updating this limit (Security Check)', async () => {
+      const res = await request(app)
+        .patch(`/api/debts/${debt._id}/limit`)
+        .set('Authorization', owner2Token)
+        .send({ limit: 4000 });
+
+      expect(res.statusCode).toBe(403);
+      expect(res.body.message).toMatch(/your own canteen/i);
+    });
+
+    it('should fail with 404 if debt not found for limit update', async () => {
+      const res = await request(app)
+        .patch(`/api/debts/${new mongoose.Types.ObjectId()}/limit`)
+        .set('Authorization', ownerToken)
+        .send({ limit: 100 });
+      expect(res.statusCode).toBe(404);
     });
   });
 });
