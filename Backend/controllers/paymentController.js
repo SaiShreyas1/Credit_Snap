@@ -286,7 +286,8 @@ exports.verifyDebtPayment = async (req, res) => {
     const settlement = await settleDebtPayment({
       debt,
       amountPaid: claimedPayment.amount,
-      receiptLabel: 'Online Debt Payment'
+      receiptLabel: 'Online Debt Payment',
+      transactionId: razorpay_payment_id
     });
 
     // Mark the record as fully successful

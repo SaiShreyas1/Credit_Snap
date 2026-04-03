@@ -403,7 +403,8 @@ describe('paymentController.verifyDebtPayment', () => {
     expect(settleDebtPayment).toHaveBeenCalledWith({
       debt: debtRecord,
       amountPaid: 230,
-      receiptLabel: 'Online Debt Payment'
+      receiptLabel: 'Online Debt Payment',
+      transactionId: 'pay_1'
     });
     expect(claimedPayment.status).toBe('paid');
     expect(claimedPayment.failureReason).toBe('');

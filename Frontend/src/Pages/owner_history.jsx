@@ -4,28 +4,18 @@ import axios from 'axios';
 import { History, Search, ChevronDown, CheckCircle, ArrowUpDown, ShoppingBag, Calendar, Clock } from 'lucide-react';
 import { io } from 'socket.io-client';
 
-// Helper to robustly convert DD-MM-YYYY + HH:MM PM into a JS Date object safely across all browsers
+// Helper to convert DD-MM-YYYY and hh:mm AM/PM to a sortable JS Date object
 const parseDateTime = (dateStr, timeStr) => {
-  if (!dateStr || !timeStr) return new Date();
-  const parts = dateStr.split('-');
-  if (parts.length === 3) {
-    const [day, month, year] = parts;
-    const dateObj = new Date(year, parseInt(month) - 1, parseInt(day));
-    
-    const timeMatch = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
-    if (timeMatch) {
-      let hours = parseInt(timeMatch[1], 10);
-      const minutes = parseInt(timeMatch[2], 10);
-      const ampm = timeMatch[3].toUpperCase();
-      
-      if (ampm === 'PM' && hours < 12) hours += 12;
-      if (ampm === 'AM' && hours === 12) hours = 0;
-      
-      dateObj.setHours(hours, minutes, 0, 0);
-    }
-    return dateObj;
-  }
-  return new Date();
+  const [day, month, year] = dateStr.split('-');
+  // Parse 12-hour time string manually to avoid cross-browser Date parsing issues
+  const timeParts = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!timeParts) return new Date(`${year}-${month}-${day}`);
+  let hours = parseInt(timeParts[1], 10);
+  const minutes = parseInt(timeParts[2], 10);
+  const period = timeParts[3].toUpperCase();
+  if (period === 'AM' && hours === 12) hours = 0;
+  if (period === 'PM' && hours !== 12) hours += 12;
+  return new Date(year, month - 1, day, hours, minutes);
 };
 
 export default function OwnerHistory() {
@@ -38,9 +28,19 @@ export default function OwnerHistory() {
   const [filterOpen, setFilterOpen] = useState(false);
 
   // Sorting and Filtering States
-  const [sortConfig, setSortConfig] = useState('default');
+  const [sortConfig, setSortConfig] = useState('date_desc');
   const [filterAmount, setFilterAmount] = useState({ min: '', max: '' });
   const [filterDate, setFilterDate] = useState({ start: '', end: '' });
+
+  const [expandedRecords, setExpandedRecords] = useState(new Set());
+  const toggleRecord = (id) => {
+    setExpandedRecords(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
+      return newSet;
+    });
+  };
 
   // History data state
   const [historyData, setHistoryData] = useState({ orders: [], debts: [] });
@@ -114,7 +114,8 @@ export default function OwnerHistory() {
               remainingDebt: order.balanceSnapshot !== undefined && order.balanceSnapshot !== null 
                                ? order.balanceSnapshot 
                                : (debtMap[studentId] || 0),
-              paymentType: 'Online'
+              paymentType: 'Online',
+              transactionId: order.transactionId || null
             });
           } else {
             const itemsStr = order.items && order.items.length > 0
@@ -174,22 +175,25 @@ export default function OwnerHistory() {
     return matchesSearch && matchesAmount && matchesDate;
   });
 
-  if (sortConfig !== 'default') {
-    list = [...list].sort((a, b) => {
-      if (sortConfig.includes('date')) {
-        const dateA = parseDateTime(a.date, a.time);
-        const dateB = parseDateTime(b.date, b.time);
-        return sortConfig === 'date_desc' ? dateB - dateA : dateA - dateB;
-      } else if (sortConfig.includes('amount')) {
-        return sortConfig === 'amount_desc' ? b.amount - a.amount : a.amount - b.amount;
-      }
-      return 0;
-    });
-  }
+  list = [...list].sort((a, b) => {
+    if (sortConfig === 'date_desc' || sortConfig === 'date_asc') {
+      const dateA = parseDateTime(a.date, a.time);
+      const dateB = parseDateTime(b.date, b.time);
+      return sortConfig === 'date_desc' ? dateB - dateA : dateA - dateB;
+    } else if (sortConfig === 'amount_desc') {
+      return b.amount - a.amount;
+    } else if (sortConfig === 'amount_asc') {
+      return a.amount - b.amount;
+    }
+    // fallback: newest first
+    const dateA = parseDateTime(a.date, a.time);
+    const dateB = parseDateTime(b.date, b.time);
+    return dateB - dateA;
+  });
 
   const getSortText = () => {
-    if (sortConfig === 'date_desc') return "Recent (Newest First)";
-    if (sortConfig === 'date_asc') return "Recent (Oldest First)";
+    if (sortConfig === 'date_desc') return "Newest First";
+    if (sortConfig === 'date_asc') return "Oldest First";
     if (sortConfig === 'amount_desc') return "Amount: High → Low";
     if (sortConfig === 'amount_asc') return "Amount: Low → High";
     return "Sort by";
@@ -260,9 +264,8 @@ export default function OwnerHistory() {
             </button>
             {sortOpen && (
               <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden py-2">
-                <div onClick={() => { setSortConfig('default'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'default' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Default</div>
-                <div onClick={() => { setSortConfig('date_desc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_desc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Recent (Newest First)</div>
-                <div onClick={() => { setSortConfig('date_asc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_asc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Recent (Oldest First)</div>
+                <div onClick={() => { setSortConfig('date_desc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_desc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Newest First</div>
+                <div onClick={() => { setSortConfig('date_asc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_asc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Oldest First</div>
                 <div onClick={() => { setSortConfig('amount_desc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'amount_desc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Amount: High → Low</div>
                 <div onClick={() => { setSortConfig('amount_asc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'amount_asc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Amount: Low → High</div>
               </div>
@@ -360,8 +363,23 @@ export default function OwnerHistory() {
                   <span className="text-gray-300">•</span>
                   <span className="flex items-center"><Clock className="w-4 h-4 mr-1.5 text-gray-400" /> {record.time}</span>
                 </div>
+                
+                {activeTab === 'debt' && record.paymentType === 'Online' && record.transactionId && (
+                  <button onClick={() => toggleRecord(record.id)} className="mt-2 text-gray-500 hover:text-gray-700 transition flex items-center text-sm font-medium">
+                    Transaction ID <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${expandedRecords.has(record.id) ? 'rotate-180' : ''}`} />
+                  </button>
+                )}
               </div>
 
+              {/* Expandable Section */}
+              {expandedRecords.has(record.id) && (
+                <div className="mt-4 pt-4 border-t border-gray-100 w-full animate-in fade-in slide-in-from-top-2 transition-all basis-full">
+                  <div className="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
+                     <span className="text-gray-500 text-sm font-medium">Razorpay Transaction ID</span>
+                     <span className="font-mono text-sm text-gray-800 bg-white px-3 py-1.5 rounded shadow-sm border border-gray-200">{record.transactionId}</span>
+                  </div>
+                </div>
+              )}
             </div>
           ))
         )}
