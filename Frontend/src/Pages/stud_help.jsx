@@ -18,7 +18,7 @@ export default function StudentHelp() {
   const faqs = [
     {
       question: "My order was rejected",
-      answer: "Your order has been rejected by the canteen owner due to some reason. Therefore your debt balance remains unchanged. For any clarification on why the order was canceled, Please reach out to the canteen owner, or you can continue with your next order."
+      answer: "Orders can be rejected by canteens (due to some reason) or manually cancelled by you from your Dashboard while still pending. In both cases, your debt balance remains completely unaffected. You can verify the status in your Order History or contact the canteen owner directly for any further clarification."
     },
     {
       question: "Payment Related Issues",
