@@ -15,9 +15,9 @@ const { settleDebtPayment } = require('../utils/debtPayments');
 exports.getActiveDebts = async (req, res) => {
   try {
     const myCanteen = await Canteen.findOne({ ownerId: req.user.id });
-    
+
     // Support both new Canteen ID references and legacy Owner ID references
-    const activeDebts = await Debt.find({ 
+    const activeDebts = await Debt.find({
       $or: [
         { canteen: req.user.id },
         { canteen: myCanteen ? myCanteen._id : null }
@@ -44,7 +44,7 @@ exports.payOffline = async (req, res) => {
     }
 
     const debt = await Debt.findById(req.params.id).populate('student');
-    
+
     if (!debt) {
       return res.status(404).json({ status: 'fail', message: 'Debt record not found!' });
     }
@@ -91,7 +91,7 @@ exports.notifyStudent = async (req, res) => {
   try {
     const debt = await Debt.findById(req.params.id)
       .populate('student', 'name email')
-      .populate('canteen', 'name'); 
+      .populate('canteen', 'name');
 
     if (!debt || !debt.student) {
       return res.status(404).json({ status: 'fail', message: 'Debt or Student record not found in the database!' });
@@ -171,12 +171,12 @@ exports.updateDebtLimit = async (req, res) => {
     const ownerMatches = debtCanteenStr === req.user.id || (myCanteen && debtCanteenStr === myCanteen._id.toString());
 
     if (!ownerMatches) {
-       return res.status(403).json({ status: 'fail', message: 'You can only change debt limits for students at your own canteen.' });
+      return res.status(403).json({ status: 'fail', message: 'You can only change debt limits for students at your own canteen.' });
     }
 
     // Validation Check: Prevent lowering limit below current debt
     if (newLimit < debt.amountOwed) {
-       return res.status(400).json({ status: 'fail', message: `Cannot set limit to ₹${newLimit} because this student currently owes ₹${debt.amountOwed}.` });
+      return res.status(400).json({ status: 'fail', message: `Cannot set limit to ₹${newLimit} because this student currently owes ₹${debt.amountOwed}.` });
     }
 
     debt.limit = newLimit;
@@ -210,10 +210,10 @@ exports.updateDebtLimit = async (req, res) => {
  */
 exports.getMyDebts = async (req, res) => {
   try {
-    const debts = await Debt.find({ 
+    const debts = await Debt.find({
       student: req.user.id,
-      amountOwed: { $gt: 0 } 
-    }).populate('canteen', 'name'); 
+      amountOwed: { $gt: 0 }
+    }).populate('canteen', 'name');
 
     res.status(200).json({ status: 'success', data: debts });
   } catch (error) {

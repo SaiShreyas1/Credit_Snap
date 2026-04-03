@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test --test-isolation=none tests/paymentController.test.js"
+    "test": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles --testTimeout=5000",
+    "test:watch": "jest --watch",
+    "test:payment": "cross-env NODE_ENV=test jest --runInBand --testTimeout=5000 tests/paymentController.test.js"
   },
   "keywords": [],
   "author": "",
@@ -25,6 +27,7 @@
   "devDependencies": {
     "cross-env": "^10.1.0",
     "jest": "^30.3.0",
+    "mongodb-memory-server": "^11.0.1",
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2"
   }

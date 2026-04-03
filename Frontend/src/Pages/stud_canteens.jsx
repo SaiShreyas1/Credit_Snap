@@ -27,18 +27,18 @@ const StudentCanteens = () => {
   // ==========================================
   // STATE MANAGEMENT
   // ==========================================
-  
+
   // View State: Controls which screen the user is currently seeing
   const [step, setStep] = useState('list'); // 'list' | 'menu' | 'checkout'
-  
+
   // Data State: Holds data fetched from the API
   const [canteensData, setCanteensData] = useState([]);
   const [menuData, setMenuData] = useState([]);
   const [selectedCanteen, setSelectedCanteen] = useState(null);
-  
+
   // Cart State: Stores item IDs as keys and quantities as values (e.g., { "item123": 2 })
   const [cart, setCart] = useState({});
-  
+
   // UI State
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -81,7 +81,7 @@ const StudentCanteens = () => {
         }
 
         const navState = location.state;
-        
+
         // Scenario A: User navigated here to explicitly reset their view
         if (navState && navState.reset) {
           setStep('list');
@@ -89,33 +89,33 @@ const StudentCanteens = () => {
           setCart({});
           return;
         }
-        
+
         // Scenario B: User clicked "Edit Order" from another page. 
         // We need to auto-load the specific canteen, its menu, and populate the cart.
         if (navState && navState.isChangingOrder && canteens.length > 0) {
           const autoCanteenId = navState.canteenId;
           const canteenToOpen = canteens.find(c => c._id === autoCanteenId);
-          
+
           if (canteenToOpen) {
             if (canteenToOpen.status === "Closed") {
               showAlert("Canteen Closed", "This canteen is currently closed. You cannot modify your order right now.", "warning");
             } else {
               // Fetch the menu for the specific canteen being edited
               const menuRes = await axios.get(`${BASE_URL}/api/canteens/${autoCanteenId}/menu`);
-              
+
               if (menuRes.data.status === 'success') {
                 const availableMenu = menuRes.data.data.menu.filter(item => item.isAvailable);
                 setMenuData(availableMenu);
-                
+
                 // Reconstruct the cart state from the saved items passed via router state
                 try {
                   const savedItems = navState.cartItems || [];
                   const newCartState = {};
-                  
+
                   savedItems.forEach(savedItem => {
                     const menuItem = availableMenu.find(m => m.name === savedItem.name);
                     if (menuItem) {
-                      newCartState[menuItem._id] = savedItem.quantity; 
+                      newCartState[menuItem._id] = savedItem.quantity;
                     }
                   });
                   setCart(newCartState);
@@ -129,7 +129,7 @@ const StudentCanteens = () => {
               }
             }
           }
-          
+
           // Clear the router state so refreshing the page doesn't trigger this again
           navigate(location.pathname, { replace: true, state: null });
         }
@@ -141,7 +141,7 @@ const StudentCanteens = () => {
     };
 
     fetchInitialData();
-  }, [location.state, location.pathname, navigate]); 
+  }, [location.state, location.pathname, navigate]);
 
   // ==========================================
   // DATA FETCHING & SOCKET LISTENERS
@@ -218,10 +218,10 @@ const StudentCanteens = () => {
       showAlert("Cart Empty", "Your cart is empty! Please add some items before ordering.", "warning");
       return;
     }
-    
+
     try {
       const token = sessionStorage.getItem('token');
-      
+
       // Format the cart data to match the backend Order schema
       const orderData = {
         canteenId: selectedCanteen._id,
@@ -272,13 +272,13 @@ const StudentCanteens = () => {
   // ==========================================
   // CART INPUT HANDLERS
   // ==========================================
-  
+
   // Handles button clicks (+ / -)
   const updateQuantity = (id, delta) => {
     setCart(prev => {
       const currentQty = prev[id] === '' ? 0 : (prev[id] || 0);
       const newQty = currentQty + delta;
-      
+
       // Remove item from cart if quantity drops to 0 or below
       if (newQty <= 0) {
         const newCart = { ...prev };
@@ -301,7 +301,7 @@ const StudentCanteens = () => {
       const currentVal = prev[id];
       if (currentVal === '' || currentVal <= 0) {
         const newCart = { ...prev };
-        delete newCart[id]; 
+        delete newCart[id];
         return newCart;
       }
       return prev;
@@ -312,7 +312,7 @@ const StudentCanteens = () => {
   const getTotalCost = () => {
     return Object.entries(cart).reduce((total, [id, qty]) => {
       const item = menuData.find(i => i._id === id);
-      const validQty = qty === '' ? 0 : qty; 
+      const validQty = qty === '' ? 0 : qty;
       return total + (item ? item.price * validQty : 0);
     }, 0);
   };
@@ -332,7 +332,7 @@ const StudentCanteens = () => {
   // ==========================================
   // DERIVED STATE (FILTERING & SORTING)
   // ==========================================
-  
+
   // Applies active filters and search query to the canteen list
   let displayCanteens = canteensData
     .filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -383,7 +383,7 @@ const StudentCanteens = () => {
 
   return (
     <main className="p-10 pb-32 w-full h-full bg-[#F8FAFC] overflow-y-auto relative">
-      
+
       {/* --- DYNAMIC HEADER --- */}
       {step !== 'list' && (
         <h1 className="text-3xl font-medium text-black mb-10 flex items-center gap-4">
@@ -496,7 +496,7 @@ const StudentCanteens = () => {
       {/* --- STEP 2: CANTEEN MENU VIEW --- */}
       {step === 'menu' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-          
+
           {/* Canteen Closed Notice */}
           {selectedCanteen?.status === "Closed" && (
             <div className="col-span-1 md:col-span-2 bg-white rounded-2xl p-10 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-2">
@@ -537,7 +537,7 @@ const StudentCanteens = () => {
                   <button className="cursor-pointer p-2.5 hover:bg-gray-200 transition text-gray-700" onClick={() => updateQuantity(item._id, -1)}>
                     <Minus className="w-5 h-5" />
                   </button>
-                  
+
                   {/* 🌟 KEYBOARD EDITABLE INPUT */}
                   <input
                     type="number"
@@ -570,14 +570,14 @@ const StudentCanteens = () => {
         <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
             <h2 className="text-2xl font-medium text-black">Review Your Order</h2>
-            <button 
-              onClick={() => setStep('menu')} 
+            <button
+              onClick={() => setStep('menu')}
               className="text-[#f97316] hover:text-[#ea580c] font-semibold text-sm underline cursor-pointer"
             >
               + Add more items
             </button>
           </div>
-          
+
           <div className="space-y-4 mb-8">
             {Object.keys(cart).length === 0 ? (
               <p className="text-gray-500 italic text-center py-4">Your cart is completely empty. Please add items.</p>
@@ -591,13 +591,13 @@ const StudentCanteens = () => {
                       <p className="text-lg font-medium text-black">{item.name}</p>
                       <p className="text-sm text-gray-500">Rs.{item.price} each</p>
                     </div>
-                    
+
                     <div className="flex items-center gap-6">
                       <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50 shadow-sm">
                         <button className="cursor-pointer p-2 hover:bg-gray-200 transition text-gray-700" onClick={() => updateQuantity(id, -1)}>
                           <Minus className="w-4 h-4" />
                         </button>
-                        
+
                         {/* 🌟 KEYBOARD EDITABLE INPUT (CHECKOUT) */}
                         <input
                           type="number"
