@@ -262,11 +262,11 @@ export default function OwnerEditMenu() {
               </div>
             </div>
             <div className="flex justify-center gap-8">
-              <button onClick={handleConfirmAdd} className="cursor-pointer px-8 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-800 font-medium hover:bg-gray-50 transition text-lg">
-                Confirm
-              </button>
               <button onClick={() => setIsAddModalOpen(false)} className="cursor-pointer px-8 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-800 font-medium hover:bg-gray-50 transition text-lg">
                 Cancel
+              </button>
+              <button onClick={handleConfirmAdd} className="cursor-pointer px-8 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-800 font-medium hover:bg-gray-50 transition text-lg">
+                Confirm
               </button>
             </div>
           </div>
