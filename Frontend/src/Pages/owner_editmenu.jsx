@@ -20,7 +20,7 @@ export default function OwnerEditMenu() {
   // State variables for manipulating UI filters, search texts, and dynamic sorting
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
-  const [activeSort, setActiveSort] = useState('');
+  const [activeSort, setActiveSort] = useState('default');
 
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
@@ -335,6 +335,7 @@ export default function OwnerEditMenu() {
               </button>
               {isSortDropdownOpen && (
                 <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
+                  <div onClick={() => { setActiveSort('default'); setIsSortDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'default' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Default</div>
                   <div onClick={() => { setActiveSort('price-low-high'); setIsSortDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'price-low-high' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Price: Low to High</div>
                   <div onClick={() => { setActiveSort('price-high-low'); setIsSortDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'price-high-low' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Price: High to Low</div>
                   <div onClick={() => { setActiveSort('name-a-z'); setIsSortDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'name-a-z' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Name: A to Z</div>
@@ -358,7 +359,7 @@ export default function OwnerEditMenu() {
             <div className="col-span-1 md:col-span-2 bg-white rounded-2xl p-12 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center gap-3">
               <AlertTriangle className="w-10 h-10 text-orange-400" />
               <p className="text-xl font-semibold text-gray-800">No matching items found!</p>
-              <button onClick={() => { setSearchQuery(''); setActiveFilter('all'); setActiveSort(''); }} className="cursor-pointer mt-2 bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-5 py-2 rounded-lg transition text-sm">Clear All Filters</button>
+              <button onClick={() => { setSearchQuery(''); setActiveFilter('all'); setActiveSort('default'); }} className="cursor-pointer mt-2 bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-5 py-2 rounded-lg transition text-sm">Clear All Filters</button>
             </div>
           )}
 
