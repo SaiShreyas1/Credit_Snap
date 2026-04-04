@@ -142,7 +142,22 @@ export default function Owneranalytics() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Legend verticalAlign="bottom" height={40} iconType="circle" wrapperStyle={{ width: '100%', fontSize: '14px', color: '#6B7280', display: 'flex', justifyContent: 'space-between', paddingTop: '10px' }}/>
+                <Legend 
+                  verticalAlign="bottom" 
+                  content={(props) => {
+                    const { payload } = props;
+                    return (
+                      <ul className="flex flex-wrap justify-center gap-x-6 gap-y-3 w-full text-[14px] text-[#6B7280] pt-3">
+                        {payload.map((entry, index) => (
+                          <li key={`item-${index}`} className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: entry.color }}></span>
+                            <span className="truncate">{entry.value}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  }}
+                />
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
