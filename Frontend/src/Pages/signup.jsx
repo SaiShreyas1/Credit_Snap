@@ -516,11 +516,11 @@ const Signup = () => {
               <span className="light-text">Already have account? </span>
               <a href="/">Login.</a>
             </div>
-          </div>
 
-          <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '13px' }}>
-            <span className="light-text" style={{ color: '#666' }}>Need Help? </span>
-            <a href="mailto:creditsnapiitk24@gmail.com" style={{ color: '#1a365d', fontWeight: '600', textDecoration: 'none' }}>Contact us here.</a>
+            <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '13px' }}>
+              <span className="light-text" style={{ color: '#666' }}>Need Help? </span>
+              <a href="mailto:creditsnapiitk24@gmail.com" style={{ color: '#1a365d', fontWeight: '600', textDecoration: 'none' }}>Contact us here.</a>
+            </div>
           </div>
         </div>
       </div>
