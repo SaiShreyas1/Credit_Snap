@@ -7,6 +7,11 @@ import { socket } from '../socket';
 
 const NOTIFICATION_STORAGE_PREFIX = 'creditsnap:notifications';
 const MAX_NOTIFICATIONS = 20;
+const DESKTOP_MEDIA_QUERY = '(min-width: 768px)';
+
+const isDesktopViewport = () => (
+  typeof window !== 'undefined' && window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+);
 
 const getStoredUser = () => {
   try {
@@ -243,7 +248,7 @@ export default function OwnerLayout() {
   }, [location.pathname, addNotification, showPaymentToast, showOrderToast, shouldSkipDuplicateNotification]);
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(isDesktopViewport);
 
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
@@ -257,8 +262,30 @@ export default function OwnerLayout() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const mediaQuery = window.matchMedia(DESKTOP_MEDIA_QUERY);
+    const handleViewportChange = (event) => {
+      setIsSidebarOpen(event.matches);
+    };
+
+    handleViewportChange(mediaQuery);
+    mediaQuery.addEventListener?.('change', handleViewportChange);
+
+    return () => {
+      mediaQuery.removeEventListener?.('change', handleViewportChange);
+    };
+  }, []);
+
   const toggleNotifications = () => { setIsNotificationsOpen(!isNotificationsOpen); setIsProfileOpen(false); };
   const toggleProfile = () => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); };
+  const handleSidebarNavigate = (path) => {
+    navigate(path);
+    if (!isDesktopViewport()) {
+      setIsSidebarOpen(false);
+    }
+  };
   const isActive = (path) => location.pathname.includes(path);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -284,18 +311,18 @@ export default function OwnerLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
+    <div className="flex h-[100dvh] min-h-[100dvh] bg-gray-50 font-sans overflow-hidden">
 
       {/* --- MOBILE OVERLAY BACKDROP --- */}
       {isSidebarOpen && (
         <div 
-          className="absolute inset-0 bg-black/50 z-[60] md:hidden"
+          className="fixed inset-0 bg-black/50 z-[60] md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* --- COLLAPSIBLE SIDEBAR --- */}
-      <aside className={`absolute top-0 left-0 md:relative z-[70] h-full ${isSidebarOpen ? 'w-48 translate-x-0' : '-translate-x-full md:translate-x-0 w-20'} bg-[#1e293b] text-white flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
+      <aside className={`absolute top-0 left-0 md:relative z-[70] h-[100dvh] md:h-full ${isSidebarOpen ? 'w-48 translate-x-0' : '-translate-x-full md:translate-x-0 w-20'} bg-[#1e293b] text-white flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
         <div>
           <div className={`p-4 flex transition-all duration-300 ${isSidebarOpen ? 'justify-start ml-2' : 'justify-center'}`}>
             <Menu
@@ -311,32 +338,32 @@ export default function OwnerLayout() {
 
           <nav className="mt-4 flex flex-col gap-2">
 
-            <div onClick={() => navigate('/owner/dashboard')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('dashboard') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => handleSidebarNavigate('/owner/dashboard')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('dashboard') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <Home className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Home</span>}
             </div>
 
-            <div onClick={() => navigate('/owner/editmenu')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('editmenu') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => handleSidebarNavigate('/owner/editmenu')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('editmenu') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <Edit className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Edit Menu</span>}
             </div>
 
-            <div onClick={() => navigate('/owner/debts')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('debts') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => handleSidebarNavigate('/owner/debts')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('debts') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <Wallet className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Active Debts</span>}
             </div>
 
-            <div onClick={() => navigate('/owner/analytics')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('analytics') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => handleSidebarNavigate('/owner/analytics')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('analytics') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <BarChart2 className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Analytics</span>}
             </div>
 
-            <div onClick={() => navigate('/owner/history')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('history') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => handleSidebarNavigate('/owner/history')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('history') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <History className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm whitespace-nowrap">History</span>}
             </div>
 
-            <div onClick={() => navigate('/owner/help')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('help') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => handleSidebarNavigate('/owner/help')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('help') ? 'bg-[#eab308] text-[#1e293b] shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <HelpCircle className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm whitespace-nowrap">Help</span>}
             </div>
@@ -344,7 +371,7 @@ export default function OwnerLayout() {
         </div>
 
         <div
-          onClick={() => navigate('/owner/about')}
+          onClick={() => handleSidebarNavigate('/owner/about')}
           className={`p-4 border-t border-slate-700 flex justify-center items-center cursor-pointer transition-all duration-300 ${isActive('about') ? 'bg-[#eab308] text-[#1e293b]' : 'hover:bg-slate-700 text-gray-300'}`}
         >
           {isSidebarOpen ? (
@@ -358,24 +385,23 @@ export default function OwnerLayout() {
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 flex flex-col overflow-hidden relative transition-all duration-300">
 
-        <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-50 shrink-0">
+        <header className="relative h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-3 sm:px-4 shadow-sm z-50 shrink-0">
           <div className="flex items-center h-full gap-2">
             <Menu className="w-6 h-6 md:hidden cursor-pointer text-slate-800" onClick={() => setIsSidebarOpen(true)} />
             <img src={canteenLogo} alt="CreditSnap Logo"
               onClick={() => navigate('/owner/dashboard')}
-              className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2 cursor-pointer hover:opacity-80 transition"
+              className="h-full max-w-[9.5rem] sm:max-w-none w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2 cursor-pointer hover:opacity-80 transition"
               onError={(e) => e.target.src = "https://via.placeholder.com/150x50?text=Logo+Here"}
             />
           </div>
 
           {/* ── PAYMENT TOAST ── centered between logo and bell ── */}
-          <div className="flex-1 flex justify-center items-center pointer-events-none">
+          <div className="pointer-events-none absolute top-full left-2 right-2 mt-2 md:static md:mt-0 md:flex-1 md:flex md:justify-center md:items-center">
             <div
-              className={`pointer-events-auto flex items-center gap-3 bg-[#1e293b] border border-[#eab308]/50 shadow-lg rounded-2xl px-4 py-2.5 transition-all duration-500 ${paymentToast
+              className={`pointer-events-auto flex w-full items-center gap-3 rounded-2xl border border-[#eab308]/50 bg-[#1e293b] px-4 py-2.5 shadow-lg transition-all duration-500 md:min-w-[260px] md:max-w-[380px] ${paymentToast
                   ? 'opacity-100 translate-y-0 scale-100'
                   : 'opacity-0 -translate-y-3 scale-95 pointer-events-none'
                 }`}
-              style={{ minWidth: '260px', maxWidth: '380px' }}
             >
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#eab308]/20 shrink-0">
                 <IndianRupee className="w-4 h-4 text-[#eab308]" />
@@ -395,7 +421,7 @@ export default function OwnerLayout() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6 pr-2">
+          <div className="flex items-center gap-4 sm:gap-6 pr-0 sm:pr-2">
 
             <div className="relative" ref={notificationRef}>
               <Bell onClick={toggleNotifications} className="w-6 h-6 text-gray-700 cursor-pointer hover:text-[#eab308] transition" />
@@ -407,12 +433,11 @@ export default function OwnerLayout() {
 
               {/* --- NEW ORDER TOAST POPUP (Low Opacity, Anchored) --- */}
               <div
-                className={`absolute top-full mt-3 right-0 z-[60] pointer-events-auto flex items-start gap-3 bg-white/95 backdrop-blur-md border border-gray-200/50 shadow-2xl rounded-2xl p-4 transition-all duration-500 ease-out ${
+                className={`fixed top-20 left-2 right-2 z-[60] pointer-events-auto flex items-start gap-3 bg-white/95 backdrop-blur-md border border-gray-200/50 shadow-2xl rounded-2xl p-4 transition-all duration-500 ease-out sm:absolute sm:top-full sm:left-auto sm:right-0 sm:mt-3 sm:w-80 ${
                   orderToast
                     ? 'opacity-100 translate-y-0 scale-100'
                     : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
                 }`}
-                style={{ width: '320px' }}
               >
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#fefce8] shrink-0 mt-0.5">
                   <ShoppingBag className="w-5 h-5 text-[#eab308]" />
@@ -431,7 +456,7 @@ export default function OwnerLayout() {
               {/* ------------------------------------------------ */}
 
               {isNotificationsOpen && (
-                <div className="absolute right-0 mt-4 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
+                <div className="fixed top-20 left-2 right-2 sm:absolute sm:top-auto sm:left-auto sm:right-0 sm:mt-4 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
                   <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4 text-gray-600" />
@@ -484,7 +509,7 @@ export default function OwnerLayout() {
                 <UserCircle onClick={toggleProfile} className="w-8 h-8 text-gray-900 cursor-pointer hover:text-[#eab308] transition" />
               )}
               {isProfileOpen && (
-                <div className="absolute right-0 mt-4 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                <div className="fixed top-20 left-2 right-2 sm:absolute sm:top-auto sm:left-auto sm:right-0 sm:mt-4 sm:w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
                   <div className="bg-gray-50 p-4 border-b border-gray-100">
                     <p className="font-bold text-gray-800">{userProfile ? userProfile.name : "Admin Profile"}</p>
                     <p className="text-xs text-gray-500">{userProfile ? userProfile.role : "Loading..."}</p>

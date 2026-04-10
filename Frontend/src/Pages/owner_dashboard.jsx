@@ -256,7 +256,7 @@ export default function OwnerDashboard() {
 
         .empty-text {
           font-family: "Righteous", "Arial Black", sans-serif;
-          font-size: 80px;
+          font-size: clamp(36px, 10vw, 80px);
           font-weight: 700;
           color: #000;
           letter-spacing: -1px;
@@ -387,6 +387,79 @@ export default function OwnerDashboard() {
           transition: 0.2s;
         }
         .close-x:hover { color: #000; }
+
+        @media (max-width: 900px) {
+          .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 20px 20px 16px 20px;
+          }
+
+          .page-title {
+            font-size: 28px;
+          }
+
+          .status-container {
+            width: 100%;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 18px;
+          }
+
+          .empty-state-wrapper {
+            padding: 24px 20px 48px;
+          }
+
+          .card-container {
+            gap: 16px;
+            padding: 0 20px 24px 20px;
+          }
+
+          .order-card {
+            grid-template-columns: 1fr;
+            gap: 18px;
+            padding: 20px;
+          }
+
+          .info-col h2 {
+            font-size: 20px;
+            padding-right: 24px;
+          }
+
+          .items-col {
+            gap: 6px;
+          }
+
+          .action-col {
+            align-items: stretch;
+            gap: 12px;
+          }
+
+          .price {
+            margin-right: 0;
+            font-size: 24px;
+          }
+
+          .btn-group {
+            flex-direction: column;
+            width: 100%;
+          }
+
+          .btn {
+            width: 100%;
+          }
+
+          .debt-badge {
+            align-self: flex-start;
+            margin-right: 0;
+          }
+
+          .close-x {
+            right: 12px;
+            top: 12px;
+          }
+        }
       `}</style>
 
       {/*Top Header Row*/}

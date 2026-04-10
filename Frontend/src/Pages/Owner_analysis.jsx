@@ -4,7 +4,7 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell,
   BarChart, Bar, LabelList
 } from 'recharts';
 
@@ -77,11 +77,16 @@ export default function Owneranalytics() {
   // Format numeric strings strictly into valid Indian Rupee representation
   // Safe Formatter to prevent `.toLocaleString()` from crashing on empty data
   const formatCurrency = (value) => value ? `₹${Number(value).toLocaleString()}` : '₹0';
+  const popularOrdersLegend = [...analytics.popularOrdersData].sort((a, b) => {
+    if (a.name === 'Others') return 1;
+    if (b.name === 'Others') return -1;
+    return 0;
+  });
 
   return (
-    <div className="p-6 flex flex-col gap-6 h-full">
+    <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6">
       {/* TOP SECTION: Earnings Area Chart */}
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col flex-1 min-h-[300px]">
+      <div className="flex min-h-[300px] flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:min-h-[340px]">
         <div className="flex justify-end items-start mb-0 shrink-0 -mt-1">
           <p className="text-xs text-gray-400 italic">
             *This graph only presents the data collected from the orders done through our website
@@ -127,54 +132,44 @@ export default function Owneranalytics() {
       </div>
 
       {/* BOTTOM SECTION: Two Charts */}
-      <div className="grid grid-cols-2 gap-6 flex-1 min-h-[300px]">
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center min-h-0">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-2">
+        <div className="flex min-h-[380px] flex-col rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:min-h-[420px] sm:p-5">
           <h3 className="text-[#38BDF8] font-semibold text-lg mb-1 shrink-0">Most Popular Orders</h3>
-          <div className="flex-1 w-full min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={analytics.popularOrdersData}
-                  cx="50%" cy="50%" innerRadius="40%" outerRadius="80%" paddingAngle={5}
-                  dataKey="value" stroke="none"
-                >
-                  {analytics.popularOrdersData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Legend 
-                  verticalAlign="bottom" 
-                  content={(props) => {
-                    const { payload } = props;
-                    // Recharts automatically sorts the Pie slices by their size, which moves "Others" into the middle of the Legend
-                    // Let's force it back to the end visually!
-                    const displayPayload = [...payload].sort((a, b) => {
-                      if (a.payload.name === 'Others') return 1;
-                      if (b.payload.name === 'Others') return -1;
-                      return 0;
-                    });
+          <div className="mt-4 h-56 w-full sm:h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={analytics.popularOrdersData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="45%"
+                    outerRadius="78%"
+                    paddingAngle={4}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {analytics.popularOrdersData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+          </div>
 
-                    return (
-                      <ul className="flex flex-wrap justify-center gap-x-6 gap-y-3 w-full text-[14px] text-[#6B7280] pt-3">
-                        {displayPayload.map((entry, index) => (
-                          <li key={`item-${index}`} className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: entry.color }}></span>
-                            <span className="truncate">{entry.value}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    );
-                  }}
-                />
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="mt-4 grid grid-cols-1 gap-x-4 gap-y-3 text-[14px] text-[#6B7280] sm:grid-cols-2">
+            {popularOrdersLegend.map((entry, index) => (
+              <div key={`popular-order-${index}`} className="flex min-w-0 items-center gap-2">
+                <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                <span className="truncate">{entry.name}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center min-h-0">
+        <div className="flex min-h-[320px] flex-col items-center rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:min-h-[360px] sm:p-5">
           <h3 className="text-[#A78BFA] font-semibold text-lg mb-1 shrink-0">Number of Orders</h3>
-          <div className="flex-1 w-full min-h-0">
+          <div className="mt-4 h-64 w-full sm:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analytics.weeklyOrdersData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />

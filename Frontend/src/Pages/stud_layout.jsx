@@ -7,6 +7,11 @@ import { socket } from '../socket';
 
 const NOTIFICATION_STORAGE_PREFIX = 'creditsnap:notifications';
 const MAX_NOTIFICATIONS = 20;
+const DESKTOP_MEDIA_QUERY = '(min-width: 768px)';
+
+const isDesktopViewport = () => (
+  typeof window !== 'undefined' && window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+);
 
 const getStoredUser = () => {
   try {
@@ -96,7 +101,7 @@ export default function StudLayout() {
   const [userProfile, setUserProfile] = useState(null);
 
   // UI Toggles
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(isDesktopViewport);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -265,6 +270,22 @@ export default function StudLayout() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const mediaQuery = window.matchMedia(DESKTOP_MEDIA_QUERY);
+    const handleViewportChange = (event) => {
+      setIsSidebarOpen(event.matches);
+    };
+
+    handleViewportChange(mediaQuery);
+    mediaQuery.addEventListener?.('change', handleViewportChange);
+
+    return () => {
+      mediaQuery.removeEventListener?.('change', handleViewportChange);
+    };
+  }, []);
+
 
   // ==========================================
   // NAVIGATION HANDLERS
@@ -272,6 +293,12 @@ export default function StudLayout() {
 
   const toggleNotifications = () => { setIsNotificationsOpen(!isNotificationsOpen); setIsProfileOpen(false); };
   const toggleProfile = () => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); };
+  const handleSidebarNavigate = (path, options) => {
+    navigate(path, options);
+    if (!isDesktopViewport()) {
+      setIsSidebarOpen(false);
+    }
+  };
 
   // Checks if the current URL matches a sidebar link to highlight it
   const isActive = (path) => location.pathname.includes(path);
@@ -302,18 +329,18 @@ export default function StudLayout() {
   // ==========================================
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
+    <div className="flex h-[100dvh] min-h-[100dvh] bg-gray-50 font-sans overflow-hidden">
 
       {/* --- MOBILE OVERLAY BACKDROP --- */}
       {isSidebarOpen && (
         <div 
-          className="absolute inset-0 bg-black/50 z-[60] md:hidden"
+          className="fixed inset-0 bg-black/50 z-[60] md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* --- COLLAPSIBLE SIDEBAR --- */}
-      <aside className={`absolute top-0 left-0 md:relative z-[70] h-full ${isSidebarOpen ? 'w-48 translate-x-0' : '-translate-x-full md:translate-x-0 w-20'} bg-linear-to-b from-[#0f172a] to-[#334f90] text-white flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
+      <aside className={`absolute top-0 left-0 md:relative z-[70] h-[100dvh] md:h-full ${isSidebarOpen ? 'w-48 translate-x-0' : '-translate-x-full md:translate-x-0 w-20'} bg-linear-to-b from-[#0f172a] to-[#334f90] text-white flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
         <div>
           {/* Hamburger Menu Icon */}
           <div className={`p-4 flex transition-all duration-300 ${isSidebarOpen ? 'justify-start ml-2' : 'justify-center'}`}>
@@ -330,27 +357,27 @@ export default function StudLayout() {
 
           <nav className="mt-4 flex flex-col gap-2">
 
-            <div onClick={() => navigate('/student/dashboard')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('dashboard') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => handleSidebarNavigate('/student/dashboard')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('dashboard') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <Home className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Home</span>}
             </div>
 
-            <div onClick={() => navigate('/student/canteens', { state: { reset: true } })} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('canteens') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => handleSidebarNavigate('/student/canteens', { state: { reset: true } })} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('canteens') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <Utensils className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">Canteens</span>}
             </div>
 
-            <div onClick={() => navigate('/student/debts')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('debts') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => handleSidebarNavigate('/student/debts')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('debts') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <Wallet className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm font-semibold whitespace-nowrap">View debts</span>}
             </div>
 
-            <div onClick={() => navigate('/student/history')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('history') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => handleSidebarNavigate('/student/history')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('history') ? 'bg-[#f97316] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <History className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm whitespace-nowrap">History</span>}
             </div>
 
-            <div onClick={() => navigate('/student/help')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('help') ? 'bg-[#ea580c] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
+            <div onClick={() => handleSidebarNavigate('/student/help')} className={`mx-2 py-3 px-2 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isActive('help') ? 'bg-[#ea580c] text-white shadow-lg' : 'text-gray-300 hover:text-white opacity-70'}`}>
               <HelpCircle className={`w-6 h-6 transition-all duration-300 ${isSidebarOpen ? 'mb-1' : ''}`} />
               {isSidebarOpen && <span className="text-sm whitespace-nowrap">Help</span>}
             </div>
@@ -359,7 +386,7 @@ export default function StudLayout() {
         </div>
 
         <div
-          onClick={() => navigate('/student/about')}
+          onClick={() => handleSidebarNavigate('/student/about')}
           className={`p-4 border-t border-slate-700 flex justify-center items-center cursor-pointer transition-all duration-300 ${isActive('about') ? 'bg-[#f97316] text-white' : 'hover:bg-slate-700 text-gray-300'}`}
         >
           {isSidebarOpen ? (
@@ -374,19 +401,19 @@ export default function StudLayout() {
       <div className="flex-1 flex flex-col overflow-hidden relative transition-all duration-300">
 
         {/* TOP HEADER */}
-        <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-50 shrink-0">
+        <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-3 sm:px-4 shadow-sm z-50 shrink-0">
 
           {/* Top Left Logo */}
           <div className="flex items-center h-full gap-2">
             <Menu className="w-6 h-6 md:hidden cursor-pointer text-slate-800" onClick={() => setIsSidebarOpen(true)} />
             <img src={studentLogo} alt="CreditSnap Logo"
               onClick={() => navigate('/student/dashboard')}
-              className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2 cursor-pointer hover:opacity-80 transition"
+              className="h-full max-w-[9.5rem] sm:max-w-none w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2 cursor-pointer hover:opacity-80 transition"
             />
           </div>
 
           {/* Top Right Icons */}
-          <div className="flex items-center gap-6 pr-2">
+          <div className="flex items-center gap-4 sm:gap-6 pr-0 sm:pr-2">
 
             {/* NOTIFICATIONS DROPDOWN */}
             <div className="relative" ref={notificationRef}>
@@ -398,7 +425,7 @@ export default function StudLayout() {
               )}
 
               {isNotificationsOpen && (
-                <div className="absolute right-0 mt-4 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
+                <div className="fixed top-20 left-2 right-2 sm:absolute sm:top-auto sm:left-auto sm:right-0 sm:mt-4 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
 
                   {/* Dropdown Header */}
                   <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -462,7 +489,7 @@ export default function StudLayout() {
               )}
 
               {isProfileOpen && (
-                <div className="absolute right-0 mt-4 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                <div className="fixed top-20 left-2 right-2 sm:absolute sm:top-auto sm:left-auto sm:right-0 sm:mt-4 sm:w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
                   <div className="bg-gray-50 p-4 border-b border-gray-100">
                     <p className="font-bold text-gray-800">{userProfile ? userProfile.name : "Student Profile"}</p>
                     <p className="text-xs text-gray-500">Roll No: {userProfile ? userProfile.rollNo : "Loading..."}</p>

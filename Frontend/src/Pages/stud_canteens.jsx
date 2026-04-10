@@ -444,13 +444,13 @@ const StudentCanteens = () => {
   }
 
   return (
-    <main className="p-10 pb-32 w-full h-full bg-[#F8FAFC] overflow-y-auto relative">
+    <main className="relative min-h-full w-full overflow-y-auto bg-[#F8FAFC] px-4 pb-40 pt-4 sm:px-6 sm:pt-6 lg:px-10 lg:pt-10">
 
       {/* --- DYNAMIC HEADER --- */}
       {step !== 'list' && (
-        <h1 className="text-3xl font-medium text-black mb-10 flex items-center gap-4">
+        <h1 className="mb-6 flex items-start gap-3 text-2xl font-medium text-black sm:mb-10 sm:items-center sm:gap-4 sm:text-3xl">
           <ArrowLeft
-            className="w-7 h-7 cursor-pointer text-gray-500 hover:text-black transition"
+            className="mt-0.5 h-6 w-6 cursor-pointer text-gray-500 transition hover:text-black sm:mt-0 sm:h-7 sm:w-7"
             onClick={step === 'menu' ? goToList : () => navigate(`/student/canteens/${selectedCanteen?.name.toLowerCase().replace(/\s+/g, '-')}`)}
           />
           {selectedCanteen?.name}
@@ -459,8 +459,8 @@ const StudentCanteens = () => {
 
       {/* --- TOP SEARCH & FILTER BAR --- */}
       {step !== 'checkout' && (
-        <div className="flex justify-between items-center mb-10 gap-6">
-          <div className="bg-white rounded-full flex items-center px-5 h-11 w-[450px] shadow-sm border border-gray-100 focus-within:ring-2 focus-within:ring-[#f97316] focus-within:border-[#f97316] transition">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-10 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+          <div className="flex h-11 w-full items-center rounded-full border border-gray-100 bg-white px-5 shadow-sm transition focus-within:border-[#f97316] focus-within:ring-2 focus-within:ring-[#f97316] lg:max-w-[450px]">
             <Search className="w-4 h-4 text-gray-400 mr-3" />
             <input
               type="text"
@@ -471,19 +471,19 @@ const StudentCanteens = () => {
             />
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:gap-4 lg:w-auto">
             {step === 'list' && (
               <div className="relative" ref={filterRef}>
                 <button
                   onClick={() => { setIsFilterDropdownOpen(!isFilterDropdownOpen); setIsSortDropdownOpen(false); }}
-                  className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-5 h-11 rounded-xl shadow-sm flex items-center gap-2 transition min-w-[140px] justify-between text-sm"
+                  className="flex h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-xl bg-[#f97316] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#ea580c] sm:min-w-[140px]"
                 >
                   <div className="flex items-center gap-2"><Filter className="w-5 h-5" />{getFilterText()}</div>
                   <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {/* Filter Dropdown Content */}
                 {isFilterDropdownOpen && (
-                  <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                  <div className="absolute left-0 right-0 mt-3 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl z-50 sm:left-auto sm:right-0 sm:w-48">
                     <div onClick={() => { setCurrentFilter('all'); setIsFilterDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentFilter === 'all' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>All Canteens</div>
                     <div onClick={() => { setCurrentFilter('open'); setIsFilterDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentFilter === 'open' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>Open Only</div>
                   </div>
@@ -494,14 +494,14 @@ const StudentCanteens = () => {
             <div className="relative" ref={sortRef}>
               <button
                 onClick={() => { setIsSortDropdownOpen(!isSortDropdownOpen); setIsFilterDropdownOpen(false); }}
-                className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-5 h-11 rounded-xl shadow-sm flex items-center gap-2 transition min-w-[140px] justify-between text-sm"
+                className="flex h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-xl bg-[#f97316] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#ea580c] sm:min-w-[140px]"
               >
                 <div className="flex items-center gap-2"><ArrowDownUp className="w-5 h-5" />{getSortText()}</div>
                 <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
               {/* Sort Dropdown Content */}
               {isSortDropdownOpen && (
-                <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                <div className="absolute left-0 right-0 mt-3 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl z-50 sm:left-auto sm:right-0 sm:w-56">
                   <div onClick={() => { setCurrentSort('name-az'); setIsSortDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentSort === 'name-az' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>Name: A to Z</div>
                   <div onClick={() => { setCurrentSort('name-za'); setIsSortDropdownOpen(false); }} className={`px-5 py-3.5 text-base cursor-pointer hover:bg-gray-50 transition ${currentSort === 'name-za' ? 'bg-orange-50 font-semibold text-[#f97316]' : 'text-gray-700'}`}>Name: Z to A</div>
                   {/* Price sorting is only visible when looking at a specific menu */}
@@ -539,7 +539,7 @@ const StudentCanteens = () => {
             return (
               <div
                 key={canteen._id}
-                className={`bg-white rounded-xl mb-4 p-6 flex justify-between items-center shadow-sm border border-gray-100 transition-all overflow-hidden ${isOpen ? 'cursor-pointer hover:shadow-md' : 'opacity-70 cursor-not-allowed'}`}
+                className={`mb-4 flex flex-col gap-4 overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all sm:flex-row sm:items-center sm:justify-between sm:p-6 ${isOpen ? 'cursor-pointer hover:shadow-md' : 'cursor-not-allowed opacity-70'}`}
                 onClick={() => goToMenu(canteen)}
               >
                 <div>
@@ -580,7 +580,7 @@ const StudentCanteens = () => {
 
           {/* Render Menu Items */}
           {selectedCanteen?.status === "Open" && displayMenu.length > 0 && displayMenu.map(item => (
-            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center transition hover:shadow-md" key={item._id}>
+            <div className="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-6" key={item._id}>
               <div>
                 <h3 className="text-xl font-medium text-black mb-1">{item.name}</h3>
                 <p className="text-[#f97316] font-semibold text-lg">Rs.{item.price}</p>
@@ -589,13 +589,13 @@ const StudentCanteens = () => {
               {/* Add to Cart button OR +/- Controls */}
               {cart[item._id] === undefined ? (
                 <button
-                  className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white px-6 py-2.5 rounded-xl font-medium transition text-base shadow-sm"
+                  className="w-full cursor-pointer rounded-xl bg-[#f97316] px-6 py-2.5 text-base font-medium text-white shadow-sm transition hover:bg-[#ea580c] sm:w-auto"
                   onClick={() => updateQuantity(item._id, 1)}
                 >
                   Add to Cart
                 </button>
               ) : (
-                <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-gray-50 shadow-inner">
+                <div className="flex w-full items-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50 shadow-inner sm:w-auto">
                   <button className="cursor-pointer p-2.5 hover:bg-gray-200 transition text-gray-700" onClick={() => updateQuantity(item._id, -1)}>
                     <Minus className="w-5 h-5" />
                   </button>
@@ -629,8 +629,8 @@ const StudentCanteens = () => {
 
       {/* --- STEP 3: CHECKOUT REVIEW VIEW --- */}
       {step === 'checkout' && (
-        <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6 lg:p-8">
+          <div className="mb-6 flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-2xl font-medium text-black">Review Your Order</h2>
             <button
               onClick={() => navigate(`/student/canteens/${selectedCanteen?.name.toLowerCase().replace(/\s+/g, '-')}`)}
@@ -648,14 +648,14 @@ const StudentCanteens = () => {
                 const item = menuData.find(i => i._id === id);
                 if (!item) return null;
                 return (
-                  <div key={id} className="flex justify-between items-center border-b border-gray-50 pb-4">
+                  <div key={id} className="flex flex-col gap-4 border-b border-gray-50 pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex-1">
                       <p className="text-lg font-medium text-black">{item.name}</p>
                       <p className="text-sm text-gray-500">Rs.{item.price} each</p>
                     </div>
 
-                    <div className="flex items-center gap-6">
-                      <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50 shadow-sm">
+                    <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-normal sm:gap-6">
+                      <div className="flex items-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 shadow-sm">
                         <button className="cursor-pointer p-2 hover:bg-gray-200 transition text-gray-700" onClick={() => updateQuantity(id, -1)}>
                           <Minus className="w-4 h-4" />
                         </button>
@@ -681,7 +681,7 @@ const StudentCanteens = () => {
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
-                      <p className="text-lg font-bold text-black w-20 text-right">
+                      <p className="w-auto text-left text-lg font-bold text-black sm:w-20 sm:text-right">
                         Rs.{item.price * (qty === '' ? 0 : qty)}
                       </p>
                     </div>
@@ -691,7 +691,7 @@ const StudentCanteens = () => {
             )}
           </div>
 
-          <div className="flex justify-between items-center bg-gray-50 p-6 rounded-xl mb-8">
+          <div className="mb-8 flex flex-col gap-2 rounded-xl bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <span className="text-xl font-medium text-black">Total Cost:</span>
             <span className="text-2xl font-bold text-[#f97316]">Rs.{getTotalCost()}</span>
           </div>
@@ -708,18 +708,18 @@ const StudentCanteens = () => {
 
       {/* --- CART FOOTER (Floating Bar) --- */}
       {step === 'menu' && Object.values(cart).some(qty => qty !== '' && qty > 0) && (
-        <div className="fixed bottom-0 right-0 w-[calc(100%-192px)] bg-white border-t border-gray-200 px-10 py-5 flex justify-between items-center shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40">
-          <div className="flex items-center gap-4">
+        <div className="fixed bottom-0 left-0 right-0 z-40 flex flex-col gap-4 border-t border-gray-200 bg-white px-4 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5 lg:px-10">
+          <div className="flex min-w-0 items-center gap-4">
             <div className="bg-[#f97316]/10 p-3 rounded-full">
               <ShoppingCart className="w-6 h-6 text-[#f97316]" />
             </div>
-            <div>
-              <p className="text-gray-500 text-sm max-w-md truncate">{getCartSummaryText()}</p>
+            <div className="min-w-0 flex-1">
+              <p className="max-w-none truncate text-sm text-gray-500 sm:max-w-md">{getCartSummaryText()}</p>
               <p className="text-xl font-bold text-black">Total: Rs.{getTotalCost()}</p>
             </div>
           </div>
           <button
-            className="cursor-pointer bg-[#f97316] hover:bg-[#ea580c] text-white px-8 py-3 rounded-xl font-medium text-lg transition shadow-md"
+            className="w-full cursor-pointer rounded-xl bg-[#f97316] px-8 py-3 text-lg font-medium text-white shadow-md transition hover:bg-[#ea580c] sm:w-auto"
             onClick={() => navigate(`/student/canteens/${selectedCanteen?.name.toLowerCase().replace(/\s+/g, '-')}/checkout`)}
           >
             Review Order
@@ -729,7 +729,7 @@ const StudentCanteens = () => {
 
       {/* --- GREEN SUCCESS TOAST NOTIFICATION --- */}
       {toast && (
-        <div className="fixed bottom-8 right-8 z-50">
+        <div className="fixed bottom-4 left-4 right-4 z-50 sm:bottom-8 sm:left-auto sm:right-8">
           <div className="flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl text-white font-medium bg-green-600">
             <CheckCircle className="w-5 h-5" />
             {toast}

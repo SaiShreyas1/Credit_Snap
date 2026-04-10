@@ -11,11 +11,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 const inlineCSS = `
   .login-page {
     display: flex;
-    height: 100vh;
-    width: 100vw;
+    min-height: 100dvh;
+    width: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
-    padding: 0;
+    padding: 24px 20px;
+    overflow-x: hidden;
   }
   .login-right-panel {
     flex: 1;
@@ -27,7 +28,7 @@ const inlineCSS = `
   .form-container {
     width: 100%;
     max-width: 420px;
-    min-height: 520px;
+    min-height: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
