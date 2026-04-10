@@ -83,7 +83,7 @@ exports.getAllCanteens = async (req, res) => {
       _id: c._id, 
       name: c.name || (c.ownerId && c.ownerId.name) || "Unnamed Canteen",
       status: c.isOpen ? "Open" : "Closed",
-      timings: "4:00 PM - 4:00 AM" // Static fallback; consider moving to schema
+      timings: c.timings
     }));
 
     res.status(200).json({ status: 'success', data: { canteens: formattedCanteens } });
