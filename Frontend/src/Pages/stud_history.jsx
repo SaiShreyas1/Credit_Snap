@@ -296,13 +296,13 @@ export default function StudHistory() {
   }
 
   return (
-    <div className="p-8 pb-32">
+    <div className="p-4 pb-32 sm:p-6 lg:p-8">
       
       {/* --- TOP BAR: SEARCH & DROPDOWNS --- */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         
         {/* Search Input */}
-        <div className="flex items-center bg-white px-4 py-2.5 rounded-full shadow-sm w-[500px] border border-gray-100 focus-within:border-[#ea580c] transition-colors">
+        <div className="flex w-full items-center rounded-full border border-gray-100 bg-white px-4 py-2.5 shadow-sm transition-colors focus-within:border-[#ea580c] lg:max-w-[500px]">
           <Search className="w-5 h-5 text-gray-400 mr-2" />
           <input
             type="text"
@@ -313,16 +313,16 @@ export default function StudHistory() {
           />
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:gap-4 lg:w-auto">
           
           {/* Filter Dropdown Container */}
           <div className="relative" ref={filterRef}>
-            <button onClick={() => { setFilterOpen(!filterOpen); setSortOpen(false); }} className="cursor-pointer bg-[#ea580c] hover:bg-orange-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-sm flex justify-center items-center gap-2 transition">
+            <button onClick={() => { setFilterOpen(!filterOpen); setSortOpen(false); }} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#ea580c] px-6 py-2.5 font-semibold text-white shadow-sm transition hover:bg-orange-700 sm:w-auto">
               {getFilterText()} <ChevronDown className="w-4 h-4" />
             </button>
             
             {filterOpen && (
-              <div className="absolute right-0 mt-3 w-72 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden p-5">
+              <div className="absolute left-0 right-0 z-50 mt-3 overflow-hidden rounded-lg border border-gray-100 bg-white p-5 shadow-xl sm:left-auto sm:right-0 sm:w-72">
                 <h4 className="font-semibold text-gray-800 mb-4 border-b pb-2">Filter Options</h4>
 
                 {/* Status Filter (Hidden on Debt Tab) */}
@@ -356,12 +356,12 @@ export default function StudHistory() {
 
           {/* Sort Dropdown Container */}
           <div className="relative" ref={sortRef}>
-            <button onClick={() => { setSortOpen(!sortOpen); setFilterOpen(false); }} className="cursor-pointer bg-[#ea580c] hover:bg-orange-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-sm flex justify-center items-center gap-2 transition">
+            <button onClick={() => { setSortOpen(!sortOpen); setFilterOpen(false); }} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#ea580c] px-6 py-2.5 font-semibold text-white shadow-sm transition hover:bg-orange-700 sm:w-auto">
               {getSortText()} <ChevronDown className="w-4 h-4" />
             </button>
             
             {sortOpen && (
-              <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden py-2">
+              <div className="absolute left-0 right-0 z-50 mt-3 overflow-hidden rounded-lg border border-gray-100 bg-white py-2 shadow-xl sm:left-auto sm:right-0 sm:w-56">
                 <div onClick={() => { setSortConfig('default'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'default' ? 'bg-orange-50 font-semibold text-[#ea580c]' : 'text-gray-700'}`}>Default</div>
                 <div onClick={() => { setSortConfig('date_desc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_desc' ? 'bg-orange-50 font-semibold text-[#ea580c]' : 'text-gray-700'}`}>Recent (Newest First)</div>
                 <div onClick={() => { setSortConfig('date_asc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_asc' ? 'bg-orange-50 font-semibold text-[#ea580c]' : 'text-gray-700'}`}>Recent (Oldest First)</div>
@@ -375,10 +375,10 @@ export default function StudHistory() {
       </div>
 
       {/* --- PAGE HEADER & TAB NAVIGATION --- */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="text-4xl font-semibold text-gray-900">History</h1>
 
-        <div className="flex bg-gray-100 border border-gray-200 rounded-xl p-1 shadow-inner relative z-10 w-[400px]">
+        <div className="relative z-10 flex w-full rounded-xl border border-gray-200 bg-gray-100 p-1 shadow-inner md:w-[400px]">
           <button
             onClick={() => { setActiveTab('order'); }}
             className={`cursor-pointer flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
@@ -501,9 +501,13 @@ export default function StudHistory() {
               {/* Expandable Section */}
               {expandedRecords.has(record.id) && (
                 <div className="mt-4 pt-4 border-t border-gray-100 w-full animate-in fade-in slide-in-from-top-2 transition-all">
-                  <div className="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
+                  <div className="flex flex-col gap-2 rounded-lg bg-gray-50 p-3 sm:flex-row sm:items-center sm:justify-between">
                      <span className="text-gray-500 text-sm font-medium">Razorpay Transaction ID</span>
-                     <span className="font-mono text-sm text-gray-800 bg-white px-3 py-1.5 rounded shadow-sm border border-gray-200">{record.transactionId}</span>
+                     <div className="w-full overflow-x-auto sm:w-auto">
+                       <span className="block min-w-max rounded border border-gray-200 bg-white px-3 py-1.5 font-mono text-xs text-gray-800 shadow-sm sm:text-sm">
+                         {record.transactionId}
+                       </span>
+                     </div>
                   </div>
                 </div>
               )}

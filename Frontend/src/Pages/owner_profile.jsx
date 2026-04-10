@@ -148,10 +148,10 @@ export default function OwnerProfile() {
   const displayPhoto = isEditing ? editForm.profilePhoto : ownerInfo.profilePhoto;
 
   return (
-    <div className="flex-1 h-full min-h-screen flex items-start justify-center pt-24 bg-white">
+    <div className="flex min-h-screen flex-1 items-start justify-center bg-white px-4 pt-20 sm:px-6 sm:pt-24">
       
       {/* The Gray Card */}
-      <div className="relative bg-[#e5e5e5] rounded-[32px] border border-gray-400 shadow-sm w-full max-w-2xl px-12 pt-20 pb-12">
+      <div className="relative w-full max-w-2xl rounded-[32px] border border-gray-400 bg-[#e5e5e5] px-5 pb-8 pt-20 shadow-sm sm:px-12 sm:pb-12">
         
         <div className="absolute -top-16 left-1/2 transform -translate-x-1/2">
           <div className="relative bg-[#0f172a] rounded-full flex items-center justify-center w-32 h-32 border-[8px] border-white overflow-hidden group transition-all">
@@ -175,10 +175,10 @@ export default function OwnerProfile() {
         </div>
 
         {/* Text Details / Input Fields */}
-        <div className="space-y-6 text-[1.15rem] text-gray-900 px-6 mt-4">
+        <div className="mt-4 space-y-6 px-0 text-[1.15rem] text-gray-900 sm:px-6">
           
-          <div className="flex items-center">
-            <span className="w-48 font-medium shrink-0">Canteen Name :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+            <span className="w-full font-medium sm:w-48 sm:shrink-0">Canteen Name :</span>
             {isEditing ? (
               <input type="text" name="canteenName" value={editForm.canteenName} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition" />
             ) : (
@@ -186,8 +186,8 @@ export default function OwnerProfile() {
             )}
           </div>
           
-          <div className="flex items-center">
-            <span className="w-48 font-medium shrink-0">Admin Name :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+            <span className="w-full font-medium sm:w-48 sm:shrink-0">Admin Name :</span>
             {isEditing ? (
               <input type="text" name="adminName" value={editForm.adminName} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition" />
             ) : (
@@ -195,13 +195,13 @@ export default function OwnerProfile() {
             )}
           </div>
           
-          <div className="flex items-center">
-            <span className="w-48 font-medium shrink-0">Email :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+            <span className="w-full font-medium sm:w-48 sm:shrink-0">Email :</span>
             <span className={isEditing ? "text-gray-500" : ""}>{ownerInfo.email}</span>
           </div>
           
-          <div className="flex items-center">
-            <span className="w-48 font-medium shrink-0">Phone No :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+            <span className="w-full font-medium sm:w-48 sm:shrink-0">Phone No :</span>
             {isEditing ? (
               <input type="text" name="phone" value={editForm.phone} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition" />
             ) : (
@@ -209,8 +209,8 @@ export default function OwnerProfile() {
             )}
           </div>
           
-          <div className="flex items-center">
-            <span className="w-48 font-medium shrink-0">Timings :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+            <span className="w-full font-medium sm:w-48 sm:shrink-0">Timings :</span>
             {isEditing ? (
               <input type="text" name="timings" value={editForm.timings} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition" />
             ) : (
@@ -218,8 +218,8 @@ export default function OwnerProfile() {
             )}
           </div>
 
-          <div className="flex items-start">
-            <span className="w-48 font-medium shrink-0 pt-1">Razorpay Key ID :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start">
+            <span className="w-full pt-1 font-medium sm:w-48 sm:shrink-0">Razorpay Key ID :</span>
             <div className="w-full max-w-sm">
               {isEditing ? (
                 <>
@@ -269,11 +269,11 @@ export default function OwnerProfile() {
         {!isEditing ? (
           // VIEW MODE
           <>
-            <div className="mt-14 flex justify-between gap-4 px-6">
-              <button onClick={() => navigate('/owner/change-password')} className="cursor-pointer bg-[#0f172a] text-white px-8 py-3 rounded-full font-medium hover:bg-slate-900 transition shadow-sm w-1/2">
+            <div className="mt-14 flex flex-col gap-4 px-0 sm:flex-row sm:px-6">
+              <button onClick={() => navigate('/owner/change-password')} className="cursor-pointer rounded-full bg-[#0f172a] px-8 py-3 font-medium text-white shadow-sm transition hover:bg-slate-900 sm:w-1/2">
                 Change Password
               </button>
-              <button onClick={handleEditClick} className="cursor-pointer bg-[#0f172a] text-white px-8 py-3 rounded-full font-medium hover:bg-slate-900 transition shadow-sm w-1/2">
+              <button onClick={handleEditClick} className="cursor-pointer rounded-full bg-[#0f172a] px-8 py-3 font-medium text-white shadow-sm transition hover:bg-slate-900 sm:w-1/2">
                 Edit Profile
               </button>
             </div>
@@ -286,18 +286,18 @@ export default function OwnerProfile() {
                 localStorage.removeItem('user');
                 localStorage.removeItem('canteenId');
                 navigate('/');
-              }} className="cursor-pointer bg-[#C28813] text-white px-14 py-3 rounded-full font-medium text-lg hover:bg-black transition shadow-sm">
+              }} className="w-full cursor-pointer rounded-full bg-[#C28813] px-14 py-3 text-lg font-medium text-white shadow-sm transition hover:bg-black sm:w-auto">
                 Log Out
              </button>
             </div>
           </>
         ) : (
           // EDIT MODE
-          <div className="mt-14 flex justify-between gap-4 px-6">
-            <button onClick={handleCancelClick} className="cursor-pointer bg-gray-500 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-600 transition shadow-sm w-1/2">
+          <div className="mt-14 flex flex-col gap-4 px-0 sm:flex-row sm:px-6">
+            <button onClick={handleCancelClick} className="cursor-pointer rounded-full bg-gray-500 px-8 py-3 font-medium text-white shadow-sm transition hover:bg-gray-600 sm:w-1/2">
               Cancel
             </button>
-            <button onClick={handleSaveClick} className="cursor-pointer bg-[#0f172a] text-white px-8 py-3 rounded-full font-medium hover:bg-slate-900 transition shadow-sm w-1/2">
+            <button onClick={handleSaveClick} className="cursor-pointer rounded-full bg-[#0f172a] px-8 py-3 font-medium text-white shadow-sm transition hover:bg-slate-900 sm:w-1/2">
               Save Changes
             </button>
           </div>

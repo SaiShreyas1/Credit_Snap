@@ -207,13 +207,13 @@ export default function OwnerHistory() {
   if (loading) return <div className="p-8"><p className="font-medium text-gray-500">Loading History...</p></div>;
 
   return (
-    <div className="p-8 pb-32">
+    <div className="p-4 pb-32 sm:p-6 lg:p-8">
 
       {/* TOP ROW: Search & Filters */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
         {/* SEARCH BAR EXACTLY LIKE ACTIVEDEBTS */}
-        <div className="flex items-center bg-white px-4 py-2.5 rounded-full shadow-sm w-[500px] border border-gray-100 focus-within:border-[#eab308] transition-colors">
+        <div className="flex w-full items-center rounded-full border border-gray-100 bg-white px-4 py-2.5 shadow-sm transition-colors focus-within:border-[#eab308] lg:max-w-[500px]">
           <Search className="w-5 h-5 text-gray-400 mr-2" />
           <input
             type="text"
@@ -225,13 +225,13 @@ export default function OwnerHistory() {
         </div>
 
         {/* FILTERS AND SORT EXACTLY LIKE ACTIVEDEBTS */}
-        <div className="flex gap-4">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:gap-4 lg:w-auto">
           <div className="relative">
-            <button onClick={() => { setFilterOpen(!filterOpen); setSortOpen(false); }} className="cursor-pointer bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg shadow-sm flex justify-center items-center gap-2 transition">
+            <button onClick={() => { setFilterOpen(!filterOpen); setSortOpen(false); }} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#eab308] px-6 py-2.5 font-semibold text-[#1e293b] shadow-sm transition hover:bg-yellow-500 sm:w-auto">
               {getFilterText()} <ChevronDown className="w-4 h-4" />
             </button>
             {filterOpen && (
-              <div className="absolute right-0 mt-3 w-72 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden p-5">
+              <div className="absolute left-0 right-0 z-50 mt-3 overflow-hidden rounded-lg border border-gray-100 bg-white p-5 shadow-xl sm:left-auto sm:right-0 sm:w-72">
                 <h4 className="font-semibold text-gray-800 mb-4 border-b pb-2">Filter Options</h4>
 
                 <div className="mb-4">
@@ -259,11 +259,11 @@ export default function OwnerHistory() {
           </div>
 
           <div className="relative">
-            <button onClick={() => { setSortOpen(!sortOpen); setFilterOpen(false); }} className="cursor-pointer bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg shadow-sm flex justify-center items-center gap-2 transition">
+            <button onClick={() => { setSortOpen(!sortOpen); setFilterOpen(false); }} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#eab308] px-6 py-2.5 font-semibold text-[#1e293b] shadow-sm transition hover:bg-yellow-500 sm:w-auto">
               {getSortText()} <ChevronDown className="w-4 h-4" />
             </button>
             {sortOpen && (
-              <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden py-2">
+              <div className="absolute left-0 right-0 z-50 mt-3 overflow-hidden rounded-lg border border-gray-100 bg-white py-2 shadow-xl sm:left-auto sm:right-0 sm:w-56">
                 <div onClick={() => { setSortConfig('date_desc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_desc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Newest First</div>
                 <div onClick={() => { setSortConfig('date_asc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'date_asc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Oldest First</div>
                 <div onClick={() => { setSortConfig('amount_desc'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortConfig === 'amount_desc' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Amount: High → Low</div>
@@ -275,11 +275,11 @@ export default function OwnerHistory() {
       </div>
 
       {/* HEADER ROW EXACTLY LIKE ACTIVEDEBTS */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="text-4xl font-semibold text-gray-900">History</h1>
 
         {/* TABS RIGHT NEXT TO HEADER OMEGA CLEAN */}
-        <div className="flex bg-gray-100 border border-gray-200 rounded-xl p-1 shadow-inner relative z-10 w-[400px]">
+        <div className="relative z-10 flex w-full rounded-xl border border-gray-200 bg-gray-100 p-1 shadow-inner md:w-[400px]">
           <button
             onClick={() => { setActiveTab('order'); }}
             className={`cursor-pointer flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-300 ${activeTab === 'order'
@@ -314,69 +314,75 @@ export default function OwnerHistory() {
           </div>
         ) : (
           list.map((record) => (
-            <div key={record.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition hover:shadow-md">
+            <div key={record.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4 transition hover:shadow-md">
 
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-1">
-                  <h3 className="text-xl font-medium text-gray-900">{record.name}</h3>
-                  {activeTab === 'debt' && (
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 bg-green-50 text-green-700 text-[11px] font-bold rounded-md uppercase tracking-wider border border-green-200">
-                        Payment Received
-                      </span>
-                      {record.paymentType === 'Offline' && (
-                        <span className="px-2.5 py-0.5 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-md uppercase tracking-wider border border-slate-200">
-                          Offline
+              <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="mb-1 flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                    <h3 className="text-xl font-medium text-gray-900">{record.name}</h3>
+                    {activeTab === 'debt' && (
+                      <div className="flex max-w-full flex-wrap items-center gap-2">
+                        <span className="px-2.5 py-0.5 bg-green-50 text-green-700 text-[11px] font-bold rounded-md uppercase tracking-wider border border-green-200">
+                          Payment Received
                         </span>
-                      )}
-                      {record.paymentType === 'Online' && (
-                        <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-bold rounded-md uppercase tracking-wider border border-blue-200">
-                          Online
-                        </span>
-                      )}
-                    </div>
+                        {record.paymentType === 'Offline' && (
+                          <span className="px-2.5 py-0.5 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-md uppercase tracking-wider border border-slate-200">
+                            Offline
+                          </span>
+                        )}
+                        {record.paymentType === 'Online' && (
+                          <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-bold rounded-md uppercase tracking-wider border border-blue-200">
+                            Online
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Ph no. {record.phone}, {record.rollNo}, Hall-{record.hall}, Room {record.room ? record.room.replace(/[-\s]/g, '') : "N/A"}
+                  </p>
+                  {activeTab === 'order' && (
+                    <p className="text-sm text-gray-600 font-medium mt-3 bg-gray-50 px-3 py-2 rounded-lg inline-flex items-center border border-gray-100">
+                      <ShoppingBag className="w-4 h-4 mr-2 text-gray-400" /> {record.itemsStr}
+                    </p>
                   )}
                 </div>
-                <p className="text-sm text-gray-500">
-                  Ph no. {record.phone}, {record.rollNo}, Hall-{record.hall}, Room {record.room ? record.room.replace(/[-\s]/g, '') : "N/A"}
-                </p>
-                {activeTab === 'order' && (
-                  <p className="text-sm text-gray-600 font-medium mt-3 bg-gray-50 px-3 py-2 rounded-lg inline-flex items-center border border-gray-100">
-                    <ShoppingBag className="w-4 h-4 mr-2 text-gray-400" /> {record.itemsStr}
-                  </p>
-                )}
-              </div>
 
-              <div className="flex flex-col items-start md:items-end gap-2 w-full md:w-auto">
-                <div className="text-[15px] font-medium text-gray-700">
-                  {activeTab === 'order' ? 'Total:' : 'Paid Amount:'} <span className={`font-bold ${activeTab === 'debt' ? 'text-green-600' : 'text-[#1e293b]'}`}>₹{record.amount}</span>
-                </div>
-
-                {activeTab === 'debt' && (
-                  <div className="text-sm font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                    Remaining Debt: <span className="font-bold text-red-500">₹{typeof record.remainingDebt === 'number' ? (Math.round(record.remainingDebt * 100) / 100) : record.remainingDebt}</span>
+                <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
+                  <div className="text-[15px] font-medium text-gray-700">
+                    {activeTab === 'order' ? 'Total:' : 'Paid Amount:'} <span className={`font-bold ${activeTab === 'debt' ? 'text-green-600' : 'text-[#1e293b]'}`}>₹{record.amount}</span>
                   </div>
-                )}
 
-                <div className="flex items-center gap-3 text-sm text-gray-500 mt-1 font-medium bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg">
-                  <span className="flex items-center"><Calendar className="w-4 h-4 mr-1.5 text-gray-400" /> {record.date}</span>
-                  <span className="text-gray-300">•</span>
-                  <span className="flex items-center"><Clock className="w-4 h-4 mr-1.5 text-gray-400" /> {record.time}</span>
+                  {activeTab === 'debt' && (
+                    <div className="text-sm font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                      Remaining Debt: <span className="font-bold text-red-500">₹{typeof record.remainingDebt === 'number' ? (Math.round(record.remainingDebt * 100) / 100) : record.remainingDebt}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 text-sm text-gray-500 mt-1 font-medium bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg">
+                    <span className="flex items-center"><Calendar className="w-4 h-4 mr-1.5 text-gray-400" /> {record.date}</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="flex items-center"><Clock className="w-4 h-4 mr-1.5 text-gray-400" /> {record.time}</span>
+                  </div>
+                  
+                  {activeTab === 'debt' && record.paymentType === 'Online' && record.transactionId && (
+                    <button onClick={() => toggleRecord(record.id)} className="mt-2 text-gray-500 hover:text-gray-700 transition flex items-center text-sm font-medium">
+                      Transaction ID <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${expandedRecords.has(record.id) ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
                 </div>
-                
-                {activeTab === 'debt' && record.paymentType === 'Online' && record.transactionId && (
-                  <button onClick={() => toggleRecord(record.id)} className="mt-2 text-gray-500 hover:text-gray-700 transition flex items-center text-sm font-medium">
-                    Transaction ID <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${expandedRecords.has(record.id) ? 'rotate-180' : ''}`} />
-                  </button>
-                )}
               </div>
 
               {/* Expandable Section */}
               {expandedRecords.has(record.id) && (
-                <div className="mt-4 pt-4 border-t border-gray-100 w-full animate-in fade-in slide-in-from-top-2 transition-all basis-full">
-                  <div className="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
+                <div className="mt-1 w-full border-t border-gray-100 pt-4 animate-in fade-in slide-in-from-top-2 transition-all">
+                  <div className="flex flex-col gap-2 rounded-lg bg-gray-50 p-3 sm:flex-row sm:items-center sm:justify-between">
                      <span className="text-gray-500 text-sm font-medium">Razorpay Transaction ID</span>
-                     <span className="font-mono text-sm text-gray-800 bg-white px-3 py-1.5 rounded shadow-sm border border-gray-200">{record.transactionId}</span>
+                     <div className="w-full overflow-x-auto sm:w-auto">
+                       <span className="block min-w-max rounded border border-gray-200 bg-white px-3 py-1.5 font-mono text-xs text-gray-800 shadow-sm sm:text-sm">
+                         {record.transactionId}
+                       </span>
+                     </div>
                   </div>
                 </div>
               )}

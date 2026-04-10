@@ -268,7 +268,7 @@ export default function ActiveDebtsContent() {
       {/* ========================================================= */}
       {payModal.isOpen && (
         <div className="fixed inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[450px] p-8 relative border border-gray-100">
+          <div className="relative w-full max-w-[450px] rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.12)] sm:p-8">
             <X onClick={closePayModal} className="absolute top-5 right-5 w-5 h-5 text-gray-400 cursor-pointer hover:text-red-500 transition" />
 
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Log Offline Payment</h2>
@@ -313,7 +313,7 @@ export default function ActiveDebtsContent() {
       {/* ========================================================= */}
       {limitModal.isOpen && (
         <div className="fixed inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[450px] p-8 relative border border-gray-100">
+          <div className="relative w-full max-w-[450px] rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.12)] sm:p-8">
             <X onClick={closeLimitModal} className="absolute top-5 right-5 w-5 h-5 text-gray-400 cursor-pointer hover:text-red-500 transition" />
 
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Set Custom Debt Limit</h2>
@@ -348,7 +348,7 @@ export default function ActiveDebtsContent() {
       {/* ========================================================= */}
       {defaultLimitModal.isOpen && (
         <div className="fixed inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[450px] p-8 relative border border-gray-100">
+          <div className="relative w-full max-w-[450px] rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.12)] sm:p-8">
             <X onClick={closeDefaultLimitModal} className="absolute top-5 right-5 w-5 h-5 text-gray-400 cursor-pointer hover:text-red-500 transition" />
 
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Set Default Limit</h2>
@@ -381,11 +381,11 @@ export default function ActiveDebtsContent() {
       {/* ========================================================= */}
       {/* MAIN CONTENT PAGE */}
       {/* ========================================================= */}
-      <div className="p-8 pb-32">
+      <div className="p-4 pb-32 sm:p-6 lg:p-8">
 
         {/* TOP ROW: Search & Filters */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center bg-white px-4 py-2.5 rounded-full shadow-sm w-[500px] border border-gray-100 focus-within:border-[#eab308] transition-colors">
+        <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex w-full items-center rounded-full border border-gray-100 bg-white px-4 py-2.5 shadow-sm transition-colors focus-within:border-[#eab308] xl:max-w-[500px]">
             <Search className="w-5 h-5 text-gray-400 mr-2" />
             <input
               type="text"
@@ -396,19 +396,19 @@ export default function ActiveDebtsContent() {
             />
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4 xl:w-auto xl:flex-nowrap">
             <div className="relative">
-              <button onClick={openDefaultLimitModal} className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-sm flex items-center gap-2 transition min-w-[150px] justify-center">
+              <button onClick={openDefaultLimitModal} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-slate-800 px-6 py-2.5 font-semibold text-white shadow-sm transition hover:bg-slate-700 sm:min-w-[150px]">
                 Set Default Limit
               </button>
             </div>
 
             <div className="relative">
-              <button onClick={() => { setFilterOpen(!filterOpen); setSortOpen(false); }} className="cursor-pointer bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg shadow-sm flex items-center gap-2 transition min-w-[150px] justify-between">
+              <button onClick={() => { setFilterOpen(!filterOpen); setSortOpen(false); }} className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg bg-[#eab308] px-6 py-2.5 font-semibold text-[#1e293b] shadow-sm transition hover:bg-yellow-500 sm:min-w-[150px]">
                 {getFilterText()} <ChevronDown className="w-4 h-4" />
               </button>
               {filterOpen && (
-                <div className="absolute right-0 mt-3 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
+                <div className="absolute left-0 right-0 z-50 mt-3 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-xl sm:left-auto sm:right-0 sm:w-48">
                   <div onClick={() => { setFilterBy('all'); setFilterOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${filterBy === 'all' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>All Active Debts</div>
                   <div onClick={() => { setFilterBy('critical'); setFilterOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${filterBy === 'critical' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Critical (≥80%)</div>
                   <div onClick={() => { setFilterBy('safe'); setFilterOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${filterBy === 'safe' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Safe (&lt;80%)</div>
@@ -417,11 +417,11 @@ export default function ActiveDebtsContent() {
             </div>
 
             <div className="relative">
-              <button onClick={() => { setSortOpen(!sortOpen); setFilterOpen(false); }} className="cursor-pointer bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg shadow-sm flex items-center gap-2 transition min-w-[150px] justify-between">
+              <button onClick={() => { setSortOpen(!sortOpen); setFilterOpen(false); }} className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg bg-[#eab308] px-6 py-2.5 font-semibold text-[#1e293b] shadow-sm transition hover:bg-yellow-500 sm:min-w-[150px]">
                 {getSortText()} <ChevronDown className="w-4 h-4" />
               </button>
               {sortOpen && (
-                <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
+                <div className="absolute left-0 right-0 z-50 mt-3 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-xl sm:left-auto sm:right-0 sm:w-56">
                   <div onClick={() => { setSortBy('default'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortBy === 'default' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Default</div>
                   <div onClick={() => { setSortBy('name'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortBy === 'name' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Name (A-Z)</div>
                   <div onClick={() => { setSortBy('debt_high'); setSortOpen(false); }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${sortBy === 'debt_high' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Debt: High → Low</div>
@@ -455,7 +455,7 @@ export default function ActiveDebtsContent() {
             const isCritical = s.debt / s.limit >= 0.8;
 
             return (
-              <div key={s.id} className={`bg-white rounded-2xl p-6 shadow-sm border ${isCritical ? 'border-red-200' : 'border-gray-100'} flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition hover:shadow-md`}>
+              <div key={s.id} className={`flex flex-col gap-4 rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6 md:flex-row md:items-center md:justify-between ${isCritical ? 'border-red-200' : 'border-gray-100'}`}>
 
                 <div>
                   <h3 className="text-xl font-medium text-gray-900 mb-1">{s.name}</h3>
@@ -464,28 +464,28 @@ export default function ActiveDebtsContent() {
                   </p>
                 </div>
 
-                <div className="flex flex-col items-end gap-3 w-full md:w-auto">
-                  <div className="text-[15px] font-medium text-gray-700 flex items-center gap-2">
+                <div className="flex w-full flex-col items-start gap-3 md:w-auto md:items-end">
+                  <div className="flex flex-wrap items-center gap-2 text-[15px] font-medium text-gray-700">
                     Total Debt: <span className={`font-bold ${isCritical ? 'text-red-600' : 'text-[#1e293b]'}`}>₹{s.debt.toLocaleString()}/{s.limit.toLocaleString()}</span>
                     <button onClick={() => openLimitModal(s)} className="p-1 hover:bg-gray-100 rounded-md transition text-gray-400 hover:text-yellow-600 cursor-pointer" title="Edit limit">
                       <Edit3 className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex w-full flex-col gap-3 sm:flex-row">
                     {/* Opens the specific payment modal for this student */}
                     <button
                       onClick={() => openPayModal(s)}
-                      className="cursor-pointer font-semibold px-5 py-2 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md text-sm flex items-center gap-1.5 bg-[#eab308] hover:bg-yellow-500 text-[#1e293b]"
+                      className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[#eab308] px-5 py-2 text-sm font-semibold text-[#1e293b] shadow-sm transition-all duration-200 hover:scale-105 hover:bg-yellow-500 hover:shadow-md active:scale-95 sm:w-auto"
                     >
                       <IndianRupee className="w-4 h-4" /> Paid Offline
                     </button>
                     <button
                       onClick={() => handleNotify(s.id)}
                       disabled={notifyingIds.has(s.id)}
-                      className={`font-semibold px-5 py-2 rounded-full transition-all duration-200 text-sm flex items-center gap-1.5 shadow-sm ${notifyingIds.has(s.id)
+                      className={`flex w-full items-center justify-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold shadow-sm transition-all duration-200 sm:w-auto ${notifyingIds.has(s.id)
                           ? 'bg-slate-500 text-white cursor-wait opacity-80'
-                          : 'cursor-pointer hover:scale-105 active:scale-95 bg-[#1e293b] hover:bg-slate-800 text-white hover:shadow-md'
+                          : 'cursor-pointer bg-[#1e293b] text-white hover:scale-105 hover:bg-slate-800 hover:shadow-md active:scale-95'
                         }`}
                     >
                       <BellRing className={`w-4 h-4 ${notifyingIds.has(s.id) ? 'animate-pulse' : ''}`} />
@@ -501,7 +501,7 @@ export default function ActiveDebtsContent() {
 
         {/* TOAST */}
         {toast && (
-          <div className="fixed bottom-8 right-8 z-50 animate-bounce">
+          <div className="fixed bottom-4 left-4 right-4 z-50 animate-bounce sm:bottom-8 sm:left-auto sm:right-8">
             <div className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl text-white font-medium ${toast.type === 'success' ? 'bg-green-600' : toast.type === 'error' ? 'bg-red-500' : 'bg-[#1e293b]'}`}>
               {toast.type === 'success' ? <CheckCircle className="w-5 h-5" /> : toast.type === 'error' ? <AlertTriangle className="w-5 h-5 text-white" /> : <BellRing className="w-5 h-5 text-[#eab308]" />}
               {toast.msg}

@@ -8,12 +8,12 @@ import canteenLogo from '../assets/Canteen_without_bg_logo.png';
 const inlineCSS = `
   .forgot-page {
     display: flex;
-    height: 100vh;
-    width: 100vw;
+    min-height: 100dvh;
+    width: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow-x: hidden;
   }
   .forgot-left-panel {
     flex: 1;
@@ -66,10 +66,10 @@ const inlineCSS = `
   }
   .error-text { color: #D32F2F; font-size: 13px; display: block; margin-top: 5px; text-align: left; font-weight: 500; }
   @media (max-width: 800px) {
-    .forgot-page { flex-direction: column; overflow: auto; }
+    .forgot-page { flex-direction: column; overflow-y: auto; }
     .forgot-left-panel { padding: 20px 0; }
     .brand-logo { max-width: 200px; }
-    .forgot-right-panel { padding: 20px; }
+    .forgot-right-panel { padding: 24px 20px 40px; }
   }
 `;
 

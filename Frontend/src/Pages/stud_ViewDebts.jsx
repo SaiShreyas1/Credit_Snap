@@ -42,12 +42,12 @@ const loadRazorpayScript = () => {
  * Renders an individual debt summary for a specific canteen.
  */
 const DebtCard = ({ data, onPayDebt, isPaying }) => (
-  <div className="bg-white rounded-xl mb-4 p-6 flex justify-between items-center shadow-sm border border-gray-100 transition-all overflow-hidden hover:shadow-md">
+  <div className="mb-4 flex flex-col gap-4 overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-6">
     <div>
       <h2 className="text-2xl font-medium text-black mb-1">{data.name}</h2>
     </div>
 
-    <div className="flex flex-col items-end gap-2">
+    <div className="flex flex-col items-start gap-2 sm:items-end">
       <p className="font-bold text-gray-500 tracking-wide uppercase text-sm">
         Debt: <span className="text-black text-lg ml-1">₹{data.currentDebt} <span className="text-gray-400 font-medium normal-case text-base">/ ₹{data.limit}</span></span>
       </p>
@@ -55,7 +55,7 @@ const DebtCard = ({ data, onPayDebt, isPaying }) => (
       {/* Dynamic Button: Changes based on debt balance and processing state */}
       {data.currentDebt > 0 ? (
         <button
-          className={`text-white px-6 py-2 rounded-xl text-sm font-medium transition cursor-pointer ${isPaying ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#f97316] hover:bg-[#ea580c]'}`}
+          className={`w-full cursor-pointer rounded-xl px-6 py-2 text-sm font-medium text-white transition sm:w-auto ${isPaying ? 'cursor-not-allowed bg-gray-400' : 'bg-[#f97316] hover:bg-[#ea580c]'}`}
           disabled={isPaying}
           onClick={() => onPayDebt(data)}
         >
@@ -358,7 +358,7 @@ export default function ViewDebts() {
   }
 
   return (
-    <main className="p-6 md:p-10 w-full min-h-screen bg-[#f8f9fa] relative">
+    <main className="relative min-h-screen w-full bg-[#f8f9fa] p-4 sm:p-6 lg:p-10">
 
       {/* --- HEADER: SEARCH & SORT --- */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-5 relative z-20">
@@ -376,11 +376,11 @@ export default function ViewDebts() {
         </div>
 
         {/* Sort Dropdown */}
-        <div className="flex gap-4">
+        <div className="flex w-full gap-4 md:w-auto">
           <div className="relative" ref={sortRef}>
             <button
               onClick={() => setIsSortOpen(!isSortOpen)}
-              className="bg-[#f97316] text-white px-5 h-11 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-[#ea580c] transition-colors justify-between min-w-[140px] cursor-pointer"
+              className="flex h-11 w-full min-w-[140px] cursor-pointer items-center justify-between gap-2 rounded-xl bg-[#f97316] px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#ea580c]"
             >
               <div className="flex items-center gap-2">
                 <ArrowDownUp className="w-4 h-4" />
@@ -390,7 +390,7 @@ export default function ViewDebts() {
             </button>
 
             {isSortOpen && (
-              <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden py-2">
+              <div className="absolute left-0 right-0 z-50 mt-3 overflow-hidden rounded-2xl border border-gray-100 bg-white py-2 shadow-xl md:left-auto md:right-0 md:w-56">
                 {['A-Z', 'Z-A', 'High to Low', 'Low to High'].map((option) => (
                   <div
                     key={option}

@@ -10,12 +10,12 @@ const inlineCSS = `
   /* Full page layout - Locked to exact window height */
   .forgot-page {
     display: flex;
-    height: 100vh; 
-    width: 100vw;
+    min-height: 100dvh; 
+    width: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    overflow: hidden; 
+    overflow-x: hidden; 
   }
 
   .forgot-left-panel {
@@ -133,7 +133,7 @@ const inlineCSS = `
   @media (max-width: 800px) {
     .forgot-page {
       flex-direction: column;
-      overflow: auto; 
+      overflow-y: auto; 
     }
     .forgot-left-panel {
       padding: 20px 0;
@@ -142,7 +142,7 @@ const inlineCSS = `
       max-width: 200px;
     }
     .forgot-right-panel {
-      padding: 20px;
+      padding: 24px 20px 40px;
     }
   }
 
