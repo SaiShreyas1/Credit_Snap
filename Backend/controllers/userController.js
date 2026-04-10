@@ -197,7 +197,7 @@ exports.verifyEmail = async (req, res) => {
  */
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ status: 'fail', message: 'Please provide email and password.' });
@@ -207,6 +207,10 @@ exports.login = async (req, res) => {
 
     if (!user || !(await user.correctPassword(password, user.password))) {
       return res.status(401).json({ status: 'fail', message: 'Incorrect email or password.' });
+    }
+
+    if (role && user.role !== role) {
+      return res.status(403).json({ status: 'fail', message: `Access denied. Please select the correct role tab.` });
     }
 
     if (!user.isVerified) {

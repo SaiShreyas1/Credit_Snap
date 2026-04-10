@@ -285,7 +285,7 @@ const Login = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: email, password: password }),
+        body: JSON.stringify({ email: email, password: password, role: isStudent ? 'student' : 'owner' }),
       });
 
       const data = await response.json();
