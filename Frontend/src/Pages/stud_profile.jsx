@@ -144,7 +144,18 @@ export default function StudProfile() {
 
   // Generic input handler for all text fields in the Edit Form
   const handleChange = (e) => {
-    setEditForm({ ...editForm, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    let newValue = value;
+    if (name === 'name') {
+      newValue = value.replace(/[^a-zA-Z\s]/g, '');
+    } else if (name === 'roomNo') {
+      newValue = value.replace(/[^a-zA-Z0-9-]/g, '');
+    } else if (name === 'rollNo') {
+      newValue = value.replace(/[^a-zA-Z0-9]/g, '');
+    } else if (name === 'phone') {
+      newValue = value.replace(/\D/g, '').slice(0, 10);
+    }
+    setEditForm({ ...editForm, [name]: newValue });
   };
 
   // ==========================================
@@ -239,7 +250,12 @@ export default function StudProfile() {
           <div className="flex items-center">
             <span className="w-40 font-medium shrink-0">Phone No :</span>
             {isEditing ? (
-              <input type="text" name="phone" value={editForm.phone} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition" />
+              <div className="w-full max-w-sm">
+                <input type="text" name="phone" value={editForm.phone} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full outline-none focus:border-[#0f172a] shadow-sm transition" />
+                {editForm.phone && editForm.phone.length !== 10 && (
+                  <div className="text-red-500 text-xs mt-1 px-1">Mobile number must be exactly 10 digits.</div>
+                )}
+              </div>
             ) : (
               <span>{studentInfo.phone}</span>
             )}
@@ -253,7 +269,12 @@ export default function StudProfile() {
           <div className="flex items-center">
             <span className="w-40 font-medium shrink-0">Hall No :</span>
             {isEditing ? (
-              <input type="text" name="hallNo" value={editForm.hallNo} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition" />
+              <select name="hallNo" value={['Not Provided', null, ''].includes(editForm.hallNo) ? "" : editForm.hallNo} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition">
+                <option value="" disabled>Select Hall No</option>
+                {Array.from({ length: 14 }, (_, i) => i + 1).map((num) => (
+                  <option key={num} value={num.toString()}>Hall {num}</option>
+                ))}
+              </select>
             ) : (
               <span>{studentInfo.hallNo}</span>
             )}

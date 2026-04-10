@@ -138,7 +138,7 @@ const Login = () => {
                 placeholder="Enter your mail"
                 className="custom-input"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value.replace(/[^a-zA-Z0-9.@+-]/g, ''))}
                 required
               />
               {emailError && <span className="error-text" style={{ color: 'red', marginTop: '5px', display: 'block' }}>{emailError}</span>}

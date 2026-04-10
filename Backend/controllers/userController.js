@@ -59,6 +59,19 @@ exports.signup = async (req, res) => {
       });
     }
 
+    if (phoneNo && !/^\d{10}$/.test(phoneNo)) {
+      return res.status(400).json({ status: 'fail', message: 'Mobile number must be exactly 10 digits.' });
+    }
+    if (name && !/^[a-zA-Z\s]+$/.test(name)) {
+      return res.status(400).json({ status: 'fail', message: 'Name can only contain alphabets and spaces.' });
+    }
+    if (rollNo && !/^[a-zA-Z0-9]+$/.test(rollNo)) {
+      return res.status(400).json({ status: 'fail', message: 'Roll number must be alphanumeric.' });
+    }
+    if (roomNo && !/^[a-zA-Z0-9-]+$/.test(roomNo)) {
+      return res.status(400).json({ status: 'fail', message: 'Room number must only contain alphanumeric characters and hyphens.' });
+    }
+
     // 1. Cleanup unverified ghost accounts or block existing active accounts
     const existingEmail = await User.findOne({ email });
     if (existingEmail) {
@@ -86,7 +99,7 @@ exports.signup = async (req, res) => {
         if (!existingRollNo.isVerified) {
           await User.findByIdAndDelete(existingRollNo._id);
         } else {
-          return res.status(400).json({ status: 'fail', message: 'An account with this roll number already exists.' });
+          return res.status(400).json({ status: 'fail', message: 'An account with this roll number already exists.Contact the Admins if you think this is a mistake.' });
         }
       }
     }
@@ -289,8 +302,20 @@ exports.updateMyProfile = async (req, res) => {
     
     // Check if name is explicitly set to empty
     const providedName = req.body.adminName !== undefined ? req.body.adminName : req.body.name;
-    if (providedName !== undefined && providedName.trim() === '') {
-      return res.status(400).json({ status: 'fail', message: 'name cannot be empty' });
+    if (providedName !== undefined) {
+      if (providedName.trim() === '') {
+        return res.status(400).json({ status: 'fail', message: 'name cannot be empty' });
+      }
+      if (!/^[a-zA-Z\s]+$/.test(providedName)) {
+        return res.status(400).json({ status: 'fail', message: 'Name can only contain alphabets and spaces.' });
+      }
+    }
+
+    if (req.body.rollNo && !/^[a-zA-Z0-9]+$/.test(req.body.rollNo)) {
+      return res.status(400).json({ status: 'fail', message: 'Roll number must be alphanumeric.' });
+    }
+    if (req.body.roomNo && !/^[a-zA-Z0-9-]+$/.test(req.body.roomNo)) {
+      return res.status(400).json({ status: 'fail', message: 'Room number must only contain alphanumeric characters and hyphens.' });
     }
 
     // Check if phone number has exactly 10 digits
