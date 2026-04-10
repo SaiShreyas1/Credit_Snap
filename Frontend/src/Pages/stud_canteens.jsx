@@ -580,8 +580,8 @@ const StudentCanteens = () => {
 
           {/* Render Menu Items */}
           {selectedCanteen?.status === "Open" && displayMenu.length > 0 && displayMenu.map(item => (
-            <div className="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-6" key={item._id}>
-              <div>
+            <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md sm:items-center sm:p-6" key={item._id}>
+              <div className="min-w-0 flex-1">
                 <h3 className="text-xl font-medium text-black mb-1">{item.name}</h3>
                 <p className="text-[#f97316] font-semibold text-lg">Rs.{item.price}</p>
               </div>
@@ -589,13 +589,13 @@ const StudentCanteens = () => {
               {/* Add to Cart button OR +/- Controls */}
               {cart[item._id] === undefined ? (
                 <button
-                  className="w-full cursor-pointer rounded-xl bg-[#f97316] px-6 py-2.5 text-base font-medium text-white shadow-sm transition hover:bg-[#ea580c] sm:w-auto"
+                  className="shrink-0 cursor-pointer whitespace-nowrap rounded-xl bg-[#f97316] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#ea580c] sm:px-6 sm:text-base"
                   onClick={() => updateQuantity(item._id, 1)}
                 >
                   Add to Cart
                 </button>
               ) : (
-                <div className="flex w-full items-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50 shadow-inner sm:w-auto">
+                <div className="flex shrink-0 items-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50 shadow-inner">
                   <button className="cursor-pointer p-2.5 hover:bg-gray-200 transition text-gray-700" onClick={() => updateQuantity(item._id, -1)}>
                     <Minus className="w-5 h-5" />
                   </button>
@@ -614,7 +614,7 @@ const StudentCanteens = () => {
                       }
                     }}
                     onBlur={() => handleQuantityBlur(item._id)}
-                    className="w-14 text-center font-semibold text-black text-xl bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-10 text-center font-semibold text-black text-lg bg-transparent outline-none sm:w-14 sm:text-xl [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
 
                   <button className="cursor-pointer p-2.5 hover:bg-gray-200 transition text-gray-700" onClick={() => updateQuantity(item._id, 1)}>
@@ -708,7 +708,7 @@ const StudentCanteens = () => {
 
       {/* --- CART FOOTER (Floating Bar) --- */}
       {step === 'menu' && Object.values(cart).some(qty => qty !== '' && qty > 0) && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 flex flex-col gap-4 border-t border-gray-200 bg-white px-4 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5 lg:px-10">
+        <div className="fixed bottom-0 left-0 right-0 z-40 flex flex-col gap-4 border-t border-gray-200 bg-white px-4 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] transition-[left] duration-300 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5 md:left-[var(--student-sidebar-width)] lg:px-10">
           <div className="flex min-w-0 items-center gap-4">
             <div className="bg-[#f97316]/10 p-3 rounded-full">
               <ShoppingCart className="w-6 h-6 text-[#f97316]" />

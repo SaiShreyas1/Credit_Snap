@@ -398,7 +398,10 @@ export default function StudLayout() {
       </aside>
 
       {/* --- MAIN CONTENT AREA --- */}
-      <div className="flex-1 flex flex-col overflow-hidden relative transition-all duration-300">
+      <div
+        className="flex-1 flex flex-col overflow-hidden relative transition-all duration-300"
+        style={{ '--student-sidebar-width': isSidebarOpen ? '12rem' : '5rem' }}
+      >
 
         {/* TOP HEADER */}
         <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-3 sm:px-4 shadow-sm z-50 shrink-0">
