@@ -1,7 +1,8 @@
 const Order = require('../models/ordersModel');
 const User = require('../models/userModel');
 const Debt = require('../models/debtModel');
-const Canteen = require('../models/canteenModel'); 
+const Canteen = require('../models/canteenModel');
+const MenuItem = require('../models/menuItemModel');
 
 // ==========================================
 // STUDENT ACTIONS
@@ -33,27 +34,59 @@ exports.createOrder = async (req, res) => {
       }
     }
 
+    // SECURITY: Validate every item actually belongs to this canteen and is available.
+    // Also recompute totalAmount server-side to prevent price tampering.
+    const canteenMenuItems = await MenuItem.find({ canteenId: canteenId, isAvailable: true });
+    const menuMap = new Map(canteenMenuItems.map(m => [m.name.toLowerCase().trim(), m]));
+
+    let recomputedTotal = 0;
+    for (const item of items) {
+      const menuEntry = menuMap.get(item.name.toLowerCase().trim());
+      if (!menuEntry) {
+        return res.status(400).json({
+          status: 'fail',
+          message: `Item '${item.name}' is not available in this canteen.`
+        });
+      }
+      const qty = Number(item.quantity);
+      if (!Number.isInteger(qty) || qty < 1) {
+        return res.status(400).json({ status: 'fail', message: `Invalid quantity for item '${item.name}'.` });
+      }
+      // Use DB price, not the client-supplied price
+      recomputedTotal += menuEntry.price * qty;
+    }
+
     // 1. SAFETY CHECK: Enforce Per-Canteen Credit Limits before creating the order
     const student = await User.findById(req.user.id);
     const targetCanteen = await Canteen.findById(canteenId);
+
+    if (!targetCanteen || !targetCanteen.isOpen) {
+      return res.status(400).json({ status: 'fail', message: 'This canteen is currently closed and not accepting orders.' });
+    }
 
     const existingDebt = await Debt.findOne({ student: req.user.id, canteen: canteenId });
     const currentCanteenDebt = existingDebt ? existingDebt.amountOwed : 0;
     const canteenLimit = existingDebt ? existingDebt.limit : (targetCanteen?.defaultLimit || 3000);
     
-    if (currentCanteenDebt + numTotalAmount > canteenLimit) {
+    if (currentCanteenDebt + recomputedTotal > canteenLimit) {
       return res.status(400).json({
         status: 'fail',
         message: `Request failed! You will exceed your ₹${canteenLimit} debt limit at this canteen (Current debt: ₹${currentCanteenDebt}).`
       });
     }
 
-    // 2. Create the Order
+    // 2. Create the Order using the server-recomputed total (not the client's value)
+    // Build items array with DB-authoritative prices
+    const sanitizedItems = items.map(item => {
+      const menuEntry = menuMap.get(item.name.toLowerCase().trim());
+      return { name: menuEntry.name, quantity: Number(item.quantity), price: menuEntry.price };
+    });
+
     let newOrder = await Order.create({
       student: req.user.id,
-      canteen: canteenId,   
-      items,
-      totalAmount: numTotalAmount
+      canteen: canteenId,
+      items: sanitizedItems,
+      totalAmount: recomputedTotal
     });
 
     // Populate student data so the frontend can display the student name immediately
