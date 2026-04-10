@@ -100,8 +100,8 @@ export default function OwnerEditMenu() {
   };
 
   const handleConfirmAdd = async () => {
-  if (!newName.trim() || !newPrice.trim() || isNaN(newPrice) || parseFloat(newPrice) < 0) {
-    showAlert("Invalid Input", "Please enter a valid Name and Price.", "warning");
+  if (!newName.trim() || !newPrice.trim() || isNaN(newPrice) || parseFloat(newPrice) <= 0) {
+    showAlert("Invalid Input", "Please enter a valid Name and a Price greater than Rs.0.", "warning");
     return;
   }
 
@@ -146,8 +146,8 @@ export default function OwnerEditMenu() {
 
   const handleSaveEdit = async () => {
     // 1. Validate Input First!
-    if (!editName.trim() || !editPrice.trim() || isNaN(editPrice) || parseFloat(editPrice) < 0) {
-      showAlert("Invalid Input", "Please enter a valid Name and Price.", "warning");
+    if (!editName.trim() || !editPrice.trim() || isNaN(editPrice) || parseFloat(editPrice) <= 0) {
+      showAlert("Invalid Input", "Please enter a valid Name and a Price greater than Rs.0.", "warning");
       return;
     }
 

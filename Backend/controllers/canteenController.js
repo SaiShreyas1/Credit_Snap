@@ -128,6 +128,15 @@ exports.addMenuItem = async (req, res) => {
       });
     }
 
+    // Validate: price must be greater than zero
+    const numPrice = Number(req.body.price);
+    if (isNaN(numPrice) || numPrice <= 0) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Item price must be greater than Rs.0.'
+      });
+    }
+
     // Prevent duplicate item names (case-insensitive)
     const existingItem = await MenuItem.findOne({
       canteenId: canteenId,
@@ -177,6 +186,17 @@ exports.updateMenuItem = async (req, res) => {
         });
       }
       req.body.name = trimmedName;
+    }
+
+    // If updating the price, ensure it is greater than zero
+    if (req.body.price !== undefined) {
+      const numPrice = Number(req.body.price);
+      if (isNaN(numPrice) || numPrice <= 0) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'Item price must be greater than Rs.0.'
+        });
+      }
     }
 
     const updatedItem = await MenuItem.findByIdAndUpdate(
