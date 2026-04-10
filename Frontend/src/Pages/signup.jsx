@@ -302,6 +302,12 @@ const Signup = () => {
       return;
     }
 
+    if (phoneNo.length !== 10) {
+      setErrorMsg('Mobile number must be exactly 10 digits.');
+      setIsSubmitting(false);
+      return;
+    }
+
     const hallNum = parseInt(hallNo, 10);
     if (isNaN(hallNum) || hallNum < 1 || hallNum > 14) {
       setErrorMsg('Incorrect Hall Number. Please enter a valid Hall Number between 1 and 14.');
@@ -364,11 +370,11 @@ const Signup = () => {
               {errorMsg && <div style={{ color: 'red', marginBottom: '10px', textAlign: 'center' }}>{errorMsg}</div>}
 
               <div className="input-group">
-                <input type="text" placeholder="Full Name" className="custom-input" value={name} onChange={(e) => setName(e.target.value)} required />
+                <input type="text" placeholder="Full Name" className="custom-input" value={name} onChange={(e) => setName(e.target.value.replace(/[^a-zA-Z\s]/g, ''))} required />
               </div>
 
               <div className="input-group">
-                <input type="text" placeholder="Roll Number" className="custom-input" value={rollNo} onChange={(e) => setRollNo(e.target.value)} required />
+                <input type="text" placeholder="Roll Number" className="custom-input" value={rollNo} onChange={(e) => setRollNo(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))} required />
               </div>
 
               <div className="input-group">
@@ -377,20 +383,25 @@ const Signup = () => {
                   placeholder="IITK Email"
                   className="custom-input"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value.replace(/[^a-zA-Z0-9.@+-]/g, ''))}
                   required
                 />
               </div>
 
-              <div className="input-group">
+              <div className="input-group" style={{ marginBottom: (phoneNo && phoneNo.length !== 10) ? '10px' : 'auto' }}>
                 <input
                   type="tel"
                   placeholder="Phone Number"
                   className="custom-input"
                   value={phoneNo}
-                  onChange={(e) => setPhoneNo(e.target.value)}
+                  onChange={(e) => setPhoneNo(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   required
                 />
+                {phoneNo && phoneNo.length !== 10 && (
+                  <div style={{ color: 'red', fontSize: '12px', marginTop: '4px', textAlign: 'left', paddingLeft: '4px' }}>
+                    Mobile number must be exactly 10 digits.
+                  </div>
+                )}
               </div>
 
               <div className="split-group">
@@ -453,7 +464,7 @@ const Signup = () => {
                     </div>
                   )}
                 </div>
-                <input type="text" placeholder="Room No" className="custom-input" value={roomNo} onChange={(e) => setRoomNo(e.target.value)} required />
+                <input type="text" placeholder="Room No" className="custom-input" value={roomNo} onChange={(e) => setRoomNo(e.target.value.replace(/[^a-zA-Z0-9-]/g, ''))} required />
               </div>
 
               <div className="input-group">
@@ -504,6 +515,11 @@ const Signup = () => {
             <div className="login-redirect">
               <span className="light-text">Already have account? </span>
               <a href="/">Login.</a>
+            </div>
+
+            <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '13px' }}>
+              <span className="light-text" style={{ color: '#666' }}>Need Help? </span>
+              <a href="mailto:creditsnapiitk24@gmail.com" style={{ color: '#1a365d', fontWeight: '600', textDecoration: 'none' }}>Contact us here.</a>
             </div>
           </div>
         </div>

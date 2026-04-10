@@ -57,18 +57,23 @@ exports.getOwnerAnalytics = async (req, res) => {
     const topItems = allOrdersRaw.slice(0, 5);
     const others = allOrdersRaw.slice(5);
     
+    // Calculate total for items outside top 5
     const othersTotal = others.length > 0 ? others.reduce((acc, curr) => acc + curr.value, 0) : 0;
     
-    // Always push 'Others' so the legend strictly displays a Grey category for consistency
-    topItems.push({ _id: 'Others', value: othersTotal });
-
-    // Map specific colors to the top 5 items + "Others"
-    const colors = ['#A78BFA', '#FF8A8A', '#38BDF8', '#FB923C', '#60A5FA', '#9CA3AF']; // 6th color gray for 'Others'
+    // Map specific colors to the top 5 items
+    const colors = ['#A78BFA', '#FF8A8A', '#38BDF8', '#FB923C', '#60A5FA'];
     const popularOrdersData = topItems.map((item, index) => ({
       name: item._id,
       value: item.value,
       color: colors[index % colors.length]
     }));
+
+    // Always push 'Others' so the legend strictly displays a Grey category for consistency
+    popularOrdersData.push({
+      name: 'Others',
+      value: othersTotal,
+      color: '#9CA3AF' // Hardcoded 6th Gray color specifically for 'Others'
+    });
 
     // ==========================================
     // 4. WEEKLY ORDERS: Last 7 Days (Dynamic & Timezone Accurate)

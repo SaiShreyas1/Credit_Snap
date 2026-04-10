@@ -64,11 +64,9 @@ const inlineCSS = `
   .form-container {
     width: 100%;
     max-width: 420px;
-    min-height: 520px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
   }
 
   .login-heading {
@@ -195,10 +193,24 @@ const inlineCSS = `
     margin-top: 35px;
     font-size: 13px;
     min-height: 20px;
+    text-align: center;
   }
 
   .signup-redirect-hidden {
     visibility: hidden;
+  }
+
+  .forgot-password-link {
+    margin-top: 15px;
+    font-size: 13px;
+    text-align: center;
+    width: 100%;
+  }
+
+  .forgot-password-link a, .signup-redirect a {
+    color: #183B66;
+    text-decoration: none;
+    font-weight: 600;
   }
 
   /* Responsive adjustments */
@@ -368,7 +380,7 @@ const Login = () => {
                   placeholder="Enter your mail"
                   className="custom-input"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value.replace(/[^a-zA-Z0-9.@+-]/g, ''))}
                   required
                 />
                 {emailError && <span className="error-text" style={{ color: 'red', marginTop: '5px', display: 'block' }}>{emailError}</span>}

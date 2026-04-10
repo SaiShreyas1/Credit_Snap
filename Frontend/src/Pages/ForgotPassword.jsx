@@ -235,7 +235,7 @@ const ForgotPassword = () => {
                   placeholder={isStudent ? "IITK Email" : "Email"}
                   className="custom-input"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value.replace(/[^a-zA-Z0-9.@+-]/g, ''))}
                   required
                 />
                 {emailError && <span className="error-text">{emailError}</span>}

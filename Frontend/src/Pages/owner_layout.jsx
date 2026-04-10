@@ -243,7 +243,7 @@ export default function OwnerLayout() {
   }, [location.pathname, addNotification, showPaymentToast, showOrderToast, shouldSkipDuplicateNotification]);
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
 
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
@@ -286,13 +286,26 @@ export default function OwnerLayout() {
   return (
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
 
+      {/* --- MOBILE OVERLAY BACKDROP --- */}
+      {isSidebarOpen && (
+        <div 
+          className="absolute inset-0 bg-black/50 z-[60] md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* --- COLLAPSIBLE SIDEBAR --- */}
-      <aside className={`${isSidebarOpen ? 'w-48' : 'w-20'} bg-[#1e293b] text-white flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
+      <aside className={`absolute top-0 left-0 md:relative z-[70] h-full ${isSidebarOpen ? 'w-48 translate-x-0' : '-translate-x-full md:translate-x-0 w-20'} bg-[#1e293b] text-white flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
         <div>
           <div className={`p-4 flex transition-all duration-300 ${isSidebarOpen ? 'justify-start ml-2' : 'justify-center'}`}>
             <Menu
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="w-8 h-8 cursor-pointer hover:text-[#eab308] transition"
+              className="w-8 h-8 cursor-pointer hover:text-[#eab308] transition hidden md:block"
+            />
+            {/* Close button for mobile */}
+            <X 
+              onClick={() => setIsSidebarOpen(false)}
+              className="w-8 h-8 cursor-pointer hover:text-[#eab308] transition md:hidden"
             />
           </div>
 
@@ -346,7 +359,8 @@ export default function OwnerLayout() {
       <div className="flex-1 flex flex-col overflow-hidden relative transition-all duration-300">
 
         <header className="h-16 bg-[#f4f7fb] border-b flex justify-between items-center px-4 shadow-sm z-50 shrink-0">
-          <div className="flex items-center h-full">
+          <div className="flex items-center h-full gap-2">
+            <Menu className="w-6 h-6 md:hidden cursor-pointer text-slate-800" onClick={() => setIsSidebarOpen(true)} />
             <img src={canteenLogo} alt="CreditSnap Logo"
               onClick={() => navigate('/owner/dashboard')}
               className="h-full w-auto object-contain mix-blend-multiply scale-[1.1] origin-left ml-2 cursor-pointer hover:opacity-80 transition"

@@ -1,14 +1,14 @@
 import { BASE_URL } from '../config';
 import React, { useState } from 'react';
 import { Lock, ShieldCheck, Eye, EyeOff } from 'lucide-react';
-import { useLocation } from 'react-router-dom'; 
-import { useNotifications } from '../context/NotificationContext'; 
- 
+import { useLocation } from 'react-router-dom';
+import { useNotifications } from '../context/NotificationContext';
+
 
 export default function ChangePassword() {
   const { showAlert } = useNotifications();
-  const location = useLocation(); 
-  const isOwner = location.pathname.includes('/owner'); 
+  const location = useLocation();
+  const isOwner = location.pathname.includes('/owner');
   // Maintain controlled form states capturing current, new, and repeated password inputs
   const [passwords, setPasswords] = useState({
     currentPassword: '',
@@ -77,8 +77,8 @@ export default function ChangePassword() {
 
       if (data.status === 'success') {
         showAlert("Password Updated", "Your password has been changed successfully!", "success");
-        setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' }); 
-        
+        setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+
         // Keep fresh auth in the current session only
         sessionStorage.setItem('token', data.token);
         sessionStorage.setItem('user', JSON.stringify(data.data.user));
@@ -95,7 +95,7 @@ export default function ChangePassword() {
   return (
     <div className="p-8 max-w-xl mx-auto">
       <div className="bg-white p-8 rounded-2xl shadow-sm border border-[#D9D9D9]">
-        
+
         <div className="flex items-center gap-3 mb-6 border-b pb-4">
           <div className="bg-orange-100 p-2 rounded-lg">
             <ShieldCheck className="w-6 h-6 text-[#f97316]" />
@@ -106,11 +106,11 @@ export default function ChangePassword() {
           </div>
         </div>
 
-          {/* Success and Error messages are now handled by global showAlert modals */}
+        {/* Success and Error messages are now handled by global showAlert modals */}
 
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          
+
           {/* Render input field for existing password with toggleable visibility icon */}
           {/* Current Password */}
           <div>
@@ -127,7 +127,7 @@ export default function ChangePassword() {
                 className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition"
                 placeholder="Enter current password"
               />
-              <div 
+              <div
                 className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-gray-400 hover:text-gray-600"
                 onClick={() => setShowCurrent(!showCurrent)}
               >
@@ -151,7 +151,7 @@ export default function ChangePassword() {
                 className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition"
                 placeholder="Enter new password"
               />
-              <div 
+              <div
                 className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-gray-400 hover:text-gray-600"
                 onClick={() => setShowNew(!showNew)}
               >
@@ -175,7 +175,7 @@ export default function ChangePassword() {
                 className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition"
                 placeholder="Confirm new password"
               />
-              <div 
+              <div
                 className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-gray-400 hover:text-gray-600"
                 onClick={() => setShowConfirm(!showConfirm)}
               >
@@ -185,18 +185,17 @@ export default function ChangePassword() {
           </div>
 
           <div className="pt-2">
-           <button
-           type="submit"
-           className={`w-full text-white font-bold py-3 rounded-xl hover:shadow-md transition duration-200 ${
-           isOwner 
-            ? 'bg-[#D89715] hover:bg-[#C28813]' // <-- Changed to your new color!
-           : 'bg-[#f97316] hover:bg-orange-600' 
-           }`}
+            <button
+              type="submit"
+              className={`w-full text-white font-bold py-3 rounded-xl hover:shadow-md transition duration-200 ${isOwner
+                  ? 'bg-[#D89715] hover:bg-[#C28813]' // <-- Changed to your new color!
+                  : 'bg-[#f97316] hover:bg-orange-600'
+                }`}
             >
-           Update Password
-           </button>
-           </div>
-          
+              Update Password
+            </button>
+          </div>
+
         </form>
       </div>
     </div>

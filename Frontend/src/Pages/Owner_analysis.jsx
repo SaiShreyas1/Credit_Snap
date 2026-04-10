@@ -62,7 +62,7 @@ export default function Owneranalytics() {
     return <div className="p-8 text-center text-gray-500 text-xl font-medium">Loading Analytics...</div>;
   }
 
-  // ⭐ CRASH PREVENTION: Show the error nicely on the screen!
+  // Show the error nicely on the screen!
   if (error) {
     return (
       <div className="p-8 h-full flex flex-col items-center justify-center text-center">
@@ -142,7 +142,30 @@ export default function Owneranalytics() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Legend verticalAlign="bottom" height={40} iconType="circle" wrapperStyle={{ width: '100%', fontSize: '14px', color: '#6B7280', display: 'flex', justifyContent: 'space-between', paddingTop: '10px' }}/>
+                <Legend 
+                  verticalAlign="bottom" 
+                  content={(props) => {
+                    const { payload } = props;
+                    // Recharts automatically sorts the Pie slices by their size, which moves "Others" into the middle of the Legend
+                    // Let's force it back to the end visually!
+                    const displayPayload = [...payload].sort((a, b) => {
+                      if (a.payload.name === 'Others') return 1;
+                      if (b.payload.name === 'Others') return -1;
+                      return 0;
+                    });
+
+                    return (
+                      <ul className="flex flex-wrap justify-center gap-x-6 gap-y-3 w-full text-[14px] text-[#6B7280] pt-3">
+                        {displayPayload.map((entry, index) => (
+                          <li key={`item-${index}`} className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: entry.color }}></span>
+                            <span className="truncate">{entry.value}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  }}
+                />
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>

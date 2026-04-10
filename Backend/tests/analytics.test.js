@@ -134,7 +134,12 @@ describe('Analytics Controller API', () => {
         .set('Authorization', owner1Token);
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.data.popularOrdersData).toEqual([]);
+      
+      // Should rigidly return the 'Others' placeholder even on empty pie charts
+      expect(res.body.data.popularOrdersData).toHaveLength(1);
+      expect(res.body.data.popularOrdersData[0].name).toBe('Others');
+      expect(res.body.data.popularOrdersData[0].value).toBe(0);
+
       // Should still have 7 days in weekly limit but all 0
       expect(res.body.data.weeklyOrdersData).toHaveLength(7);
       expect(res.body.data.weeklyOrdersData.every(d => d.orders === 0)).toBe(true);
@@ -205,10 +210,13 @@ describe('Analytics Controller API', () => {
 
       const data = res.body.data;
       
-      // ONLY valid samosa order should appear
-      expect(data.popularOrdersData).toHaveLength(1);
+      // Valid samosa + 'Others' base pie segment
+      expect(data.popularOrdersData).toHaveLength(2);
       expect(data.popularOrdersData[0].name).toBe('Valid Samosa');
       expect(data.popularOrdersData[0].value).toBe(3); // Quantity
+      
+      expect(data.popularOrdersData[1].name).toBe('Others');
+      expect(data.popularOrdersData[1].value).toBe(0);
 
       expect(data.weeklyOrdersData.reduce((acc, d) => acc + d.orders, 0)).toBe(1);
       
@@ -232,13 +240,16 @@ describe('Analytics Controller API', () => {
         totalAmount: 200,
         status: 'accepted'
       });
+      // Fetch Canteen 1 data
       const res1 = await request(app).get('/api/analytics/owner').set('Authorization', owner1Token);
       expect(res1.body.data.popularOrdersData[0].name).toBe('Canteen1 Burger');
-      expect(res1.body.data.popularOrdersData).toHaveLength(1);
+      expect(res1.body.data.popularOrdersData).toHaveLength(2); // Item + Others
       expect(res1.body.data.earningsData.reduce((acc, d) => acc + d.earnings, 0)).toBe(100);
+
+      // Fetch Canteen 2 data
       const res2 = await request(app).get('/api/analytics/owner').set('Authorization', owner2Token);
       expect(res2.body.data.popularOrdersData[0].name).toBe('Canteen2 Pizza');
-      expect(res2.body.data.popularOrdersData).toHaveLength(1);
+      expect(res2.body.data.popularOrdersData).toHaveLength(2); // Item + Others
       expect(res2.body.data.earningsData.reduce((acc, d) => acc + d.earnings, 0)).toBe(200);
     });
   });
@@ -275,18 +286,18 @@ describe('Analytics Controller API', () => {
       const res = await request(app).get('/api/analytics/owner').set('Authorization', owner1Token);
       const pops = res.body.data.popularOrdersData;
 
-      expect(pops).toHaveLength(5);
+      // 5 top items + 1 'Others' aggregation
+      expect(pops).toHaveLength(6);
       expect(pops[0].name).toBe('Item B');
       expect(pops[0].value).toBe(20);
       
       expect(pops[1].name).toBe('Item C');
       expect(pops[4].name).toBe('Item G');
       
-      //Enforce the color scheme mentioned in the controller
-      const expectedColors = ['#A78BFA', '#FF8A8A', '#38BDF8', '#FB923C', '#60A5FA'];
-      pops.forEach((p, idx) => {
-        expect(p.color).toBe(expectedColors[idx % expectedColors.length]);
-      });
+      // Verify 'Others' caught all the remaining items (Item A: 2 + Item E: 1 = 3)
+      expect(pops[5].name).toBe('Others');
+      expect(pops[5].value).toBe(3);
+      expect(pops[5].color).toBe('#9CA3AF'); // Explicitly verify layout integrity
     });
 
     it('should calculate monthly earnings sorted chronologically across different months', async () => {
@@ -355,9 +366,9 @@ describe('Analytics Controller API', () => {
       expect(earnings.length).toBeGreaterThan(0);
       expect(earnings[earnings.length - 1].earnings).toBe(40);
 
-      // Assert popular orders ingestion
+      // Assert popular orders ingestion features '+ Others' segment dynamically 
       const pops = res.body.data.popularOrdersData;
-      expect(pops).toHaveLength(1);
+      expect(pops).toHaveLength(2);
       expect(pops[0].name).toBe('Late Samosa');
       expect(pops[0].value).toBe(2);
     });

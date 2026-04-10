@@ -1,10 +1,10 @@
-export let BASE_URL = 'http://localhost:5000';
+export let BASE_URL = 'http://localhost:5005';
 
 export const checkServerBaseUrl = async () => {
   const SERVER_IP = typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:5000`
-    : 'http://172.27.16.252:5000';
-  const LOCAL_IP = 'http://localhost:5000';
+    ? `${window.location.protocol}//${window.location.hostname}:5005`
+    : 'http://172.27.16.252:5005';
+  const LOCAL_IP = 'http://localhost:5005';
 
   try {
     const controller = new AbortController();

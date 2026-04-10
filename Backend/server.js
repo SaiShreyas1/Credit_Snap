@@ -13,7 +13,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const app = require('./app');
 
-const PORT = process.env.PORT || 5000;
+const PORT = 5005; // Force 5005 aggressively to bypass the university server block
 const DB_URL = process.env.MONGO_URI;
 
 // ==========================================
@@ -26,8 +26,8 @@ const httpServer = createServer(app);
 // Initialize Socket.IO with Cross-Origin Resource Sharing (CORS) rules
 const io = new Server(httpServer, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
-
+    // Dynamically allow whatever port Vite assigns (5176, etc.) on the shared server
+    origin: (origin, callback) => callback(null, true),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
   },
