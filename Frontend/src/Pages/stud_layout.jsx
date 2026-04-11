@@ -109,10 +109,29 @@ export default function StudLayout() {
   const [notifications, setNotifications] = useState(() => loadStoredNotifications());
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
+  const recentSocketNotificationKeysRef = useRef(new Map());
 
   // ==========================================
   // NOTIFICATION HELPERS
   // ==========================================
+
+  const shouldSkipDuplicateSocketNotification = useCallback((key, ttlMs = 5000) => {
+    const now = Date.now();
+    const recentKeys = recentSocketNotificationKeysRef.current;
+
+    for (const [storedKey, timestamp] of recentKeys.entries()) {
+      if (now - timestamp > ttlMs) {
+        recentKeys.delete(storedKey);
+      }
+    }
+
+    if (recentKeys.has(key)) {
+      return true;
+    }
+
+    recentKeys.set(key, now);
+    return false;
+  }, []);
 
   /**
    * Pushes a new notification to the top of the list.
@@ -120,6 +139,10 @@ export default function StudLayout() {
    * without causing infinite re-renders. Limits history to the 20 most recent alerts.
    */
   const addNotification = useCallback((type, title, message) => {
+    if (shouldSkipDuplicateSocketNotification(`notif:${type}:${title}:${message}`)) {
+      return;
+    }
+
     setNotifications(prev => [{
       id: Date.now(),
       type,      // 'success' | 'error' | 'warning' | 'info'
@@ -128,7 +151,7 @@ export default function StudLayout() {
       time: new Date(),
       read: false
     }, ...prev].slice(0, 20));
-  }, []);
+  }, [shouldSkipDuplicateSocketNotification]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -166,13 +189,19 @@ export default function StudLayout() {
     // Connect to the global WebSocket server
     socket.connect();
 
-    socket.off('connect');
-    socket.off('orderStatusUpdated');
-    socket.off('debt-updated');
-    socket.off('notify-student');
-    socket.off('payment-successful');
-
     const handleConnect = () => socket.emit('join-student', user._id);
+    const handleOrderStatusUpdated = (order) => {
+      if (!order?._id || !order?.status) return;
+      if (shouldSkipDuplicateSocketNotification(`order-status:${order._id}:${order.status}`)) return;
+
+      const items = order.items?.map(i => `${i.quantity}x ${i.name}`).join(', ') || 'your order';
+      const canteen = order.canteen?.name || 'the canteen';
+      if (order.status === 'accepted') {
+        addNotification('success', 'Order Accepted! ðŸŽ‰', `${items} from ${canteen} has been accepted.`);
+      } else if (order.status === 'rejected') {
+        addNotification('error', 'Order Rejected', `${items} from ${canteen} was rejected by the owner.`);
+      }
+    };
     socket.on('connect', handleConnect);
     if (socket.connected) handleConnect();
 
@@ -223,11 +252,7 @@ export default function StudLayout() {
 
     // Cleanup: Disconnect when user logs out or leaves the layout entirely
     return () => {
-      socket.off('connect');
-      socket.off('orderStatusUpdated');
-      socket.off('debt-updated');
-      socket.off('notify-student');
-      socket.off('payment-successful');
+      socket.off('connect', handleConnect);
       socket.disconnect();
     };
   }, [addNotification]);

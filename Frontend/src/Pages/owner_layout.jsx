@@ -184,12 +184,6 @@ export default function OwnerLayout() {
           if (canteenId) {
             socket.connect();
 
-            // Clear any old listeners before attaching new ones to prevent duplicates across hot-reloads
-            socket.off('connect');
-            socket.off('newOrder');
-            socket.off('debt-threshold');
-            socket.off('payment-received');
-
             const handleConnect = () => socket.emit('join-canteen', canteenId);
             socket.on('connect', handleConnect);
             if (socket.connected) handleConnect();
@@ -239,11 +233,6 @@ export default function OwnerLayout() {
 
     return () => {
       isCancelled = true;
-      socket.off('connect');
-      socket.off('newOrder');
-      socket.off('debt-threshold');
-      socket.off('payment-received');
-      socket.disconnect();
     };
   }, [location.pathname, addNotification, showPaymentToast, showOrderToast, shouldSkipDuplicateNotification]);
 

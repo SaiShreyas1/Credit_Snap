@@ -76,6 +76,8 @@ export default function OwnerDashboard() {
   useEffect(() => {
     if (!canteen || !canteen._id) return;
 
+    const handleConnect = () => socket.emit('join-canteen', canteen._id);
+
     const handleNewOrder = (newOrder) => {
       console.log('🔔 New real-time order received!', newOrder);
       const firstItemName = newOrder.items?.[0]?.name;
@@ -95,22 +97,18 @@ export default function OwnerDashboard() {
     // When a student cancels their pending order (e.g., clicks "Add more items"),
     // or when an order is accepted/rejected, update the UI instantly without refresh.
     const handleOrderStatusUpdated = (updatedOrder) => {
-      if (updatedOrder.status === 'cancelled') {
-        // Remove the cancelled card immediately so the owner can't accidentally accept it
-        setOrders(prevOrders => prevOrders.filter(o => o._id !== updatedOrder._id));
-      } else {
-        // For accepted/rejected, update the card status in place
-        setOrders(prevOrders =>
-          prevOrders.map(o => o._id === updatedOrder._id ? { ...o, status: updatedOrder.status } : o)
-        );
-      }
+      fetchOrders();
     };
 
+    socket.connect();
+    socket.on('connect', handleConnect);
     socket.on('newOrder', handleNewOrder);
     socket.on('payment-received', handlePayment);
     socket.on('orderStatusUpdated', handleOrderStatusUpdated);
+    if (socket.connected) handleConnect();
 
     return () => {
+      socket.off('connect', handleConnect);
       socket.off('newOrder', handleNewOrder);
       socket.off('payment-received', handlePayment);
       socket.off('orderStatusUpdated', handleOrderStatusUpdated);
