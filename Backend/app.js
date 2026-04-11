@@ -15,6 +15,8 @@ const ordersRouter = require('./routes/ordersRoute');
 const debtRoutes = require('./routes/debtRoutes'); 
 const analyticsRoutes = require('./routes/analyticsRoutes'); 
 const paymentRoutes = require('./routes/paymentRoutes');
+const { apiLimiter } = require('./middleware/rateLimiter');
+
 
 const app = express();
 
@@ -34,6 +36,9 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // ==========================================
 // API ROUTE MOUNTING
 // ==========================================
+
+// Apply the general API rate limiter to all API routes
+app.use('/api', apiLimiter);
 
 // Mount canteen-specific endpoints (menu, status, creation)
 app.use('/api/canteens', canteenRoutes); 

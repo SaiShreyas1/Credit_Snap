@@ -1,5 +1,7 @@
 const express = require('express');
 const userController = require('../controllers/userController');
+const { authLimiter } = require('../middleware/rateLimiter');
+
 
 const router = express.Router();
 
@@ -12,14 +14,14 @@ const router = express.Router();
  * @desc    Register a new student.
  * @access  Public
  */
-router.post('/signup', userController.signup);
+router.post('/signup', authLimiter, userController.signup);
 
 /**
  * @route   POST /api/users/login
  * @desc    Authenticate a user and return a JWT.
  * @access  Public
  */
-router.post('/login', userController.login);
+router.post('/login', authLimiter, userController.login);
 
 /**
  * @route   GET /api/users/verifyEmail/:token
@@ -33,14 +35,14 @@ router.get('/verifyEmail/:token', userController.verifyEmail);
  * @desc    Generate a password reset token and send it via email.
  * @access  Public
  */
-router.post('/forgotPassword', userController.forgotPassword);
+router.post('/forgotPassword', authLimiter, userController.forgotPassword);
 
 /**
  * @route   PATCH /api/users/resetPassword/:token
  * @desc    Reset a user's password using a valid reset token.
  * @access  Public
  */
-router.patch('/resetPassword/:token', userController.resetPassword);
+router.patch('/resetPassword/:token', authLimiter, userController.resetPassword);
 
 // ==========================================
 // ROUTER MIDDLEWARE (Authentication Required)
