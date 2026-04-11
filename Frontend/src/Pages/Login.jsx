@@ -261,6 +261,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   // --- LOGIN LOGIC ---
   // Function to authenticate the user and retrieve a session token from the backend
@@ -277,6 +278,7 @@ const Login = () => {
     //Clear any old errors before trying to log in
     setEmailError('');
     setLoginError('');
+    setIsLoading(true);
 
     //2.CONNECTION TO MONGODB
     try {
@@ -315,6 +317,7 @@ const Login = () => {
       } else {
         //If the password was wrong, or email wasn't found, show the error!
         setLoginError(data.message);
+        setIsLoading(false);
       }
     } catch (error) {
       if (error.name === 'QuotaExceededError') {
@@ -323,6 +326,7 @@ const Login = () => {
         console.error(error);
         setLoginError('Cannot connect to the backend server. Is nodemon running?');
       }
+      setIsLoading(false);
     }
   };
 
@@ -332,6 +336,21 @@ const Login = () => {
   return (
     <>
       <style>{inlineCSS}</style>
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
+          <div className="relative flex items-center justify-center">
+            {/* Background trace ring */}
+            <div className="absolute w-20 h-20 border-4 border-gray-200 rounded-full"></div>
+            {/* Spinning ring */}
+            <div className={`absolute w-20 h-20 border-4 border-transparent ${isStudent ? 'border-t-[#183B66]' : 'border-t-[#D4AC0D]'} rounded-full animate-spin`}></div>
+            {/* Center Favicon */}
+            <img src="/favicon/favicon.svg" alt="Loading" className="w-10 h-10 object-contain z-10" />
+          </div>
+        </div>
+      )}
+
       <div className="login-page">
         <div className={`login-left-panel ${isStudent ? 'bg-blue-theme' : 'bg-yellow-theme'}`}>
           <div className="brand-logo-wrap">
@@ -422,9 +441,10 @@ const Login = () => {
 
               <button
                 type="submit"
-                className={`primary-login-btn ${isStudent ? 'btn-blue' : 'btn-yellow'}`}
+                disabled={isLoading}
+                className={`primary-login-btn ${isStudent ? 'btn-blue' : 'btn-yellow'} ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                LOGIN
+                {isLoading ? 'VERIFYING...' : 'LOGIN'}
               </button>
             </form>
 
