@@ -56,7 +56,7 @@ exports.createOrder = async (req, res) => {
       recomputedTotal += menuEntry.price * qty;
     }
 
-    // 1. SAFETY CHECK: Enforce Per-Canteen Credit Limits before creating the order
+    // 1. 🛡️ STRICT SAFETY CHECK: Enforce Per-Canteen Credit Limits
     const student = await User.findById(req.user.id);
     const targetCanteen = await Canteen.findById(canteenId);
 
@@ -66,12 +66,18 @@ exports.createOrder = async (req, res) => {
 
     const existingDebt = await Debt.findOne({ student: req.user.id, canteen: canteenId });
     const currentCanteenDebt = existingDebt ? existingDebt.amountOwed : 0;
-    const canteenLimit = existingDebt ? existingDebt.limit : (targetCanteen?.defaultLimit || 3000);
+    
+    // Fallback logic: Use student's custom debt limit if it exists, otherwise use canteen default.
+    // Fixed: Ensure we never default to an undefined limit which could bypass validation.
+    const canteenLimit = (existingDebt && existingDebt.limit !== undefined) 
+      ? existingDebt.limit 
+      : (targetCanteen.defaultLimit || 3000);
 
+    // CRITICAL: Ensure NO bypasses for high-priced items exists here. Every order must respect the limit.
     if (currentCanteenDebt + recomputedTotal > canteenLimit) {
       return res.status(400).json({
         status: 'fail',
-        message: `Request failed! You will exceed your ₹${canteenLimit} debt limit at this canteen (Current debt: ₹${currentCanteenDebt}).`
+        message: `Order rejected! This would exceed your ₹${canteenLimit} debt limit at ${targetCanteen.name} (Current debt: ₹${currentCanteenDebt}).`
       });
     }
 
@@ -334,12 +340,17 @@ exports.updateOrderStatus = async (req, res) => {
       const currentCanteenDebt = existingDebt ? existingDebt.amountOwed : 0;
 
       const canteenObj = await Canteen.findById(canteenId);
-      const canteenLimit = existingDebt ? existingDebt.limit : (canteenObj?.defaultLimit || 3000);
+      
+      // Strict limit check: Use existing limit or canteen default
+      const canteenLimit = (existingDebt && existingDebt.limit !== undefined)
+        ? existingDebt.limit
+        : (canteenObj?.defaultLimit || 3000);
 
+      // SECURITY: Final server-side check before updating balances
       if (currentCanteenDebt + order.totalAmount > canteenLimit) {
         return res.status(400).json({
           status: 'fail',
-          message: `Per-canteen debt limit of ₹${canteenLimit} exceeded! Current debt is ₹${currentCanteenDebt}.`
+          message: `Cannot accept order! Per-canteen debt limit of ₹${canteenLimit} exceeded for this student.`
         });
       }
 
