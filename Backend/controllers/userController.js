@@ -313,13 +313,21 @@ exports.updateMyProfile = async (req, res) => {
       if (!/^[a-zA-Z\s]+$/.test(providedName)) {
         return res.status(400).json({ status: 'fail', message: 'Name can only contain alphabets and spaces.' });
       }
+      if (providedName.length > 50) {
+        return res.status(400).json({ status: 'fail', message: 'Name cannot exceed 50 characters.' });
+      }
     }
 
-    if (req.body.rollNo && !/^[a-zA-Z0-9]+$/.test(req.body.rollNo)) {
-      return res.status(400).json({ status: 'fail', message: 'Roll number must be alphanumeric.' });
+    if (req.body.rollNo) {
+      if (!/^[a-zA-Z0-9]+$/.test(req.body.rollNo)) return res.status(400).json({ status: 'fail', message: 'Roll number must be alphanumeric.' });
+      if (req.body.rollNo.length > 20) return res.status(400).json({ status: 'fail', message: 'Roll number cannot exceed 20 characters.' });
     }
-    if (req.body.roomNo && !/^[a-zA-Z0-9-]+$/.test(req.body.roomNo)) {
-      return res.status(400).json({ status: 'fail', message: 'Room number must only contain alphanumeric characters and hyphens.' });
+    if (req.body.roomNo) {
+      if (!/^[a-zA-Z0-9-]+$/.test(req.body.roomNo)) return res.status(400).json({ status: 'fail', message: 'Room number must only contain alphanumeric characters and hyphens.' });
+      if (req.body.roomNo.length > 20) return res.status(400).json({ status: 'fail', message: 'Room number cannot exceed 20 characters.' });
+    }
+    if (req.body.hallNo && req.body.hallNo.length > 20) {
+      return res.status(400).json({ status: 'fail', message: 'Hall No cannot exceed 20 characters.' });
     }
 
     // Check if phone number has exactly 10 digits
@@ -357,7 +365,7 @@ exports.updateMyProfile = async (req, res) => {
 
         // 2. Decode and check actual byte size (limit: 500 KB)
         const MAX_BYTES = 500 * 1024; // 500 KB
-        const base64Data = photo.split(',')[1] || '';
+        const base64Data = photo.substring(photo.indexOf(',') + 1) || '';
         // Base64 encodes 3 bytes into 4 chars, so decoded size ≈ base64Length * 0.75
         const approxBytes = Math.ceil((base64Data.length * 3) / 4);
         if (approxBytes > MAX_BYTES) {
@@ -378,8 +386,14 @@ exports.updateMyProfile = async (req, res) => {
       canteen = await Canteen.findOne({ ownerId: user._id }).select('+razorpayMerchantKeySecretEncrypted');
       
       if (canteen) {
-        if (req.body.canteenName) canteen.name = req.body.canteenName;
-        if (req.body.timings) canteen.timings = req.body.timings;
+        if (req.body.canteenName) {
+          if (req.body.canteenName.length > 100) return res.status(400).json({ status: 'fail', message: 'Canteen name too long.' });
+          canteen.name = req.body.canteenName;
+        }
+        if (req.body.timings) {
+          if (req.body.timings.length > 100) return res.status(400).json({ status: 'fail', message: 'Timings too long.' });
+          canteen.timings = req.body.timings;
+        }
         if (Object.prototype.hasOwnProperty.call(req.body, 'razorpayMerchantKeyId')) {
           const keyId = (req.body.razorpayMerchantKeyId || '').trim();
           canteen.razorpayMerchantKeyId = keyId || canteen.razorpayMerchantKeyId;

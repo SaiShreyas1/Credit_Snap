@@ -317,7 +317,12 @@ const Login = () => {
         setLoginError(data.message);
       }
     } catch (error) {
-      setLoginError('Cannot connect to the backend server. Is nodemon running?');
+      if (error.name === 'QuotaExceededError') {
+        setLoginError('Your profile data is too large. Please contact an admin.');
+      } else {
+        console.error(error);
+        setLoginError('Cannot connect to the backend server. Is nodemon running?');
+      }
     }
   };
 
