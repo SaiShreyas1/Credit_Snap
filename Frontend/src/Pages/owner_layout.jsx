@@ -281,6 +281,19 @@ export default function OwnerLayout() {
   const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   const clearAll = () => setNotifications([]);
 
+  const handleNotificationClick = (notif) => {
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+    setIsNotificationsOpen(false);
+
+    if (notif.title.includes('New Order')) {
+      navigate('/owner/dashboard');
+    } else if (notif.title.includes('Payment Received')) {
+      navigate('/owner/history');
+    } else if (notif.title.includes('Debt')) {
+      navigate('/owner/debts');
+    }
+  };
+
   useEffect(() => {
     saveStoredNotifications(notifications);
   }, [notifications]);
@@ -422,7 +435,12 @@ export default function OwnerLayout() {
 
               {/* --- NEW ORDER TOAST POPUP (Low Opacity, Anchored) --- */}
               <div
-                className={`fixed top-20 left-2 right-2 z-[60] pointer-events-auto flex items-start gap-3 bg-white/95 backdrop-blur-md border border-gray-200/50 shadow-2xl rounded-2xl p-4 transition-all duration-500 ease-out sm:absolute sm:top-full sm:left-auto sm:right-0 sm:mt-3 sm:w-80 ${
+                onClick={() => {
+                   navigate('/owner/dashboard');
+                   setOrderToast(null);
+                   clearTimeout(orderToastTimer.current);
+                }}
+                className={`fixed top-20 left-2 right-2 z-[60] pointer-events-auto flex items-start gap-3 bg-white/95 backdrop-blur-md border border-gray-200/50 shadow-2xl rounded-2xl p-4 transition-all duration-500 ease-out sm:absolute sm:top-full sm:left-auto sm:right-0 sm:mt-3 sm:w-80 cursor-pointer hover:bg-gray-50 ${
                   orderToast
                     ? 'opacity-100 translate-y-0 scale-100'
                     : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
@@ -472,7 +490,7 @@ export default function OwnerLayout() {
                       notifications.map((notif) => (
                         <div
                           key={notif.id}
-                          onClick={() => setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n))}
+                          onClick={() => handleNotificationClick(notif)}
                           className={`flex gap-3 px-5 py-4 cursor-pointer transition-colors ${notif.read ? 'bg-white hover:bg-gray-50' : 'bg-yellow-50/60 hover:bg-yellow-50'
                             }`}
                         >
