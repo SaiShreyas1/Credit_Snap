@@ -1,7 +1,8 @@
 const Order = require('../models/ordersModel');
 const User = require('../models/userModel');
 const Debt = require('../models/debtModel');
-const Canteen = require('../models/canteenModel'); 
+const Canteen = require('../models/canteenModel');
+const MenuItem = require('../models/menuItemModel');
 
 // ==========================================
 // STUDENT ACTIONS
@@ -15,7 +16,7 @@ const Canteen = require('../models/canteenModel');
 exports.createOrder = async (req, res) => {
   try {
     const { canteenId, items, totalAmount } = req.body;
-    
+
     // Explicitly cast to Number to prevent Javascript string concatenation bugs
     const numTotalAmount = Number(totalAmount);
 
@@ -33,27 +34,59 @@ exports.createOrder = async (req, res) => {
       }
     }
 
+    // SECURITY: Validate every item actually belongs to this canteen and is available.
+    // Also recompute totalAmount server-side to prevent price tampering.
+    const canteenMenuItems = await MenuItem.find({ canteenId: canteenId, isAvailable: true });
+    const menuMap = new Map(canteenMenuItems.map(m => [m.name.toLowerCase().trim(), m]));
+
+    let recomputedTotal = 0;
+    for (const item of items) {
+      const menuEntry = menuMap.get(item.name.toLowerCase().trim());
+      if (!menuEntry) {
+        return res.status(400).json({
+          status: 'fail',
+          message: `Item '${item.name}' is not available in this canteen.`
+        });
+      }
+      const qty = Number(item.quantity);
+      if (!Number.isInteger(qty) || qty < 1) {
+        return res.status(400).json({ status: 'fail', message: `Invalid quantity for item '${item.name}'.` });
+      }
+      // Use DB price, not the client-supplied price
+      recomputedTotal += menuEntry.price * qty;
+    }
+
     // 1. SAFETY CHECK: Enforce Per-Canteen Credit Limits before creating the order
     const student = await User.findById(req.user.id);
     const targetCanteen = await Canteen.findById(canteenId);
 
+    if (!targetCanteen || !targetCanteen.isOpen) {
+      return res.status(400).json({ status: 'fail', message: 'This canteen is currently closed and not accepting orders.' });
+    }
+
     const existingDebt = await Debt.findOne({ student: req.user.id, canteen: canteenId });
     const currentCanteenDebt = existingDebt ? existingDebt.amountOwed : 0;
     const canteenLimit = existingDebt ? existingDebt.limit : (targetCanteen?.defaultLimit || 3000);
-    
-    if (currentCanteenDebt + numTotalAmount > canteenLimit) {
+
+    if (currentCanteenDebt + recomputedTotal > canteenLimit) {
       return res.status(400).json({
         status: 'fail',
         message: `Request failed! You will exceed your ₹${canteenLimit} debt limit at this canteen (Current debt: ₹${currentCanteenDebt}).`
       });
     }
 
-    // 2. Create the Order
+    // 2. Create the Order using the server-recomputed total (not the client's value)
+    // Build items array with DB-authoritative prices
+    const sanitizedItems = items.map(item => {
+      const menuEntry = menuMap.get(item.name.toLowerCase().trim());
+      return { name: menuEntry.name, quantity: Number(item.quantity), price: menuEntry.price };
+    });
+
     let newOrder = await Order.create({
       student: req.user.id,
-      canteen: canteenId,   
-      items,
-      totalAmount: numTotalAmount
+      canteen: canteenId,
+      items: sanitizedItems,
+      totalAmount: recomputedTotal
     });
 
     // Populate student data so the frontend can display the student name immediately
@@ -101,7 +134,7 @@ exports.getStudentHistory = async (req, res) => {
 
     const orderHistory = [];
     const paymentHistory = [];
-    const combinedHistory = []; 
+    const combinedHistory = [];
 
     allRecords.forEach(record => {
       // Flag to separate actual food orders from Khata payment receipts
@@ -115,9 +148,9 @@ exports.getStudentHistory = async (req, res) => {
       const day = String(dateObj.getDate()).padStart(2, '0');
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
       const year = dateObj.getFullYear();
-      
-      const safeStatus = record.status 
-        ? record.status.charAt(0).toUpperCase() + record.status.slice(1) 
+
+      const safeStatus = record.status
+        ? record.status.charAt(0).toUpperCase() + record.status.slice(1)
         : 'Pending';
 
       const formattedRecord = {
@@ -127,32 +160,32 @@ exports.getStudentHistory = async (req, res) => {
         amount: record.totalAmount || 0,
         date: `${day}-${month}-${year}`,
         time: dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-        type: isPayment ? 'payment' : 'order' 
+        type: isPayment ? 'payment' : 'order'
       };
 
       if (isPayment) {
         const paymentRecord = { ...formattedRecord, items: 'Debt Clearance' };
         paymentHistory.push(paymentRecord);
-        combinedHistory.push(paymentRecord); 
+        combinedHistory.push(paymentRecord);
       } else {
         const orderRecord = {
           ...formattedRecord,
           items: Array.isArray(record.items) && record.items.length > 0
-            ? record.items.map(i => `${i.quantity}x ${i.name}`).join(', ') 
+            ? record.items.map(i => `${i.quantity}x ${i.name}`).join(', ')
             : 'Unknown Items'
         };
         orderHistory.push(orderRecord);
-        combinedHistory.push(orderRecord); 
+        combinedHistory.push(orderRecord);
       }
     });
 
-    res.status(200).json({ 
-      status: 'success', 
-      data: { 
-        orders: orderHistory, 
+    res.status(200).json({
+      status: 'success',
+      data: {
+        orders: orderHistory,
         payments: paymentHistory,
-        allHistory: combinedHistory 
-      } 
+        allHistory: combinedHistory
+      }
     });
   } catch (error) {
     console.error("[Order Controller] ❌ ERROR IN GET STUDENT HISTORY:", error);
@@ -168,7 +201,7 @@ exports.getStudentHistory = async (req, res) => {
 exports.cancelOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
-    
+
     if (!order) {
       return res.status(404).json({ status: 'fail', message: 'Order not found' });
     }
@@ -197,6 +230,50 @@ exports.cancelOrder = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Auto-cancel any pending order the student has at a given canteen.
+ *          Called when a student clicks "Add more items" on the checkout page
+ *          so they can modify their cart without the race condition of an owner
+ *          accepting the old order while the new one is being submitted.
+ * @route   PATCH /api/orders/cancel-pending-at-canteen
+ * @access  Private (Student)
+ */
+exports.cancelPendingAtCanteen = async (req, res) => {
+  try {
+    const { canteenId } = req.body;
+    const studentId = req.user._id || req.user.id;
+
+    if (!canteenId) {
+      return res.status(400).json({ status: 'fail', message: 'canteenId is required.' });
+    }
+
+    const pendingOrder = await Order.findOne({
+      student: studentId,
+      canteen: canteenId,
+      status: 'pending'
+    });
+
+    // Idempotent: if no pending order exists, just return success (nothing to cancel)
+    if (!pendingOrder) {
+      return res.status(200).json({ status: 'success', message: 'No pending order to cancel.' });
+    }
+
+    pendingOrder.status = 'cancelled';
+    await pendingOrder.save();
+
+    // 📡 Instantly remove the card from the owner's live dashboard
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`canteen:${canteenId}`).emit('orderStatusUpdated', pendingOrder);
+    }
+
+    res.status(200).json({ status: 'success', message: 'Pending order cancelled. You may now place a new order.' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+
 
 // ==========================================
 // OWNER ACTIONS
@@ -210,13 +287,13 @@ exports.cancelOrder = async (req, res) => {
 exports.getOwnerOrders = async (req, res) => {
   try {
     const myCanteen = await Canteen.findOne({ ownerId: req.user.id });
-    
+
     if (!myCanteen) {
       return res.status(200).json({ status: 'success', results: 0, data: [] });
     }
 
     const orders = await Order.find({ canteen: myCanteen._id })
-      .populate('student', 'name rollNo phoneNo hallNo roomNo') 
+      .populate('student', 'name rollNo phoneNo hallNo roomNo')
       .sort('-createdAt');
 
     res.status(200).json({ status: 'success', results: orders.length, data: orders });
@@ -237,6 +314,15 @@ exports.updateOrderStatus = async (req, res) => {
     let order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
+    // RACE CONDITION GUARD: Prevent accepting/rejecting an order that was already
+    // cancelled by the student (e.g., they clicked "Add more items" to edit their cart).
+    if (order.status === 'cancelled') {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'This order was already cancelled by the student and cannot be accepted or rejected.'
+      });
+    }
+
     const studentId = order.student._id || order.student;
     const canteenId = order.canteen._id || order.canteen;
 
@@ -246,10 +332,10 @@ exports.updateOrderStatus = async (req, res) => {
 
       const existingDebt = await Debt.findOne({ student: studentId, canteen: canteenId });
       const currentCanteenDebt = existingDebt ? existingDebt.amountOwed : 0;
-      
+
       const canteenObj = await Canteen.findById(canteenId);
       const canteenLimit = existingDebt ? existingDebt.limit : (canteenObj?.defaultLimit || 3000);
-      
+
       if (currentCanteenDebt + order.totalAmount > canteenLimit) {
         return res.status(400).json({
           status: 'fail',
@@ -263,12 +349,12 @@ exports.updateOrderStatus = async (req, res) => {
 
       // 2. Create or update the specific Canteen Debt Ticket
       await Debt.findOneAndUpdate(
-        { student: studentId, canteen: canteenId }, 
-        { 
-          $inc: { amountOwed: order.totalAmount },        
+        { student: studentId, canteen: canteenId },
+        {
+          $inc: { amountOwed: order.totalAmount },
           $setOnInsert: { limit: canteenObj?.defaultLimit || 3000 }
         },
-        { upsert: true, new: true }                         
+        { upsert: true, new: true }
       );
 
       // 3. Freeze the remaining debt snapshot natively into the order itself
@@ -284,29 +370,29 @@ exports.updateOrderStatus = async (req, res) => {
     if (io && studentId) {
       // Notify student their order was updated
       io.to(`student:${studentId}`).emit('orderStatusUpdated', order);
-      
+
       // If a debt was actively created, trigger table refreshes and threshold warnings
       if (status === 'accepted') {
-         io.to(`student:${studentId}`).emit('debt-updated');
-         io.to(`canteen:${canteenId}`).emit('debt-updated');
+        io.to(`student:${studentId}`).emit('debt-updated');
+        io.to(`canteen:${canteenId}`).emit('debt-updated');
 
-         try {
-           const updatedDebt = await Debt.findOne({ student: studentId, canteen: canteenId }).populate('student', 'name');
-           
-           if (updatedDebt && updatedDebt.limit > 0) {
-             const pct = (updatedDebt.amountOwed / updatedDebt.limit) * 100;
-             if (pct >= 80) {
-               io.to(`canteen:${canteenId}`).emit('debt-threshold', {
-                 studentName: updatedDebt.student?.name || 'A student',
-                 pct,
-                 amountOwed: updatedDebt.amountOwed,
-                 limit: updatedDebt.limit
-               });
-             }
-           }
-         } catch (thresholdErr) {
-           console.error('[Order Controller] ⚠️ Failed to emit debt-threshold:', thresholdErr.message);
-         }
+        try {
+          const updatedDebt = await Debt.findOne({ student: studentId, canteen: canteenId }).populate('student', 'name');
+
+          if (updatedDebt && updatedDebt.limit > 0) {
+            const pct = (updatedDebt.amountOwed / updatedDebt.limit) * 100;
+            if (pct >= 80) {
+              io.to(`canteen:${canteenId}`).emit('debt-threshold', {
+                studentName: updatedDebt.student?.name || 'A student',
+                pct,
+                amountOwed: updatedDebt.amountOwed,
+                limit: updatedDebt.limit
+              });
+            }
+          }
+        } catch (thresholdErr) {
+          console.error('[Order Controller] ⚠️ Failed to emit debt-threshold:', thresholdErr.message);
+        }
       }
     }
 
@@ -324,7 +410,7 @@ exports.updateOrderStatus = async (req, res) => {
 exports.clearOrders = async (req, res) => {
   try {
     const { orderIds } = req.body;
-    
+
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
       return res.status(400).json({ status: 'fail', message: 'Please provide an array of order IDs to clear.' });
     }

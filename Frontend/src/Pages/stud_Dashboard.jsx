@@ -64,14 +64,14 @@ const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder, onDismissOrder }
       onClick={() => isPending && setIsExpanded(!isExpanded)}
     >
       {/* Main Visible Row */}
-      <div className="p-5 flex justify-between items-center">
+      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div>
           <h3 className="text-lg font-medium text-gray-900 mb-1">{orderItems}</h3>
           <p className="text-gray-600 text-sm">
             {canteenName}, <span className="text-gray-500">{formatOrderDate(order.createdAt)}</span>
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-start gap-2 sm:items-end">
           <div className="flex items-center gap-2">
             {/* Dynamic Status Badge */}
             <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${order.status === 'pending' ? 'bg-orange-100 text-orange-700' :
@@ -104,7 +104,7 @@ const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder, onDismissOrder }
       {/* Slide-in Action Panel (Only renders if order is pending AND user clicked it) */}
       {isPending && isExpanded && (
         <div
-          className="px-5 pb-4 pt-1 border-t border-orange-50 flex gap-3 bg-orange-50/40"
+          className="flex flex-col gap-3 border-t border-orange-50 bg-orange-50/40 px-5 pb-4 pt-3 sm:flex-row sm:items-center"
           onClick={(e) => e.stopPropagation()} // Prevents the card from collapsing when a button is clicked
         >
           <button
@@ -119,7 +119,7 @@ const ActiveOrderCard = ({ order, onCancelOrder, onChangeOrder, onDismissOrder }
           >
             ✕ Cancel
           </button>
-          <span className="ml-auto self-center text-xs text-gray-400 italic">Click card to close</span>
+          <span className="text-xs italic text-gray-400 sm:ml-auto sm:self-center">Click card to close</span>
         </div>
       )}
     </div>
@@ -336,16 +336,16 @@ export default function StudDashboard() {
 
 
   return (
-    <main className="p-8 overflow-y-auto flex-1 bg-gray-50 min-h-screen">
+    <main className="flex-1 overflow-y-auto bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8">
 
       {/* --- TOP ROW: DEBT WIDGET & ALERTS --- */}
       <div className="flex flex-col md:flex-row gap-6 mb-8">
 
         {/* Total Debt Hero Card */}
-        <div className="bg-gradient-to-r from-[#1e3a8a] to-[#3b82f6] rounded-2xl p-6 text-white flex-1 shadow-lg h-40 flex flex-col justify-between">
+        <div className="flex min-h-40 flex-1 flex-col justify-between rounded-2xl bg-gradient-to-r from-[#1e3a8a] to-[#3b82f6] p-6 text-white shadow-lg">
           <div>
             <p className="text-lg opacity-90">Total Debt:</p>
-            <h1 className="text-4xl font-bold tracking-tight">₹{totalDebt.toFixed(2)}</h1>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">₹{totalDebt.toFixed(2)}</h1>
           </div>
           {totalDebt > 0 && (
             <div>

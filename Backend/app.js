@@ -24,8 +24,22 @@ const app = express();
 // GLOBAL MIDDLEWARES
 // ==========================================
 
-// Enable Cross-Origin Resource Sharing to allow the React frontend to communicate with this API
-app.use(cors()); 
+// Enable Cross-Origin Resource Sharing — only allow requests from the trusted frontend origin
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow server-to-server requests (no origin) and whitelisted origins only
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked: origin '${origin}' is not allowed`));
+    }
+  },
+  credentials: true,
+}));
 
 // Parse incoming JSON payloads (increased limit to handle base64 image payloads if necessary)
 app.use(express.json({ limit: '10mb' })); 

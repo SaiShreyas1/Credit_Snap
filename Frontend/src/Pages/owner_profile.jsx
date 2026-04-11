@@ -1,6 +1,6 @@
 import { BASE_URL } from '../config';
-import React, { useState, useEffect } from 'react';
-import { User } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../context/NotificationContext';
 
@@ -16,6 +16,30 @@ const buildOwnerInfo = (user, canteen) => ({
   razorpayMerchantSecretConfigured: Boolean(canteen?.razorpayMerchantSecretConfigured),
 });
 
+const parseTimings = (timingStr) => {
+  const regex = /(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)/i;
+  const match = timingStr ? timingStr.match(regex) : null;
+  if (match) {
+    return {
+      fromHour: parseInt(match[1]),
+      fromMinute: parseInt(match[2]),
+      fromPeriod: match[3].toUpperCase(),
+      toHour: parseInt(match[4]),
+      toMinute: parseInt(match[5]),
+      toPeriod: match[6].toUpperCase(),
+    };
+  }
+  return {
+    fromHour: 4, fromMinute: 0, fromPeriod: 'PM',
+    toHour: 4, toMinute: 0, toPeriod: 'AM'
+  };
+};
+
+const formatTimings = (t) => {
+  const pad = (n) => n.toString().padStart(2, '0');
+  return `${t.fromHour}:${pad(t.fromMinute || 0)} ${t.fromPeriod} - ${t.toHour}:${pad(t.toMinute || 0)} ${t.toPeriod}`;
+};
+
 export default function OwnerProfile() {
   const { showAlert } = useNotifications();
   const navigate = useNavigate();
@@ -27,6 +51,7 @@ export default function OwnerProfile() {
   // 2. Edit Mode State
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(ownerInfo);
+  const [timingParts, setTimingParts] = useState(parseTimings(ownerInfo.timings));
 
   // Request authorized profile metadata from server during component initialization cycle
   // 🚀 FETCH PROFILE ON MOUNT
@@ -58,6 +83,7 @@ export default function OwnerProfile() {
   // 3. Handlers
   const handleEditClick = () => {
     setEditForm(ownerInfo); // reset form to current data
+    setTimingParts(parseTimings(ownerInfo.timings));
     setIsEditing(true);
   };
 
@@ -66,13 +92,35 @@ export default function OwnerProfile() {
   };
 
   const handleSaveClick = async () => {
+    const errors = [];
+
+    // 1. Admin Name Validation
     if (!editForm.adminName || editForm.adminName.trim() === '') {
-      showAlert("Validation Error", "name cannot be empty", "warning");
-      return;
+      errors.push("Admin name cannot be empty");
     }
 
+    // 2. Phone Number Validation
     if (editForm.phone && !/^\d{10}$/.test(editForm.phone)) {
-      showAlert("Validation Error", "number of digits in phone number is not equal to 10", "warning");
+      errors.push("Phone number must be exactly 10 digits");
+    }
+
+    // 3. Timing Validation
+    const isValid = (h, m) => {
+      const hh = parseInt(h);
+      const mm = parseInt(m);
+      return !isNaN(hh) && hh >= 1 && hh <= 12 && !isNaN(mm) && mm >= 0 && mm <= 59;
+    };
+
+    if (!isValid(timingParts.fromHour, timingParts.fromMinute)) {
+      errors.push("Opening time must have hours (1-12) and minutes (0-59)");
+    }
+    if (!isValid(timingParts.toHour, timingParts.toMinute)) {
+      errors.push("Closing time must have hours (1-12) and minutes (0-59)");
+    }
+
+    if (errors.length > 0) {
+      // Show all errors in a single alert box
+      showAlert("Validation Error", errors.join(". "), "warning");
       return;
     }
 
@@ -82,9 +130,12 @@ export default function OwnerProfile() {
         canteenName: editForm.canteenName,
         adminName: editForm.adminName,
         phone: editForm.phone,
-        timings: editForm.timings,
-        profilePhoto: editForm.profilePhoto ?? "",
+        timings: formatTimings(timingParts),
       };
+
+      if (editForm.profilePhoto !== ownerInfo.profilePhoto) {
+        payload.profilePhoto = editForm.profilePhoto ?? "";
+      }
 
       if (editForm.razorpayMerchantKeyId?.trim()) {
         payload.razorpayMerchantKeyId = editForm.razorpayMerchantKeyId.trim();
@@ -108,6 +159,7 @@ export default function OwnerProfile() {
         const newInfo = buildOwnerInfo(data.data.user, data.data.canteen);
         setOwnerInfo(newInfo);
         setEditForm(newInfo);
+        setTimingParts(parseTimings(newInfo.timings));
         setIsEditing(false);
         showAlert("Success", "Profile updated successfully!", "success");
       } else {
@@ -120,6 +172,29 @@ export default function OwnerProfile() {
 
   const handleChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  };
+
+  const handleTimingChange = (field, value) => {
+    if (field.includes('Period')) {
+      setTimingParts(prev => ({ ...prev, [field]: value }));
+      return;
+    }
+
+    if (value === "") {
+      setTimingParts(prev => ({ ...prev, [field]: "" }));
+      return;
+    }
+
+    let numValue = parseInt(value);
+    if (isNaN(numValue)) return;
+
+    if (field.includes('Hour')) {
+      numValue = Math.max(1, Math.min(12, numValue));
+    } else if (field.includes('Minute')) {
+      numValue = Math.max(0, Math.min(59, numValue));
+    }
+
+    setTimingParts(prev => ({ ...prev, [field]: numValue }));
   };
 
   const handlePhotoUpload = (e) => {
@@ -148,10 +223,10 @@ export default function OwnerProfile() {
   const displayPhoto = isEditing ? editForm.profilePhoto : ownerInfo.profilePhoto;
 
   return (
-    <div className="flex-1 h-full min-h-screen flex items-start justify-center pt-24 bg-white">
+    <div className="flex min-h-screen flex-1 items-start justify-center bg-white px-4 pt-20 sm:px-6 sm:pt-24">
       
       {/* The Gray Card */}
-      <div className="relative bg-[#e5e5e5] rounded-[32px] border border-gray-400 shadow-sm w-full max-w-2xl px-12 pt-20 pb-12">
+      <div className="relative w-full max-w-2xl rounded-[32px] border border-gray-400 bg-[#e5e5e5] px-5 pb-8 pt-20 shadow-sm sm:px-12 sm:pb-12">
         
         <div className="absolute -top-16 left-1/2 transform -translate-x-1/2">
           <div className="relative bg-[#0f172a] rounded-full flex items-center justify-center w-32 h-32 border-[8px] border-white overflow-hidden group transition-all">
@@ -175,10 +250,10 @@ export default function OwnerProfile() {
         </div>
 
         {/* Text Details / Input Fields */}
-        <div className="space-y-6 text-[1.15rem] text-gray-900 px-6 mt-4">
+        <div className="mt-4 space-y-6 px-0 text-[1.15rem] text-gray-900 sm:px-6">
           
-          <div className="flex items-center">
-            <span className="w-48 font-medium shrink-0">Canteen Name :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+            <span className="w-full font-medium sm:w-48 sm:shrink-0">Canteen Name :</span>
             {isEditing ? (
               <input type="text" name="canteenName" value={editForm.canteenName} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition" />
             ) : (
@@ -186,8 +261,8 @@ export default function OwnerProfile() {
             )}
           </div>
           
-          <div className="flex items-center">
-            <span className="w-48 font-medium shrink-0">Admin Name :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+            <span className="w-full font-medium sm:w-48 sm:shrink-0">Admin Name :</span>
             {isEditing ? (
               <input type="text" name="adminName" value={editForm.adminName} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition" />
             ) : (
@@ -195,13 +270,13 @@ export default function OwnerProfile() {
             )}
           </div>
           
-          <div className="flex items-center">
-            <span className="w-48 font-medium shrink-0">Email :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+            <span className="w-full font-medium sm:w-48 sm:shrink-0">Email :</span>
             <span className={isEditing ? "text-gray-500" : ""}>{ownerInfo.email}</span>
           </div>
           
-          <div className="flex items-center">
-            <span className="w-48 font-medium shrink-0">Phone No :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+            <span className="w-full font-medium sm:w-48 sm:shrink-0">Phone No :</span>
             {isEditing ? (
               <input type="text" name="phone" value={editForm.phone} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition" />
             ) : (
@@ -209,17 +284,79 @@ export default function OwnerProfile() {
             )}
           </div>
           
-          <div className="flex items-center">
-            <span className="w-48 font-medium shrink-0">Timings :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+            <span className="w-full font-medium sm:w-48 sm:shrink-0">Timings :</span>
             {isEditing ? (
-              <input type="text" name="timings" value={editForm.timings} onChange={handleChange} className="bg-white border border-gray-300 rounded-lg px-3 py-1 w-full max-w-sm outline-none focus:border-[#0f172a] shadow-sm transition" />
+              <div className="flex items-center gap-3">
+                <div className="flex flex-nowrap items-center gap-2">
+                  <div className="flex items-center bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-sm">
+                    <input
+                      type="number"
+                      min="1"
+                      max="12"
+                      value={timingParts.fromHour}
+                      onChange={(e) => handleTimingChange('fromHour', e.target.value)}
+                      onKeyDown={(e) => ['e', 'E', '+', '-', '.'].includes(e.key) && e.preventDefault()}
+                      className="w-10 text-center outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <span className="mx-0.5">:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={timingParts.fromMinute}
+                      onChange={(e) => handleTimingChange('fromMinute', e.target.value)}
+                      onKeyDown={(e) => ['e', 'E', '+', '-', '.'].includes(e.key) && e.preventDefault()}
+                      className="w-10 text-center outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <select
+                      value={timingParts.fromPeriod}
+                      onChange={(e) => handleTimingChange('fromPeriod', e.target.value)}
+                      className="ml-1 bg-transparent outline-none cursor-pointer font-medium"
+                    >
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
+                  <span className="text-gray-500 font-medium">to</span>
+                  <div className="flex items-center bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-sm">
+                    <input
+                      type="number"
+                      min="1"
+                      max="12"
+                      value={timingParts.toHour}
+                      onChange={(e) => handleTimingChange('toHour', e.target.value)}
+                      onKeyDown={(e) => ['e', 'E', '+', '-', '.'].includes(e.key) && e.preventDefault()}
+                      className="w-10 text-center outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <span className="mx-0.5">:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={timingParts.toMinute}
+                      onChange={(e) => handleTimingChange('toMinute', e.target.value)}
+                      onKeyDown={(e) => ['e', 'E', '+', '-', '.'].includes(e.key) && e.preventDefault()}
+                      className="w-10 text-center outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <select
+                      value={timingParts.toPeriod}
+                      onChange={(e) => handleTimingChange('toPeriod', e.target.value)}
+                      className="ml-1 bg-transparent outline-none cursor-pointer font-medium"
+                    >
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
             ) : (
               <span>{ownerInfo.timings}</span>
             )}
           </div>
 
-          <div className="flex items-start">
-            <span className="w-48 font-medium shrink-0 pt-1">Razorpay Key ID :</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start">
+            <span className="w-full pt-1 font-medium sm:w-48 sm:shrink-0">Razorpay Key ID :</span>
             <div className="w-full max-w-sm">
               {isEditing ? (
                 <>
@@ -269,11 +406,11 @@ export default function OwnerProfile() {
         {!isEditing ? (
           // VIEW MODE
           <>
-            <div className="mt-14 flex justify-between gap-4 px-6">
-              <button onClick={() => navigate('/owner/change-password')} className="cursor-pointer bg-[#0f172a] text-white px-8 py-3 rounded-full font-medium hover:bg-slate-900 transition shadow-sm w-1/2">
+            <div className="mt-14 flex flex-col gap-4 px-0 sm:flex-row sm:px-6">
+              <button onClick={() => navigate('/owner/change-password')} className="cursor-pointer rounded-full bg-[#0f172a] px-8 py-3 font-medium text-white shadow-sm transition hover:bg-slate-900 sm:w-1/2">
                 Change Password
               </button>
-              <button onClick={handleEditClick} className="cursor-pointer bg-[#0f172a] text-white px-8 py-3 rounded-full font-medium hover:bg-slate-900 transition shadow-sm w-1/2">
+              <button onClick={handleEditClick} className="cursor-pointer rounded-full bg-[#0f172a] px-8 py-3 font-medium text-white shadow-sm transition hover:bg-slate-900 sm:w-1/2">
                 Edit Profile
               </button>
             </div>
@@ -286,18 +423,18 @@ export default function OwnerProfile() {
                 localStorage.removeItem('user');
                 localStorage.removeItem('canteenId');
                 navigate('/');
-              }} className="cursor-pointer bg-[#C28813] text-white px-14 py-3 rounded-full font-medium text-lg hover:bg-black transition shadow-sm">
+              }} className="w-full cursor-pointer rounded-full bg-[#C28813] px-14 py-3 text-lg font-medium text-white shadow-sm transition hover:bg-black sm:w-auto">
                 Log Out
              </button>
             </div>
           </>
         ) : (
           // EDIT MODE
-          <div className="mt-14 flex justify-between gap-4 px-6">
-            <button onClick={handleCancelClick} className="cursor-pointer bg-gray-500 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-600 transition shadow-sm w-1/2">
+          <div className="mt-14 flex flex-col gap-4 px-0 sm:flex-row sm:px-6">
+            <button onClick={handleCancelClick} className="cursor-pointer rounded-full bg-gray-500 px-8 py-3 font-medium text-white shadow-sm transition hover:bg-gray-600 sm:w-1/2">
               Cancel
             </button>
-            <button onClick={handleSaveClick} className="cursor-pointer bg-[#0f172a] text-white px-8 py-3 rounded-full font-medium hover:bg-slate-900 transition shadow-sm w-1/2">
+            <button onClick={handleSaveClick} className="cursor-pointer rounded-full bg-[#0f172a] px-8 py-3 font-medium text-white shadow-sm transition hover:bg-slate-900 sm:w-1/2">
               Save Changes
             </button>
           </div>

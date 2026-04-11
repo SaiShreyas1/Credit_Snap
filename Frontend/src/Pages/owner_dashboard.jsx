@@ -92,14 +92,31 @@ export default function OwnerDashboard() {
       showAlert(`💰 Payment Received!`, `${data.studentName} paid ₹${data.amount} online.`, 'success');
     };
 
+    // When a student cancels their pending order (e.g., clicks "Add more items"),
+    // or when an order is accepted/rejected, update the UI instantly without refresh.
+    const handleOrderStatusUpdated = (updatedOrder) => {
+      if (updatedOrder.status === 'cancelled') {
+        // Remove the cancelled card immediately so the owner can't accidentally accept it
+        setOrders(prevOrders => prevOrders.filter(o => o._id !== updatedOrder._id));
+      } else {
+        // For accepted/rejected, update the card status in place
+        setOrders(prevOrders =>
+          prevOrders.map(o => o._id === updatedOrder._id ? { ...o, status: updatedOrder.status } : o)
+        );
+      }
+    };
+
     socket.on('newOrder', handleNewOrder);
     socket.on('payment-received', handlePayment);
+    socket.on('orderStatusUpdated', handleOrderStatusUpdated);
 
     return () => {
       socket.off('newOrder', handleNewOrder);
       socket.off('payment-received', handlePayment);
+      socket.off('orderStatusUpdated', handleOrderStatusUpdated);
     };
   }, [canteen]);
+
 
   // ==========================================
   //4. API ACTIONS
@@ -256,7 +273,7 @@ export default function OwnerDashboard() {
 
         .empty-text {
           font-family: "Righteous", "Arial Black", sans-serif;
-          font-size: 80px;
+          font-size: clamp(36px, 10vw, 80px);
           font-weight: 700;
           color: #000;
           letter-spacing: -1px;
@@ -387,6 +404,79 @@ export default function OwnerDashboard() {
           transition: 0.2s;
         }
         .close-x:hover { color: #000; }
+
+        @media (max-width: 900px) {
+          .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 20px 20px 16px 20px;
+          }
+
+          .page-title {
+            font-size: 28px;
+          }
+
+          .status-container {
+            width: 100%;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 18px;
+          }
+
+          .empty-state-wrapper {
+            padding: 24px 20px 48px;
+          }
+
+          .card-container {
+            gap: 16px;
+            padding: 0 20px 24px 20px;
+          }
+
+          .order-card {
+            grid-template-columns: 1fr;
+            gap: 18px;
+            padding: 20px;
+          }
+
+          .info-col h2 {
+            font-size: 20px;
+            padding-right: 24px;
+          }
+
+          .items-col {
+            gap: 6px;
+          }
+
+          .action-col {
+            align-items: stretch;
+            gap: 12px;
+          }
+
+          .price {
+            margin-right: 0;
+            font-size: 24px;
+          }
+
+          .btn-group {
+            flex-direction: column;
+            width: 100%;
+          }
+
+          .btn {
+            width: 100%;
+          }
+
+          .debt-badge {
+            align-self: flex-start;
+            margin-right: 0;
+          }
+
+          .close-x {
+            right: 12px;
+            top: 12px;
+          }
+        }
       `}</style>
 
       {/*Top Header Row*/}

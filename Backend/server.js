@@ -24,10 +24,20 @@ const DB_URL = process.env.MONGO_URI;
 const httpServer = createServer(app);
 
 // Initialize Socket.IO with Cross-Origin Resource Sharing (CORS) rules
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173'];
+
 const io = new Server(httpServer, {
   cors: {
-    // Dynamically allow whatever port Vite assigns (5176, etc.) on the shared server
-    origin: (origin, callback) => callback(null, true),
+    // Only allow connections from whitelisted origins
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked: origin '${origin}' is not allowed`));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
   },

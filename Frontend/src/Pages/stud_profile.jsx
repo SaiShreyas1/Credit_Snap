@@ -102,13 +102,19 @@ export default function StudProfile() {
 
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      const payload = { ...editForm };
+
+      if (editForm.profilePhoto === studentInfo.profilePhoto) {
+        delete payload.profilePhoto;
+      }
+
       const response = await fetch(`${BASE_URL}/api/users/update-my-profile`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(editForm)
+        body: JSON.stringify(payload)
       });
       const data = await response.json();
       

@@ -8,11 +8,12 @@ import { Eye, EyeOff } from 'lucide-react';
 const inlineCSS = `
   .login-page {
     display: flex;
-    height: 100vh;
-    width: 100vw;
+    min-height: 100dvh;
+    width: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
+    overflow-x: hidden;
   }
 
   .login-left-panel {
@@ -217,6 +218,7 @@ const inlineCSS = `
   @media (max-width: 800px) {
     .login-page {
       flex-direction: column;
+      overflow-y: auto;
     }
 
     .login-left-panel {
@@ -229,7 +231,7 @@ const inlineCSS = `
     }
 
     .login-right-panel {
-      padding: 40px 20px;
+      padding: 24px 20px 40px;
     }
 
     .form-container {
@@ -283,7 +285,7 @@ const Login = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: email, password: password }),
+        body: JSON.stringify({ email: email, password: password, role: isStudent ? 'student' : 'owner' }),
       });
 
       const data = await response.json();

@@ -100,8 +100,8 @@ export default function OwnerEditMenu() {
   };
 
   const handleConfirmAdd = async () => {
-  if (!newName.trim() || !newPrice.trim() || isNaN(newPrice) || parseFloat(newPrice) < 0) {
-    showAlert("Invalid Input", "Please enter a valid Name and Price.", "warning");
+  if (!newName.trim() || !newPrice.trim() || isNaN(newPrice) || parseFloat(newPrice) <= 0) {
+    showAlert("Invalid Input", "Please enter a valid Name and a Price greater than Rs.0.", "warning");
     return;
   }
 
@@ -132,7 +132,7 @@ export default function OwnerEditMenu() {
     showAlert("Success", `${newName} has been added to the menu!`, "success");
   } catch (err) {
     console.error("Error adding item:", err);
-    showAlert("Error", "Failed to add item to menu.", "error");
+    showAlert("Error", err.response?.data?.message || "Failed to add item to menu.", "error");
   }
 };
 
@@ -146,8 +146,8 @@ export default function OwnerEditMenu() {
 
   const handleSaveEdit = async () => {
     // 1. Validate Input First!
-    if (!editName.trim() || !editPrice.trim() || isNaN(editPrice) || parseFloat(editPrice) < 0) {
-      showAlert("Invalid Input", "Please enter a valid Name and Price.", "warning");
+    if (!editName.trim() || !editPrice.trim() || isNaN(editPrice) || parseFloat(editPrice) <= 0) {
+      showAlert("Invalid Input", "Please enter a valid Name and a Price greater than Rs.0.", "warning");
       return;
     }
 
@@ -169,7 +169,7 @@ export default function OwnerEditMenu() {
       showAlert("Updated", "Item updated successfully.", "success");
     } catch (err) {
       console.error("Error saving edits:", err);
-      showAlert("Error", "Failed to save edits to database", "error");
+      showAlert("Error", err.response?.data?.message || "Failed to save edits to database.", "error");
     }
   };
 
@@ -233,23 +233,23 @@ export default function OwnerEditMenu() {
       {/* 1. ADD NEW ITEM MODAL */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[500px] p-10 relative border border-gray-100">
+          <div className="relative w-full max-w-[500px] rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.12)] sm:p-10">
             <X onClick={() => setIsAddModalOpen(false)} className="absolute top-5 right-5 w-5 h-5 text-gray-600 cursor-pointer hover:text-black transition" />
             <h2 className="text-xl font-medium text-center text-gray-900 mb-10">Add New Item:</h2>
-            <div className="space-y-8 mb-12 px-4">
-              <div className="flex items-center justify-between">
+            <div className="mb-12 space-y-8 px-0 sm:px-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <label className="text-gray-900 font-medium text-lg">Item Name:</label>
                 <input
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-48 text-center border-b-2 border-gray-900 focus:border-[#eab308] outline-none pb-1 bg-transparent text-lg placeholder-gray-300"
+                  className="w-full border-b-2 border-gray-900 bg-transparent pb-1 text-center text-lg outline-none placeholder-gray-300 focus:border-[#eab308] sm:w-48"
                   placeholder="e.g. Cheese Dosa"
                 />
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <label className="text-gray-900 font-medium text-lg">Price:</label>
-                <div className="w-48 flex items-center justify-center border-b-2 border-gray-900 focus-within:border-[#eab308] pb-1">
+                <div className="flex w-full items-center justify-center border-b-2 border-gray-900 pb-1 focus-within:border-[#eab308] sm:w-48">
                   <span className="text-gray-900 text-lg mr-1">₹</span>
                   <input
                     type="number"
@@ -261,11 +261,11 @@ export default function OwnerEditMenu() {
                 </div>
               </div>
             </div>
-            <div className="flex justify-center gap-8">
-              <button onClick={() => setIsAddModalOpen(false)} className="cursor-pointer px-8 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-800 font-medium hover:bg-gray-50 transition text-lg">
+            <div className="flex flex-col justify-center gap-4 sm:flex-row sm:gap-8">
+              <button onClick={() => setIsAddModalOpen(false)} className="cursor-pointer rounded-xl border border-gray-200 bg-white px-8 py-2.5 text-lg font-medium text-gray-800 shadow-sm transition hover:bg-gray-50">
                 Cancel
               </button>
-              <button onClick={handleConfirmAdd} className="cursor-pointer px-8 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-800 font-medium hover:bg-gray-50 transition text-lg">
+              <button onClick={handleConfirmAdd} className="cursor-pointer rounded-xl border border-gray-200 bg-white px-8 py-2.5 text-lg font-medium text-gray-800 shadow-sm transition hover:bg-gray-50">
                 Confirm
               </button>
             </div>
@@ -276,7 +276,7 @@ export default function OwnerEditMenu() {
       {/* 2. EDIT ITEM MODAL */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-[400px] border border-gray-100 overflow-hidden">
+          <div className="w-full max-w-[400px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl">
             <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="text-xl font-semibold text-gray-900">Edit Item</h3>
               <X onClick={() => setIsEditModalOpen(false)} className="w-5 h-5 text-gray-400 cursor-pointer hover:text-red-500" />
@@ -300,11 +300,11 @@ export default function OwnerEditMenu() {
       )}
 
       {/* 3. MAIN CONTENT PAGE */}
-      <div className="p-8 pb-32">
+      <div className="p-4 pb-32 sm:p-6 lg:p-8">
 
         {/* TOP ROW: Search & Filters */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center bg-white px-4 py-2.5 rounded-full shadow-sm w-[500px] border border-gray-100">
+        <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex w-full items-center rounded-full border border-gray-100 bg-white px-4 py-2.5 shadow-sm lg:max-w-[500px]">
             <Search className="w-5 h-5 text-gray-400 mr-2" />
             <input
               type="text"
@@ -315,13 +315,13 @@ export default function OwnerEditMenu() {
             />
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:gap-4 lg:w-auto">
             <div className="relative">
-              <button onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)} className="cursor-pointer bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg shadow-sm flex items-center gap-2 transition min-w-[150px] justify-between">
+              <button onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)} className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg bg-[#eab308] px-6 py-2.5 font-semibold text-[#1e293b] shadow-sm transition hover:bg-yellow-500 sm:min-w-[150px]">
                 {getFilterText()} <ChevronDown className="w-4 h-4" />
               </button>
               {isFilterDropdownOpen && (
-                <div className="absolute right-0 mt-3 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
+                <div className="absolute left-0 right-0 z-50 mt-3 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-xl sm:left-auto sm:right-0 sm:w-48">
                   <div onClick={() => { setActiveFilter('all'); setIsFilterDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeFilter === 'all' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>All Items</div>
                   <div onClick={() => { setActiveFilter('available'); setIsFilterDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeFilter === 'available' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Available Only</div>
                   <div onClick={() => { setActiveFilter('unavailable'); setIsFilterDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeFilter === 'unavailable' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Unavailable Only</div>
@@ -330,11 +330,11 @@ export default function OwnerEditMenu() {
             </div>
 
             <div className="relative">
-              <button onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)} className="cursor-pointer bg-[#eab308] hover:bg-yellow-500 text-[#1e293b] font-semibold px-6 py-2.5 rounded-lg shadow-sm flex items-center gap-2 transition min-w-[150px] justify-between">
+              <button onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)} className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg bg-[#eab308] px-6 py-2.5 font-semibold text-[#1e293b] shadow-sm transition hover:bg-yellow-500 sm:min-w-[150px]">
                 {getSortText()} <ChevronDown className="w-4 h-4" />
               </button>
               {isSortDropdownOpen && (
-                <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
+                <div className="absolute left-0 right-0 z-50 mt-3 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-xl sm:left-auto sm:right-0 sm:w-56">
                   <div onClick={() => { setActiveSort('default'); setIsSortDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'default' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Default</div>
                   <div onClick={() => { setActiveSort('price-low-high'); setIsSortDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'price-low-high' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Price: Low to High</div>
                   <div onClick={() => { setActiveSort('price-high-low'); setIsSortDropdownOpen(false) }} className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition ${activeSort === 'price-high-low' ? 'bg-yellow-50 font-semibold text-[#1e293b]' : 'text-gray-700'}`}>Price: High to Low</div>
@@ -346,9 +346,9 @@ export default function OwnerEditMenu() {
         </div>
 
         {/* HEADER ROW: Title & Add Button */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-4xl font-semibold text-gray-900">Manage Menu</h1>
-          <button onClick={handleOpenAddModal} className="cursor-pointer bg-[#1e293b] hover:bg-slate-800 text-white font-medium px-6 py-3 rounded-lg shadow-md flex items-center gap-2 transition">
+          <button onClick={handleOpenAddModal} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#1e293b] px-6 py-3 font-medium text-white shadow-md transition hover:bg-slate-800 sm:w-auto">
             <Plus className="w-5 h-5" /> Add New Item
           </button>
         </div>
@@ -364,14 +364,14 @@ export default function OwnerEditMenu() {
           )}
 
           {filteredAndSortedMenu.map((item) => (
-            <div key={item.id} className={`bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex justify-between items-center transition hover:shadow-md ${!item.isAvailable ? 'opacity-60' : ''}`}>
+            <div key={item.id} className={`flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-6 ${!item.isAvailable ? 'opacity-60' : ''}`}>
               <div>
                 <h3 className="text-xl font-medium text-gray-900 mb-2">{item.name}</h3>
                 <p className="text-sm text-gray-600">
                   Price: <span className="text-[#3b82f6] font-semibold">₹{item.price}</span>
                 </p>
               </div>
-              <div className="flex flex-col items-end gap-3">
+              <div className="flex flex-col items-start gap-3 sm:items-end">
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-medium text-gray-500">Available</span>
                   <div
@@ -383,7 +383,7 @@ export default function OwnerEditMenu() {
                 </div>
 
                 {/* BUTTONS ROW: Edit and Delete */}
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button onClick={() => handleEditClick(item)} className="cursor-pointer flex items-center gap-1 text-sm font-semibold text-gray-600 border border-gray-200 bg-gray-50 hover:bg-gray-100 px-3 py-1 rounded-full transition">
                     <Edit3 className="w-3.5 h-3.5" /> Edit
                   </button>

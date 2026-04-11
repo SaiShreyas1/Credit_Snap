@@ -14,7 +14,7 @@ import VerifyEmailPending from './Pages/VerifyEmailPending';
 //--Student Pages ---
 import StudLayout from './Pages/stud_layout';
 import StudDashboard from './Pages/stud_Dashboard';
-import StudCanteens from './Pages/stud_canteens';
+import StudCanteens from './Pages/stud_Canteens';
 import StudProfile from './Pages/stud_profile';
 import StudHistory from './Pages/stud_history';
 import ChangePassword from './Pages/ChangePassword';

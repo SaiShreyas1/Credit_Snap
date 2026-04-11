@@ -37,6 +37,13 @@ router.get('/my-active-orders', ordersController.getStudentOrders);
 router.get('/my-history', ordersController.getStudentHistory);
 
 /**
+ * @route   PATCH /api/orders/cancel-pending-at-canteen
+ * @desc    Auto-cancel any pending order the student has at a canteen (fired when editing cart).
+ * @access  Private (Student)
+ */
+router.patch('/cancel-pending-at-canteen', ordersController.cancelPendingAtCanteen);
+
+/**
  * @route   PATCH /api/orders/:id/cancel
  * @desc    Cancel an existing pending order before it is accepted by the canteen owner.
  * @access  Private (Student)

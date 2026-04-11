@@ -9,12 +9,12 @@ const inlineCSS = `
   /* Full page layout - Locked to exact window height to prevent scrollbar */
   .signup-page {
     display: flex;
-    height: 100vh;
-    width: 100vw;
+    min-height: 100dvh;
+    width: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow-x: hidden;
     /* This strictly prevents the scrollbar */
   }
 
@@ -234,7 +234,7 @@ const inlineCSS = `
   @media (max-width: 800px) {
     .signup-page {
       flex-direction: column;
-      overflow: auto;
+      overflow-y: auto;
       /* Allow scroll on mobile where screen is too small */
     }
 
@@ -248,7 +248,7 @@ const inlineCSS = `
     }
 
     .signup-right-panel {
-      padding: 20px;
+      padding: 24px 20px 40px;
     }
   }
 

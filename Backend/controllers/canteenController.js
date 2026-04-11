@@ -83,7 +83,7 @@ exports.getAllCanteens = async (req, res) => {
       _id: c._id, 
       name: c.name || (c.ownerId && c.ownerId.name) || "Unnamed Canteen",
       status: c.isOpen ? "Open" : "Closed",
-      timings: "4:00 PM - 4:00 AM" // Static fallback; consider moving to schema
+      timings: c.timings
     }));
 
     res.status(200).json({ status: 'success', data: { canteens: formattedCanteens } });
@@ -119,6 +119,23 @@ exports.addMenuItem = async (req, res) => {
     
     // Sanitize input: Remove leading/trailing spaces and collapse multiple spaces
     const trimmedName = req.body.name.trim().replace(/\s+/g, ' ');
+
+    // Validate: name must contain at least one alphabetical letter (allows "7UP", "Item 3", etc.)
+    if (!/[a-zA-Z]/.test(trimmedName)) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Item name must contain at least one alphabetical letter (e.g., "7UP" is fine, but "123" is not).'
+      });
+    }
+
+    // Validate: price must be greater than zero
+    const numPrice = Number(req.body.price);
+    if (isNaN(numPrice) || numPrice <= 0) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Item price must be greater than Rs.0.'
+      });
+    }
 
     // Prevent duplicate item names (case-insensitive)
     const existingItem = await MenuItem.findOne({
@@ -159,6 +176,29 @@ exports.addMenuItem = async (req, res) => {
  */
 exports.updateMenuItem = async (req, res) => {
   try {
+    // If updating the name, apply the same letter-check validation
+    if (req.body.name !== undefined) {
+      const trimmedName = req.body.name.trim().replace(/\s+/g, ' ');
+      if (!/[a-zA-Z]/.test(trimmedName)) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'Item name must contain at least one alphabetical letter (e.g., "7UP" is fine, but "123" is not).'
+        });
+      }
+      req.body.name = trimmedName;
+    }
+
+    // If updating the price, ensure it is greater than zero
+    if (req.body.price !== undefined) {
+      const numPrice = Number(req.body.price);
+      if (isNaN(numPrice) || numPrice <= 0) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'Item price must be greater than Rs.0.'
+        });
+      }
+    }
+
     const updatedItem = await MenuItem.findByIdAndUpdate(
       req.params.itemId,
       req.body,
