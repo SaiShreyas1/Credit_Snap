@@ -36,7 +36,6 @@ export default function ActiveDebtsContent() {
           id: d._id,
           name: d.student?.name || "Unknown Student",
           phone: d.student?.phoneNo || "+91 XXXXXXXXXX",
-          hall: d.student?.hall || "N/A",
           email: d.student?.email || "N/A",
           debt: d.amountOwed,
           limit: d.limit || 3000 // 🔧 THE FIX: Pull custom limit directly from Debt record
@@ -460,7 +459,7 @@ export default function ActiveDebtsContent() {
                 <div>
                   <h3 className="text-xl font-medium text-gray-900 mb-1">{s.name}</h3>
                   <p className="text-sm text-gray-500">
-                    Ph no. {s.phone}, {s.hall}, Mail: {s.email}
+                    Ph no. {s.phone}, Mail: {s.email}
                   </p>
                 </div>
 
